@@ -1,17 +1,43 @@
+/* Class DecodeAudio to process the raw packet data from the channel and prepare the audio 
+ * for peak detection
+ * Inputs: 	RawAudio - raw audio channel data from each device
+ * 			Handles - object to provide audio settings like thresholds, sampling rates etc
+ * 			DeviceData - device specific data like id, port, tcpCount, audio samples
+ * Output:	For each device, the updated DeviceData object shall contain the aligned audio for
+ * 			each device*/
 
-public class DecodeAudio {
+
+public class DecodeAudio implements Runnable{
 	
 	RawAudio raw;
 	Handles hndl;
 	DeviceData device;
 	
-	public DecodeAudio()
+	/*Constructor for current class*/
+	public DecodeAudio(RawAudio raw, Handles hndl, DeviceData device)
+	{
+		this.raw = raw;
+		this.hndl = hndl;
+		this.device = device;
+	}
+	
+	/* function to detect the special symbol FFFFFFF7 in the feature frame and extraction of the 
+	 * individual samples for each device*/
+	public void processFeatureFrame()
 	{}
 	
+	/*function to concatenate audio samples after detecting the special symbol */
 	public void concatenateAudio()
 	{}
 	
+	/*for each device, aligns the start and end of each concatenated audio stream, little ambiguous*/
 	public void alignAudio()
 	{}
 
+	@Override
+	public void run() {
+		processFeatureFrame();
+		concatenateAudio();
+		alignAudio();		
+	}
 }
