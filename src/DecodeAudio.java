@@ -1,4 +1,4 @@
-
+package src;
 /* Class DecodeAudio to process the raw packet data from the channel and prepare the audio 
  * for peak detection
  * Inputs: 	RawAudio - raw audio channel data from each device
@@ -11,15 +11,15 @@
 public class DecodeAudio implements Runnable{
 	
 	RawAudio raw;		//Class to retrieve int32 packet data with actual raw audio
-	Handles hndl;		// Class to manage settings for computation,thresholds,sampling rates etc
-	DeviceData device;	//Class to manage device specific data obtained from network pertaining to ip, port, device id, tcpCount
+	InitParameters handle;		// Class to manage settings for computation,thresholds,sampling rates etc
+	MakeConnection connData;	//Class to manage device specific data obtained from network pertaining to ip, port, device id, tcpCount
 	
 	/*Constructor for current class*/
-	public DecodeAudio(RawAudio raw, Handles hndl, DeviceData device)
+	public DecodeAudio(RawAudio raw, InitParameters handle, MakeConnection connData)
 	{
 		this.raw = raw;
-		this.hndl = hndl;
-		this.device = device;
+		this.handle = handle;
+		this.connData = connData;
 	}
 		
 	/* function to detect the special symbol FFFFFFF7 in the feature frame and extraction of the 
@@ -42,4 +42,4 @@ public class DecodeAudio implements Runnable{
 		alignAudio();		
 	}
 }
-	
+
