@@ -4,6 +4,7 @@ package com.google.cmusv.pandaa;
  * Maps to the "rec" variable in MakeConnection.m. The network essential updates the rec 
  * object as each device sends its data*/
 
-public class MakeConnection { //Fabian
+//TODO(fabian,dilip): refactor to work with com.google.cmusv.pandaa.stream.SocketStream
+public class MakeConnection {
 
 }
