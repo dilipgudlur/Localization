@@ -1,4 +1,4 @@
-package PANDAA_Server.src;
+package com.google.cmusv.pandaa;
 
 public class Localizer {
 	public static void main(String[] args)
