@@ -2,8 +2,9 @@ package com.google.cmusv.pandaa.audio;
 
 import java.io.Serializable;
 
-import com.google.cmusv.pandaa.audio.FrameStream.Frame;
-import com.google.cmusv.pandaa.audio.FrameStream.Header;
+import com.google.cmusv.pandaa.stream.FrameStream.Frame;
+import com.google.cmusv.pandaa.stream.FrameStream.Header;
+import com.google.cmusv.pandaa.stream.FrameStream.LocalFrameStream;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -11,7 +12,7 @@ import android.media.MediaRecorder;
 
 public class AcquireAudio implements Runnable, Serializable {
 
-	transient FrameStream frameStream;
+	transient LocalFrameStream frameStream;
 	transient RawAudioFrame audioFrame;
 
 	transient private int frequency;
@@ -25,7 +26,7 @@ public class AcquireAudio implements Runnable, Serializable {
 	// Changing the sample resolution changes sample type. byte vs. short.
 	transient private static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
 
-	public AcquireAudio(FrameStream out) {
+	public AcquireAudio(LocalFrameStream out) {
 		frameStream = out;
 		isHeaderSet = false;
 		this.setFrequency(16000);
@@ -35,7 +36,7 @@ public class AcquireAudio implements Runnable, Serializable {
 	}
 
 	public void run() {
-		// Wait until we’re recording…
+		// Wait until we're recording
 		synchronized (mutex) {
 			while (!this.isRecording) {
 				try {
@@ -50,7 +51,7 @@ public class AcquireAudio implements Runnable, Serializable {
 		android.os.Process
 				.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
 
-		// Allocate Recorder and Start Recording…
+		// Allocate Recorder and Start Recording
 		int bufferRead = 0;
 		int bufferSize = AudioRecord.getMinBufferSize(this.getFrequency(),
 				this.getChannelConfiguration(), this.getAudioEncoding());
@@ -92,12 +93,12 @@ public class AcquireAudio implements Runnable, Serializable {
 			for (int idxBuffer = 0; idxBuffer < bufferRead; ++idxBuffer) {
 				audioFrame = new RawAudioFrame();
 				audioFrame.audioData = tempBuffer[idxBuffer];
-				frameStream.sendMessage(audioFrame);
+				frameStream.sendFrame(audioFrame);
 				numberOfBytes++;
 			}
 		}
 
-		// Close resources…
+		// Close resources
 		recordInstance.stop();
 	}
 

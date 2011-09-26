@@ -14,7 +14,9 @@ import android.os.Bundle;
 import android.widget.EditText;
 
 import com.google.cmusv.pandaa.audio.AcquireAudio.RawAudioFrame;
-import com.google.cmusv.pandaa.audio.FrameStream.Header;
+import com.google.cmusv.pandaa.stream.FileStream;
+import com.google.cmusv.pandaa.stream.FrameStream.Header;
+import com.google.cmusv.pandaa.stream.FrameStream.LocalFrameStream;
 
 public class PandaaAudioActivity extends Activity {
 	EditText textArea;
@@ -28,7 +30,7 @@ public class PandaaAudioActivity extends Activity {
 
 		String fileName = getApplicationContext().getFilesDir() + "/test.raw";
 
-		FrameStream audioFileStream = new FileStream(fileName);
+		LocalFrameStream audioFileStream = new FileStream(fileName);
 		AcquireAudio audioRecorder = new AcquireAudio(audioFileStream);
 		Thread th = new Thread(audioRecorder);
 
@@ -59,7 +61,7 @@ public class PandaaAudioActivity extends Activity {
 			textArea.append("FrameTime = " + new Long(h.frameTime).toString()
 					+ "\n");
 			textArea.append("StartTime = " + new Date(h.startTime) + "\n");
-			while ((f = (RawAudioFrame) audioFileStream.recvMessage()) != null) {
+			while ((f = (RawAudioFrame) audioFileStream.recvFrame()) != null) {
 				oos.writeShort(f.audioData);
 			}
 			MediaPlayer mpPlayer = new MediaPlayer();
