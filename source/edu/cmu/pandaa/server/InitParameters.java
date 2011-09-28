@@ -1,4 +1,4 @@
-package src;
+package com.google.cmusv.pandaa;
 /*Class Handles manages specific settings like TDOA parameters,threshold computation,network 
  * ports,sound event details, time sync details etc  */
 
