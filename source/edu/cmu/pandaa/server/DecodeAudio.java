@@ -1,4 +1,4 @@
-package com.google.cmusv.pandaa;
+package edu.cmu.pandaa.server;
 /* Class DecodeAudio to process the raw packet data from the channel and prepare the audio 
  * for peak detection
  * Inputs: 	RawAudio - raw audio channel data from each device

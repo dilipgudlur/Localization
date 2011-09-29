@@ -1,4 +1,4 @@
-package com.google.cmusv.pandaa;
+package edu.cmu.pandaa.server;
 
 public class Localizer {
 	public static void main(String[] args)
