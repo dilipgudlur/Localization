@@ -1,6 +1,6 @@
 package edu.cmu.pandaa.server;
-/* Class DecodeAudio to process the raw packet data from the channel and prepare the audio 
- * for peak detection
+/* Step a&b: Class DecodeAudio to process the raw packet data from the channel and reconstruct the audio 
+ * and prepare for peak detection
  * Inputs: 	RawAudio - raw audio channel data from each device
  * 			Handles - object to provide audio settings like thresholds, sampling rates etc
  * 			DeviceData - device specific data like id, port, tcpCount, audio samples
@@ -31,15 +31,12 @@ public class DecodeAudio implements Runnable{
 	public void concatenateAudio()
 	{}
 	
-	/*for each device, aligns the start and end of each concatenated audio stream, little ambiguous*/
-	public void alignAudio()
-	{}
-
+	
 	@Override
 	public void run() {
 		processFeatureFrame();
 		concatenateAudio();
-		alignAudio();		
+				
 	}
 }
 

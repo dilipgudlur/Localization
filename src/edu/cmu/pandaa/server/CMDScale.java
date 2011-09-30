@@ -1,4 +1,4 @@
-/*Classical MultiDimensional Scaling : 
+/*Step g: Classical MultiDimensional Scaling : 
  * takes an input matrix giving dissimilarities between pairs of items and 
  * outputs a coordinate matrix
  * Input: pairwise distances between devices, say there are 3 phones, A, B, C 
