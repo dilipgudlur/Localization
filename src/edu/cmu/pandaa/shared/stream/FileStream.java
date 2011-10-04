@@ -1,4 +1,4 @@
-package com.google.cmusv.pandaa.stream;
+package edu.cmu.pandaa.shared.stream;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,9 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OptionalDataException;
 
-import com.google.cmusv.pandaa.stream.FrameStream.LocalFrameStream;
-
-public class FileStream implements LocalFrameStream {
+public class FileStream implements FrameStream {
 
   private File audioFile;
   private static int sequenceNum;
@@ -67,8 +65,8 @@ public class FileStream implements LocalFrameStream {
   public synchronized void sendFrame(Frame m) throws IllegalStateException {
     try {
       m.seqNum = sequenceNum++;
-            oos.writeObject(m);
-            oos.flush();
+      oos.writeObject(m);
+      oos.flush();
     } catch (FileNotFoundException e) {
       throw new IllegalStateException("Cannot Open File", e);
     } catch (IOException e) {
