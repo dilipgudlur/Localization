@@ -50,7 +50,8 @@ class ExtractFeatures implements Runnable {
 	}
 
 	class FeatureFrame extends Frame implements Serializable {
-		short[] featureData;
+		int[] offset;
+		short[] peaks;
 	}
 
 	class FeatureHeader extends Header implements Serializable {
