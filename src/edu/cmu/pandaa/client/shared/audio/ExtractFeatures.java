@@ -3,7 +3,9 @@ package edu.cmu.pandaa.client.shared.audio;
 import java.io.Serializable;
 
 
+import edu.cmu.pandaa.shared.stream.FeatureData.FeatureFrame;
 import edu.cmu.pandaa.shared.stream.FrameStream;
+import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
 
 class ExtractFeatures implements Runnable {
 	FrameStream in, out;
@@ -38,7 +40,7 @@ class ExtractFeatures implements Runnable {
 				short[] bufferData = processAudio(frame);
 				if (bufferData != null)
 				{
-					featureFrame.featureData = bufferData;
+				//	featureFrame.featureData = bufferData;
 					out.sendFrame(featureFrame);
 				}
 			} catch (Exception e) {
@@ -46,14 +48,6 @@ class ExtractFeatures implements Runnable {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	class FeatureFrame extends Frame implements Serializable {
-		int[] offset;
-		short[] peaks;
-	}
-
-	class FeatureHeader extends Header implements Serializable {
 	}
 
 	/*
