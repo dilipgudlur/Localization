@@ -1,13 +1,12 @@
 package edu.cmu.pandaa.client.shared.audio;
 
 import java.io.Serializable;
-import com.google.cmusv.pandaa.audio.AcquireAudio.RawAudioFrame;
-import com.google.cmusv.pandaa.stream.FrameStream.Frame;
-import com.google.cmusv.pandaa.stream.FrameStream.Header;
-import com.google.cmusv.pandaa.stream.FrameStream.LocalFrameStream;
+
+
+import edu.cmu.pandaa.shared.stream.FrameStream;
 
 class ExtractFeatures implements Runnable {
-	LocalFrameStream in, out;
+	FrameStream in, out;
 	FeatureFrame featureFrame;
 	double threshold;	// threshold for amplitude
 	int totalSampleBeenProcessed = 0;
@@ -18,7 +17,7 @@ class ExtractFeatures implements Runnable {
 	int frameCount = 0;
 	int gjumped = 0;	// the unit of gJumped is frameSample
 
-	private ExtractFeatures(LocalFrameStream in, LocalFrameStream out) {
+	private ExtractFeatures(FrameStream in, FrameStream out) {
 		this.in = in;
 		this.out = out;
 		this.setThreshold(10);
