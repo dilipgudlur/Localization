@@ -1,4 +1,4 @@
-package com.google.cmusv.pandaa.audio;
+package edu.cmu.pandaa.client.shared.audio;
 
 import java.io.Serializable;
 import com.google.cmusv.pandaa.audio.AcquireAudio.RawAudioFrame;

@@ -1,4 +1,4 @@
-package com.google.cmusv.pandaa.stream;
+package edu.cmu.pandaa.shared.stream;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,9 +9,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OptionalDataException;
 
-import com.google.cmusv.pandaa.stream.FrameStream.LocalFrameStream;
+import edu.cmu.pandaa.shared.stream.GenericFrame.Frame;
+import edu.cmu.pandaa.shared.stream.GenericFrame.Header;
 
-public class FileStream implements LocalFrameStream {
+public class FileStream implements FrameStream {
 
   private File audioFile;
   private static int sequenceNum;
@@ -30,7 +31,6 @@ public class FileStream implements LocalFrameStream {
       oos = new ObjectOutputStream(new FileOutputStream(this.audioFile));
       ois = new ObjectInputStream(new FileInputStream(this.audioFile));
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -42,7 +42,6 @@ public class FileStream implements LocalFrameStream {
     } catch (FileNotFoundException e) {
       throw new IllegalStateException("Cannot Open File", e);
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -52,13 +51,10 @@ public class FileStream implements LocalFrameStream {
     try {
       audioHeader = (Header)ois.readObject();
     } catch (OptionalDataException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     } catch (ClassNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return audioHeader;
@@ -72,7 +68,6 @@ public class FileStream implements LocalFrameStream {
     } catch (FileNotFoundException e) {
       throw new IllegalStateException("Cannot Open File", e);
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -82,13 +77,10 @@ public class FileStream implements LocalFrameStream {
     try {
       audioFrame = (Frame)ois.readObject();
     } catch (OptionalDataException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     } catch (ClassNotFoundException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return audioFrame;

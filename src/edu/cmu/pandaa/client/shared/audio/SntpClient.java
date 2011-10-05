@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.cmusv.pandaa.audio;
+package edu.cmu.pandaa.client.shared.audio;
 
 import android.os.SystemClock;
 import android.util.Config;
