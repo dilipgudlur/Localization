@@ -8,10 +8,10 @@ import edu.cmu.pandaa.shared.stream.GenericFrame.Header;
 
 public class RawAudio {
 	public static class RawAudioFrame extends Frame implements Serializable {
-		public Short[] audioData;
+		public short[] audioData;
 
 		public RawAudioFrame(int frameLength) {
-			audioData = new Short[frameLength];
+			audioData = new short[frameLength];
 		}
 	}
 
