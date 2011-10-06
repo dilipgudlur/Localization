@@ -1,19 +1,23 @@
 package edu.cmu.pandaa.shared.stream;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+
 public class SocketStream implements FrameStream {
   
-  Header headerBuffer;
+  StreamHeader headerBuffer;
   Socket connection;
   ObjectOutputStream outObjectStream;
   ObjectInputStream inObjectStream;
   Object incomingMessage;
   
-  SocketStream(Socket connection) {
+  public SocketStream(Socket connection) {
     this.connection = connection;
     
     try {
@@ -23,12 +27,13 @@ public class SocketStream implements FrameStream {
     catch (IOException e) { e.printStackTrace(); }
   }
   
-  public void setHeader(Header h) {
+  public void setHeader(StreamHeader h) {
     headerBuffer = h;
-    notify();   // if receiver is waiting for header, wake up
+    sendObject(h);    // send header over network
+    notify();         // if a thread is waiting for the header, wake it up
   }
   
-  public Header getHeader() {
+  public StreamHeader getHeader() {
     if (headerBuffer == null) {
       try {
         wait();   // sleep until there's a header
@@ -38,25 +43,37 @@ public class SocketStream implements FrameStream {
     return headerBuffer;
   }
   
-  public void sendFrame(Frame f) {
-    try {
-      outObjectStream.writeObject(f);
-    }
-    catch (IOException e) { System.out.println("Error sending message."); e.printStackTrace(); }
+  public void sendFrame(StreamFrame f) {
+    sendObject(f);    // send frame over network
   }
   
-  public Frame recvFrame() {
+  public StreamFrame recvFrame() {
     try {
       incomingMessage = inObjectStream.readObject();
       
-      if (incomingMessage instanceof Frame) {
-        return (Frame) incomingMessage;
+      if (incomingMessage instanceof StreamFrame) {
+        return (StreamFrame) incomingMessage;
       }
-      else if (incomingMessage instanceof Header) {
-        this.headerBuffer = (Header) incomingMessage;
+      else if (incomingMessage instanceof StreamHeader) {
+        setHeader((StreamHeader) incomingMessage);
       }
-      return recvFrame();   // return next Message if this one wasn't a Frame
+      return recvFrame();   // return next message if this one wasn't a frame
     }
+    catch (EOFException e) {
+      System.out.println("Connection closed by client.");
+      e.printStackTrace();
+      try { connection.close(); }
+      catch (IOException ioex) { ioex.printStackTrace(); }
+      return null;
+    }
+    catch (IOException e) { System.out.println("Error, connection closed abnormally."); e.printStackTrace(); return null; }
     catch (Exception e) { e.printStackTrace(); return null; }
+  }
+  
+  private void sendObject(Object o) {
+    try {
+      outObjectStream.writeObject(o);
+    }
+    catch (IOException e) { System.out.println("Error sending message."); e.printStackTrace(); }
   }
 }

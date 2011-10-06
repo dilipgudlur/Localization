@@ -1,12 +1,12 @@
 package edu.cmu.pandaa.shared.stream;
 
-import edu.cmu.pandaa.shared.stream.GenericFrame.Frame;
-import edu.cmu.pandaa.shared.stream.GenericFrame.Header;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 public interface FrameStream {
-  public void setHeader(Header h);
-  public Header getHeader();
+  public void setHeader(StreamHeader h);
+  public StreamHeader getHeader();          // will block until there's a header (should be set first thing anyway)
 
-  public Frame recvFrame(); // will block until ready
-  public void sendFrame(Frame m);
+  public StreamFrame recvFrame();           // will block until there's a frame available
+  public void sendFrame(StreamFrame m) throws Exception;
 }
