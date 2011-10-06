@@ -7,14 +7,15 @@ import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
 class ExtractFeatures implements Runnable {
 	FrameStream in, out;
 	FeatureFrame featureFrame;
-	double threshold;	// threshold for amplitude
+	double threshold; // threshold for amplitude
+	double max = 20;
 	int totalSampleBeenProcessed = 0;
 	int bytesPerSample = 4;
 	int sampleRate = 16000;
-	int timeFrame = 100;	// ms
+	int timeFrame = 100; // ms
 	int frameSample = sampleRate / 1000 * timeFrame;
 	int frameCount = 0;
-	int gjumped = 0;	// the unit of gJumped is frameSample
+	int gjumped = 0; // the unit of gJumped is frameSample
 
 	private ExtractFeatures(FrameStream in, FrameStream out) {
 		this.in = in;
@@ -23,7 +24,7 @@ class ExtractFeatures implements Runnable {
 	}
 
 	public void run() {
-		
+
 		// Write Header to FrameStream
 		RawAudioFrame af;
 		out.setHeader(in.getHeader());
@@ -35,9 +36,8 @@ class ExtractFeatures implements Runnable {
 			try {
 				featureFrame = new FeatureFrame();
 				featureFrame = processAudio(frame);
-				if (featureFrame != null)
-				{
-				//	featureFrame.featureData = bufferData;
+				if (featureFrame != null) {
+					// featureFrame.featureData = bufferData;
 					out.sendFrame(featureFrame);
 				}
 			} catch (Exception e) {
@@ -54,41 +54,31 @@ class ExtractFeatures implements Runnable {
 	 */
 
 	public FeatureFrame processAudio(short[] buffer1) throws Exception {
+		int index = 0;
+		FeatureFrame ff = new FeatureFrame();
 
-		int len = buffer1.length; // Should equal frameSample
-		short[] buffer2 = new short[len + 3]; // store the frames with impulses
-		
-		if (len == frameSample) {
 			double maxHeight = maxHeight(buffer1, 0, frameSample);
 			if (maxHeight > threshold) {
-				short[] sampleNum = int2short(totalSampleBeenProcessed);
-				buffer2[0] = (short) gjumped;	//store the gJumped
-				buffer2[1] = sampleNum[0];
-				buffer2[2] = sampleNum[1];
-				//store the number of total samples that have been processed
 				for (int i = 0; i < frameSample; i++) {
-					buffer2[3 + i] = buffer1[i];	//store the audio with impulses
+					double value = java.lang.Math.abs((double) buffer1[i]) / 65536.0;
+					if (value > threshold) {
+						ff.peaks[index] = buffer1[i];
+						ff.offset[index] = totalSampleBeenProcessed;
+						index++;
+					}
+					totalSampleBeenProcessed++;
+					// store the number of total samples that have been
+					// processed
 				}
-				gjumped = 0;
+				//gjumped = 0;
 			} else {
-				gjumped++; // jumping counter
+				//gjumped++; // jumping counter
 				totalSampleBeenProcessed += frameSample;
 				return null;
 			}
-			totalSampleBeenProcessed += frameSample;
-			return buffer2;
-		} else {
-			throw new Exception(
-					"The frame does not have the correct number of samples");
-		}
-	}
+			return ff;
+		} 
 
-	private short[] int2short(int integer) {
-		short[] shortArray = new short[2];
-		shortArray[0] = (short) (integer & 0xFF);
-		shortArray[1] = (short) (integer >> 16 & 0xFF);
-		return shortArray;
-	}
 
 	public double maxHeight(short[] buffer1, int start_index, int len) {
 		double max = 0.0;
@@ -101,6 +91,7 @@ class ExtractFeatures implements Runnable {
 			}
 			i++;
 		}
+		adaptThreshold(max);
 		return max;
 	}
 
@@ -111,5 +102,13 @@ class ExtractFeatures implements Runnable {
 	public void setThreshold(double thr) {
 		// TODO: set adaptive threshold
 		threshold = thr;
+	}
+
+	public void adaptThreshold(double maxH) {
+		if (maxH > max) {
+			setThreshold(0.5 * maxH);
+			max = maxH;
+		}
+
 	}
 }
