@@ -41,7 +41,7 @@ class ExtractFeatures implements Runnable {
 				if (bufferData != null)
 				{
 				//	featureFrame.featureData = bufferData;
-					out.sendFrame(featureFrame);
+				//	out.sendFrame(featureFrame);
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
