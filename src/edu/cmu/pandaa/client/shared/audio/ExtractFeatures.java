@@ -1,8 +1,5 @@
 package edu.cmu.pandaa.client.shared.audio;
 
-import java.io.Serializable;
-
-
 import edu.cmu.pandaa.shared.stream.FeatureData.FeatureFrame;
 import edu.cmu.pandaa.shared.stream.FrameStream;
 import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
@@ -37,11 +34,11 @@ class ExtractFeatures implements Runnable {
 			frameCount++;
 			try {
 				featureFrame = new FeatureFrame();
-				short[] bufferData = processAudio(frame);
-				if (bufferData != null)
+				featureFrame = processAudio(frame);
+				if (featureFrame != null)
 				{
 				//	featureFrame.featureData = bufferData;
-				//	out.sendFrame(featureFrame);
+					out.sendFrame(featureFrame);
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -56,7 +53,7 @@ class ExtractFeatures implements Runnable {
 	 * buffer2 is returned.
 	 */
 
-	public short[] processAudio(short[] buffer1) throws Exception {
+	public FeatureFrame processAudio(short[] buffer1) throws Exception {
 
 		int len = buffer1.length; // Should equal frameSample
 		short[] buffer2 = new short[len + 3]; // store the frames with impulses
