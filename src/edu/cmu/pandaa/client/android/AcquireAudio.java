@@ -13,7 +13,7 @@ import android.media.MediaRecorder;
 
 public class AcquireAudio implements Runnable, Serializable {
 
-	transient FrameStream frameStream;
+	FrameStream frameStream;
 	transient RawAudioFrame audioFrame;
 
 	transient private int frequency;
