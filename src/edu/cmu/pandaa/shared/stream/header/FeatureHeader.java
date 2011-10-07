@@ -6,7 +6,7 @@ import java.io.Serializable;
 public class FeatureHeader extends StreamHeader implements Serializable {
 
 	public static class FeatureFrame extends StreamFrame implements Serializable {
-		public int[] offsets;  /* TAP: What units are these in? Needs a comment */
+		public int[] offsets;  // the number of samples that have been processed so far
 	    public short[] peaks;
 
 	}
