@@ -9,8 +9,8 @@ import java.util.Date;
 
 import edu.cmu.pandaa.shared.stream.FileStream;
 import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.GenericFrame.Header;
-import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 
 import android.app.Activity;
 import android.media.AudioManager;
@@ -51,7 +51,7 @@ public class PandaaAudioActivity extends Activity {
 			e.printStackTrace();
 		}
 
-		Header h = audioFileStream.getHeader();
+		StreamHeader h = audioFileStream.getHeader();
 		RawAudioFrame f = null;
 		ObjectOutputStream oos = null;
 		try {

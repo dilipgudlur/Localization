@@ -9,8 +9,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OptionalDataException;
 
-import edu.cmu.pandaa.shared.stream.GenericFrame.Frame;
-import edu.cmu.pandaa.shared.stream.GenericFrame.Header;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 public class FileStream implements FrameStream {
 
@@ -35,10 +35,10 @@ public class FileStream implements FrameStream {
     }
   }
   
-  public synchronized void setHeader(Header h) {
+  public synchronized void setHeader(StreamHeader h) {
     try {
-            oos.writeObject(h);
-            oos.flush();
+      oos.writeObject(h);
+      oos.flush();
     } catch (FileNotFoundException e) {
       throw new IllegalStateException("Cannot Open File", e);
     } catch (IOException e) {
@@ -46,10 +46,10 @@ public class FileStream implements FrameStream {
     }
   }
 
-  public synchronized Header getHeader() {
-    Header audioHeader = null;
+  public synchronized StreamHeader getHeader() {
+    StreamHeader audioHeader = null;
     try {
-      audioHeader = (Header)ois.readObject();
+      audioHeader = (StreamHeader) ois.readObject();
     } catch (OptionalDataException e) {
       e.printStackTrace();
     } catch (ClassNotFoundException e) {
@@ -60,7 +60,7 @@ public class FileStream implements FrameStream {
     return audioHeader;
   }
 
-  public synchronized void sendFrame(Frame m) throws IllegalStateException {
+  public synchronized void sendFrame(StreamFrame m) throws IllegalStateException {
     try {
       m.seqNum = sequenceNum++;
             oos.writeObject(m);
@@ -72,10 +72,10 @@ public class FileStream implements FrameStream {
     }
   }
 
-  public Frame recvFrame() {
-    Frame audioFrame = null;
+  public StreamFrame recvFrame() {
+    StreamFrame audioFrame = null;
     try {
-      audioFrame = (Frame)ois.readObject();
+      audioFrame = (StreamFrame) ois.readObject();
     } catch (OptionalDataException e) {
       e.printStackTrace();
     } catch (ClassNotFoundException e) {

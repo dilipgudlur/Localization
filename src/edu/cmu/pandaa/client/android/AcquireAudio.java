@@ -3,8 +3,8 @@ package edu.cmu.pandaa.client.android;
 import java.io.Serializable;
 
 import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
-import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioHeader;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
 
 
 import android.media.AudioFormat;
@@ -86,7 +86,12 @@ public class AcquireAudio implements Runnable, Serializable {
 				// When a frame is full send it to the stream and create a new frame
 				if (audioFrame == null || audioIndex >= frameLength) {
 					if (audioFrame != null) {
-						frameStream.sendFrame(audioFrame);
+						try {
+							frameStream.sendFrame(audioFrame);
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 					audioFrame = new RawAudioFrame(frameLength);
 					audioIndex = 0;
@@ -98,7 +103,12 @@ public class AcquireAudio implements Runnable, Serializable {
 		
 		if(audioIndex > 0) {
 			numberOfBytes = audioIndex;
-			frameStream.sendFrame(audioFrame);
+			try {
+				frameStream.sendFrame(audioFrame);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			audioIndex = 0;
 			audioFrame = null;
 		}

@@ -1,17 +1,20 @@
 package edu.cmu.pandaa.shared.stream;
 
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+
 // a memory buffer
 public class MemoryStream implements FrameStream {
 
-  private Header headerBuffer;
-  private Frame frameBuffer;
+  private StreamHeader headerBuffer;
+  private StreamFrame frameBuffer;
 
-  public void setHeader(Header h) {
+  public void setHeader(StreamHeader h) {
     headerBuffer = h;
-    notify();   // if receiver is waiting for header, wake up
+    notify();     // if receiver is waiting for header, wake up
   }
 
-  public Header getHeader() {
+  public StreamHeader getHeader() {
     if (headerBuffer == null) {
       try {
         wait();   // sleep until there's a header
@@ -21,9 +24,9 @@ public class MemoryStream implements FrameStream {
     return headerBuffer;
   }
 
-  public synchronized void sendFrame(Frame m) throws Exception {
+  public void sendFrame(StreamFrame f) throws Exception {
     if (frameBuffer == null) {
-      frameBuffer = m;
+      frameBuffer = f;
       notify();   // if receiver is sleeping, wake up 
     } 
     else {
@@ -31,7 +34,7 @@ public class MemoryStream implements FrameStream {
     }
   }
 
-  public synchronized Frame recvFrame() {
+  public StreamFrame recvFrame() {
     if (frameBuffer == null) {
       try {
         wait();
@@ -39,7 +42,7 @@ public class MemoryStream implements FrameStream {
       catch (InterruptedException e) { e.printStackTrace(); }
     }
     
-    Frame f = frameBuffer;
+    StreamFrame f = frameBuffer;
     frameBuffer = null;
     return f;
   }
