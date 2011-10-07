@@ -11,24 +11,24 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 
-public class AcquireAudio implements Runnable, Serializable {
+public class AcquireAudio implements Runnable {
 
 	FrameStream frameStream;
-	transient RawAudioFrame audioFrame;
+	RawAudioFrame audioFrame;
 
-	transient private int frequency;
-	transient private int channelConfiguration;
-	transient private volatile boolean isRecording;
-	transient public static int numberOfBytes = 0;
-	transient private boolean isHeaderSet;
-	transient private int audioIndex;
-	transient private int frameTime, frameLength;
+	private int frequency;
+	private int channelConfiguration;
+	private volatile boolean isRecording;
+	public static int numberOfBytes = 0;
+	private boolean isHeaderSet;
+	private int audioIndex;
+	private int frameTime, frameLength;
 
 	// Changing the sample resolution changes sample type. byte vs. short.
-	transient private static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
-	transient private static final int AUDIO_FREQUENCY = 16000;
-	transient private static final int FRAME_TIME = 100;
-	transient private static final int MILLISECONDS = 1000;
+	private static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
+	private static final int AUDIO_FREQUENCY = 16000;
+	private static final int FRAME_TIME = 100;
+	private static final int MILLISECONDS = 1000;
 	
 	public AcquireAudio(FrameStream out) {
 		frameStream = out;
@@ -49,8 +49,11 @@ public class AcquireAudio implements Runnable, Serializable {
 
 		// Allocate Recorder and Start Recording…
 		int bufferRead = 0;
+		System.out.println("Freq: " + this.getFrequency() + "Channel Configuration: " +
+				this.getChannelConfiguration() + " Audio Encoding: " + this.getAudioEncoding());
 		int bufferSize = AudioRecord.getMinBufferSize(this.getFrequency(),
 				this.getChannelConfiguration(), this.getAudioEncoding());
+		System.out.println("Buffersise: " + bufferSize);
 		AudioRecord recordInstance = new AudioRecord(
 				MediaRecorder.AudioSource.MIC, this.getFrequency(),
 				this.getChannelConfiguration(), this.getAudioEncoding(),
@@ -78,7 +81,7 @@ public class AcquireAudio implements Runnable, Serializable {
 			// Set the header in the stream if it has not already been done
 			if (bufferRead > 0 && !isHeaderSet) {
 				isHeaderSet = true;
-				frameStream.setHeader(new RawAudioHeader(frameTime));
+				frameStream.setHeader(new RawAudioHeader(frameTime, this.getFrequency(), this.getChannelConfiguration(), this.getAudioEncoding()));
 			}
 			
 			for (int idxBuffer = 0; idxBuffer < bufferRead; ++idxBuffer) {

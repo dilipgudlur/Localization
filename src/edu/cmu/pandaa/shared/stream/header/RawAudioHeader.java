@@ -6,9 +6,16 @@ import edu.cmu.pandaa.client.shared.audio.AudioTimeStamp;
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
 
-	public RawAudioHeader(int frameTime) {
+	public int samplingRate;
+	public int channelConfiguration;
+	public int audioEncoding;
+	
+	public RawAudioHeader(int frameTime, int samplingRate, int channelConf, int audioEncoding) {
 		startTime = AudioTimeStamp.getCurrentTime();
 		this.frameTime = frameTime;
+		this.samplingRate = samplingRate;
+		this.channelConfiguration = channelConf;
+		this.audioEncoding = audioEncoding;
 	}
 
 	public static class RawAudioFrame extends StreamFrame implements Serializable {
