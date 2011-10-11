@@ -1,8 +1,7 @@
 
 
 interface StreamModule {
-    void initialize(StreamHeader inHeader);
-    StreamHeader getOutHeader();
+    StreamHeader initialize(StreamHeader inHeader);
     StreamFrame process(StreamFrame inFrame);
     void close();
 }

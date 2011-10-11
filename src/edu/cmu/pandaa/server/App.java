@@ -11,7 +11,9 @@ import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 // server app
 public class App {
-  
+    StreamModule decompress;
+    StreamModule concatenate;
+
   App() {
     // listen for clients
     AcceptClients acceptClients = new AcceptClients();
@@ -63,16 +65,22 @@ public class App {
     }
     
     public void run() {         
-      while (true) {
-        frame = clientStream.recvFrame();   // message comes in as a compressed frame
+	StreamHeader header = clientStream.getHeader();
+	header = decompress.initialize(header);
+	header = concatenate.initialize(header);
+
+	while (true) {
+	    frame = clientStream.recvFrame();   // message comes in as a compressed frame
         
+	    frame = decompress.process(frame);
+	    frame = concatenate.process(frame);
         //TODO: decompress
         //TODO: concatenate
         //TODO: align
         //TODO: detect impulsive peaks
         
         //TODO: put everything in a FrameStream for pair-wise TDOA computation
-      }
+	}
     }
   }
 }
