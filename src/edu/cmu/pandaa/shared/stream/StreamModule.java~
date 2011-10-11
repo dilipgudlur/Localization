@@ -1,6 +1,0 @@
-
-
-interface StreamModule {
-
-    StreamFrame process(StreamFrame in);
-}
