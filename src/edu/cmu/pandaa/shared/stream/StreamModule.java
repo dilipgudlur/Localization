@@ -8,10 +8,10 @@ interface StreamModule {
 
 public void go(FrameStream in, FrameStream out, StreamModule m1, StreamModule m2) {
 
-    StreamHeader headerIn = in.getHeader();
-    m1.initialize(headerIn);
-    m2.initialize(m1.getOutHeader());
-    out.setHeader(m2.getOutHeader());
+    StreamHeader header = in.getHeader();
+    header = m1.initialize(header);
+    header = m2.initialize(header);
+    out.setHeader(header);
 
     while ((StreamFrame frame = in.recvFrame()) != null) {
 	frame = m1.process(frame);
