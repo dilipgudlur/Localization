@@ -4,9 +4,10 @@ import java.io.Serializable;
 
 
 public class FeatureHeader extends StreamHeader implements Serializable {
-
+	public int samplingRate;
+	
 	public static class FeatureFrame extends StreamFrame implements Serializable {
-		public int[] offsets;  // the number of samples that have been processed so far
+		public int[] offsets;  // nanosecond of the peak
 	    public short[] peaks;
 
 	}
