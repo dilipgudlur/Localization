@@ -19,7 +19,9 @@ public class MemoryStream implements FrameStream {
       try {
         wait();   // sleep until there's a header
       } 
-      catch (InterruptedException e) { e.printStackTrace(); }
+      catch (InterruptedException e) { 
+        e.printStackTrace();
+      }
     }
     return headerBuffer;
   }
@@ -39,7 +41,9 @@ public class MemoryStream implements FrameStream {
       try {
         wait();
       } 
-      catch (InterruptedException e) { e.printStackTrace(); }
+      catch (InterruptedException e) { 
+        e.printStackTrace();
+      }
     }
     
     StreamFrame f = frameBuffer;

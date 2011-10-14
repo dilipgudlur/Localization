@@ -1,21 +1,25 @@
 package edu.cmu.pandaa.client.shared.audio;
 
-import edu.cmu.pandaa.shared.stream.FeatureData.FeatureFrame;
+
 import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.RawAudio.RawAudioFrame;
+import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
+import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
+
 
 class ExtractFeatures implements Runnable {
 	FrameStream in, out;
 	FeatureFrame featureFrame;
-	double threshold; // threshold for amplitude
+	double threshold;	// threshold for amplitude
 	double max = 20;
 	int totalSampleBeenProcessed = 0;
 	int bytesPerSample = 4;
-	int sampleRate = 16000;
-	int timeFrame = 100; // ms
+	int sampleRate;
+	int timeFrame = 100;	// ms
 	int frameSample = sampleRate / 1000 * timeFrame;
 	int frameCount = 0;
-	int gjumped = 0; // the unit of gJumped is frameSample
+	int gjumped = 0;	// the unit of gJumped is frameSample
+	int nsPerSample;
 
 	private ExtractFeatures(FrameStream in, FrameStream out) {
 		this.in = in;
@@ -27,8 +31,11 @@ class ExtractFeatures implements Runnable {
 
 		// Write Header to FrameStream
 		RawAudioFrame af;
-		out.setHeader(in.getHeader());
-
+		FeatureHeader fh = (FeatureHeader) in.getHeader();
+		out.setHeader(fh);
+		sampleRate = fh.samplingRate;
+		nsPerSample = 10^9 / sampleRate;	//nanosecond per sample
+		
 		// read raw audio from the original audio file
 		while ((af = (RawAudioFrame) in.recvFrame()) != null) {
 			short[] frame = af.audioData;
@@ -37,7 +44,6 @@ class ExtractFeatures implements Runnable {
 				featureFrame = new FeatureFrame();
 				featureFrame = processAudio(frame);
 				if (featureFrame != null) {
-					// featureFrame.featureData = bufferData;
 					out.sendFrame(featureFrame);
 				}
 			} catch (Exception e) {
@@ -63,7 +69,7 @@ class ExtractFeatures implements Runnable {
 					double value = java.lang.Math.abs((double) buffer1[i]) / 65536.0;
 					if (value > threshold) {
 						ff.peaks[index] = buffer1[i];
-						ff.offset[index] = totalSampleBeenProcessed;
+						ff.offsets[index] = totalSampleBeenProcessed * nsPerSample;
 						index++;
 					}
 					totalSampleBeenProcessed++;

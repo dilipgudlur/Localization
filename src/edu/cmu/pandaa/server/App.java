@@ -7,11 +7,14 @@ import java.net.Socket;
 import edu.cmu.pandaa.shared.stream.FrameStream;
 import edu.cmu.pandaa.shared.stream.MemoryStream;
 import edu.cmu.pandaa.shared.stream.SocketStream;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 // server app
 public class App {
-  
+    StreamModule decompress;
+    StreamModule concatenate;
+
   App() {
     // listen for clients
     AcceptClients acceptClients = new AcceptClients();
@@ -27,6 +30,7 @@ public class App {
     
     ServerSocket server;
     Socket connection;
+    Thread client;
     
     AcceptClients() {
       this.start();
@@ -39,11 +43,13 @@ public class App {
         
         while (true) {
           connection = server.accept();   // accept incoming connection
-          new HandleClient(connection);   // launch new client thread
+          client = new HandleClient(connection);   // launch new client thread
+          //TODO: add client to client manager, which pairs client.impulsePeaks in instances of TDOAImpulseCorrelationModule
         }
       } 
-      catch (IOException e) { System.out.println("Error, connection closed abnormally."); e.printStackTrace(); }
-      
+      catch (IOException e) { 
+        System.out.println("Error, connection closed abnormally."); e.printStackTrace(); 
+      }
     }    
   }
   
@@ -63,16 +69,21 @@ public class App {
     }
     
     public void run() {         
-      while (true) {
-        frame = clientStream.recvFrame();   // message comes in as a compressed frame
-        
-        //TODO: decompress
-        //TODO: concatenate
+    	StreamHeader header = clientStream.getHeader();
+    	header = decompress.initialize(header);
+    	header = concatenate.initialize(header);
+    
+    	while (true) {
+  	    frame = clientStream.recvFrame();    // message comes in as a compressed frame
+          
+  	    frame = decompress.process(frame);   //TODO: decompress
+  	    frame = concatenate.process(frame);  //TODO: concatenate
+  	    
         //TODO: align
         //TODO: detect impulsive peaks
-        
-        //TODO: put everything in a FrameStream for pair-wise TDOA computation
-      }
+  	    
+        impulsePeaks.sendFrame(frame);    // put everything in a FrameStream for pair-wise TDOA computation
+    	}
     }
   }
 }
