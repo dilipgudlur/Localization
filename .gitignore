@@ -1,5 +1,6 @@
 bin/
 *.classpath
 *.project
+*~
 gen/
 android-app/default.properties
