@@ -9,6 +9,7 @@ import java.util.Date;
 
 import edu.cmu.pandaa.shared.stream.FileStream;
 import edu.cmu.pandaa.shared.stream.FrameStream;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 
@@ -61,6 +62,7 @@ public class PandaaAudioActivity extends Activity {
 			textArea.append("FrameTime = " + new Long(h.frameTime).toString()
 					+ "\n");
 			textArea.append("StartTime = " + new Date(h.startTime) + "\n");
+			textArea.append("AudioEncoding: " + new Integer(((RawAudioHeader)h).audioEncoding));
 			while ((f = (RawAudioFrame) audioFileStream.recvFrame()) != null) {
 //				textArea.append(new Integer(f.audioData.length).toString());
 				numFrames++;
