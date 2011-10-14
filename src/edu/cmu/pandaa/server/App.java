@@ -7,6 +7,7 @@ import java.net.Socket;
 import edu.cmu.pandaa.shared.stream.FrameStream;
 import edu.cmu.pandaa.shared.stream.MemoryStream;
 import edu.cmu.pandaa.shared.stream.SocketStream;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 // server app
@@ -44,8 +45,9 @@ public class App {
           new HandleClient(connection);   // launch new client thread
         }
       } 
-      catch (IOException e) { System.out.println("Error, connection closed abnormally."); e.printStackTrace(); }
-      
+      catch (IOException e) { 
+        System.out.println("Error, connection closed abnormally."); e.printStackTrace(); 
+      }
     }    
   }
   
@@ -65,22 +67,20 @@ public class App {
     }
     
     public void run() {         
-	StreamHeader header = clientStream.getHeader();
-	header = decompress.initialize(header);
-	header = concatenate.initialize(header);
-
-	while (true) {
-	    frame = clientStream.recvFrame();   // message comes in as a compressed frame
-        
-	    frame = decompress.process(frame);
-	    frame = concatenate.process(frame);
-        //TODO: decompress
-        //TODO: concatenate
+    	StreamHeader header = clientStream.getHeader();
+    	header = decompress.initialize(header);
+    	header = concatenate.initialize(header);
+    
+    	while (true) {
+  	    frame = clientStream.recvFrame();    // message comes in as a compressed frame
+          
+  	    frame = decompress.process(frame);   //TODO: decompress
+  	    frame = concatenate.process(frame);  //TODO: concatenate
+  	    
         //TODO: align
         //TODO: detect impulsive peaks
-        
         //TODO: put everything in a FrameStream for pair-wise TDOA computation
-	}
+    	}
     }
   }
 }
