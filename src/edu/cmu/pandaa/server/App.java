@@ -30,6 +30,7 @@ public class App {
     
     ServerSocket server;
     Socket connection;
+    Thread client;
     
     AcceptClients() {
       this.start();
@@ -42,7 +43,8 @@ public class App {
         
         while (true) {
           connection = server.accept();   // accept incoming connection
-          new HandleClient(connection);   // launch new client thread
+          client = new HandleClient(connection);   // launch new client thread
+          //TODO: add client to client manager, which pairs client.impulsePeaks in instances of TDOAImpulseCorrelationModule
         }
       } 
       catch (IOException e) { 
@@ -79,7 +81,8 @@ public class App {
   	    
         //TODO: align
         //TODO: detect impulsive peaks
-        //TODO: put everything in a FrameStream for pair-wise TDOA computation
+  	    
+        impulsePeaks.sendFrame(frame);    // put everything in a FrameStream for pair-wise TDOA computation
     	}
     }
   }
