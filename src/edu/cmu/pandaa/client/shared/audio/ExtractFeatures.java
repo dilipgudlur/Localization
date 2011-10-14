@@ -13,12 +13,11 @@ class ExtractFeatures implements Runnable {
 	double threshold;	// threshold for amplitude
 	double max = 20;
 	int totalSampleBeenProcessed = 0;
-	int bytesPerSample = 4;
 	int sampleRate;
 	int timeFrame = 100;	// ms
-	int frameSample = sampleRate / 1000 * timeFrame;
-	int frameCount = 0;
-	int gjumped = 0;	// the unit of gJumped is frameSample
+	int frameSample;
+	//int frameCount = 0;
+	//int gjumped = 0;	 //the unit of gJumped is frameSample
 	int nsPerSample;
 
 	private ExtractFeatures(FrameStream in, FrameStream out) {
@@ -35,11 +34,12 @@ class ExtractFeatures implements Runnable {
 		out.setHeader(fh);
 		sampleRate = fh.samplingRate;
 		nsPerSample = 10^9 / sampleRate;	//nanosecond per sample
+		frameSample = sampleRate / 1000 * timeFrame;
 		
 		// read raw audio from the original audio file
 		while ((af = (RawAudioFrame) in.recvFrame()) != null) {
 			short[] frame = af.audioData;
-			frameCount++;
+			//frameCount++;
 			try {
 				featureFrame = new FeatureFrame();
 				featureFrame = processAudio(frame);
@@ -68,7 +68,7 @@ class ExtractFeatures implements Runnable {
 				for (int i = 0; i < frameSample; i++) {
 					double value = java.lang.Math.abs((double) buffer1[i]) / 65536.0;
 					if (value > threshold) {
-						ff.peaks[index] = buffer1[i];
+						ff.peakMagnitudes[index] = buffer1[i];
 						ff.offsets[index] = totalSampleBeenProcessed * nsPerSample;
 						index++;
 					}

@@ -8,7 +8,7 @@ public class FeatureHeader extends StreamHeader implements Serializable {
 	
 	public static class FeatureFrame extends StreamFrame implements Serializable {
 		public int[] offsets;  // nanosecond of the peak
-	    public short[] peaks;
+	    public short[] peakMagnitudes; // magnitude information for each peak
 
 	}
 }
