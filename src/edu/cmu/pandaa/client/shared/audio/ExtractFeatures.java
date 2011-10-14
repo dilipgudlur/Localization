@@ -91,7 +91,7 @@ class ExtractFeatures implements Runnable {
 		int i = 0;
 		while (i < len) {
 			double value = java.lang.Math
-					.abs((double) buffer1[start_index + i]) / 65536.0;
+					.abs((double) buffer1[start_index + i]) / 65536.0;	//TODO
 			if (value > max) {
 				max = value;
 			}
