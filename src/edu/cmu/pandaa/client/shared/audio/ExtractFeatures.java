@@ -4,6 +4,7 @@ package edu.cmu.pandaa.client.shared.audio;
 import edu.cmu.pandaa.shared.stream.FrameStream;
 import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
 import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
 
 
@@ -32,7 +33,7 @@ class ExtractFeatures implements Runnable {
 		RawAudioFrame af;
 		FeatureHeader fh = (FeatureHeader) in.getHeader();
 		out.setHeader(fh);
-		sampleRate = fh.samplingRate;
+		sampleRate = ((RawAudioHeader)in.getHeader()).samplingRate;
 		nsPerSample = 10^9 / sampleRate;	//nanosecond per sample
 		frameSample = sampleRate / 1000 * timeFrame;
 		

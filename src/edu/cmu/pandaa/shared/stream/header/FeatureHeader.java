@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 
 public class FeatureHeader extends StreamHeader implements Serializable {
-	public int samplingRate;
 	
 	public static class FeatureFrame extends StreamFrame implements Serializable {
 		public int[] peakOffsets;  // nanosecond of the peak in one frame
