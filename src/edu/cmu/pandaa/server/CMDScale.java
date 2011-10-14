@@ -1,3 +1,4 @@
+package edu.cmu.pandaa.server;
 /*Step g: Classical MultiDimensional Scaling : 
  * takes an input matrix giving dissimilarities between pairs of items and 
  * outputs a coordinate matrix
@@ -16,22 +17,57 @@ corresponding columns of Y in reproducing the original distance matrix D with th
 points.
  * */
 
-package edu.cmu.pandaa.server;
+
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
+import edu.cmu.pandaa.shared.stream.FileStream;
+import edu.cmu.pandaa.shared.stream.FrameStream;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.GeometryHeader.GeometryFrame;
 
 public class CMDScale {
 	
-	double[][] inputDistanceVector ;
-	double[][] ouputDistanceVector ;
+	//double[][] dissimilarity;
+	//double[][] relCoordinates;
+	int numFrames = 0;
 	
-	public CMDScale(double[][] inputDistanceVector)
+	/*public CMDScale(double[][] dissimilarity) //not sure if this correct
 	{
-		this.inputDistanceVector = inputDistanceVector ;		
-	}
+		this.dissimilarity = dissimilarity ;		
+	}*/
 	
-	public void applyCMDS()
-	{   //use the library for CMDScaling
-		//ouputDistanceVector = MDSJ.classicalScaling(inputDistanceVector);
+	public static void main(String[] args)
+	{
+		/*populates GeometryFrame members*/
+		String inFile = "D:/dissimilarity.txt";
+		String outFile = "D:/relCoordinate.txt";
+		FrameStream inputDissimilarityFile = new FileStream(inFile);
+		FrameStream ouptutCoordinateFile = new FileStream(outFile);
+		ProcessDissimilarity dissimilarity = new ProcessDissimilarity(inputDissimilarityFile, ouptutCoordinateFile);
+		Thread th = new Thread(dissimilarity);
+		th.start();
 		
-	}
+		/*StreamHeader h = ouptutCoordinateFile.getHeader();
+		GeometryFrame f = null;
+		ObjectOutputStream oos = null;
+		try {
+			oos = new ObjectOutputStream(new FileOutputStream(new File("D:\relCoordinates.txt")));
+			while ((f = (GeometryFrame) ouptutCoordinateFile.recvFrame()) != null) {
+				//numFrames++;
+				//oos.writeLong(f.geometry);
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 
+	}	
 }
