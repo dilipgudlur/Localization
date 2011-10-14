@@ -69,7 +69,7 @@ class ExtractFeatures implements Runnable {
 					double value = java.lang.Math.abs((double) buffer1[i]) / 65536.0;
 					if (value > threshold) {
 						ff.peakMagnitudes[index] = buffer1[i];
-						ff.offsets[index] = totalSampleBeenProcessed * nsPerSample;
+						ff.peakOffsets[index] = totalSampleBeenProcessed * nsPerSample;
 						index++;
 					}
 					totalSampleBeenProcessed++;
