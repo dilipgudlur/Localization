@@ -24,7 +24,9 @@ public class SocketStream implements FrameStream {
       this.outObjectStream = new ObjectOutputStream(connection.getOutputStream());
       this.inObjectStream = new ObjectInputStream(connection.getInputStream());
     }
-    catch (IOException e) { e.printStackTrace(); }
+    catch (IOException e) { 
+      e.printStackTrace();
+    }
   }
   
   public void setHeader(StreamHeader h) {
@@ -38,7 +40,9 @@ public class SocketStream implements FrameStream {
       try {
         wait();   // sleep until there's a header
       } 
-      catch (InterruptedException e) { e.printStackTrace(); }
+      catch (InterruptedException e) { 
+        e.printStackTrace(); 
+      }
     }
     return headerBuffer;
   }
@@ -66,14 +70,20 @@ public class SocketStream implements FrameStream {
       catch (IOException ioex) { ioex.printStackTrace(); }
       return null;
     }
-    catch (IOException e) { System.out.println("Error, connection closed abnormally."); e.printStackTrace(); return null; }
-    catch (Exception e) { e.printStackTrace(); return null; }
+    catch (IOException e) { 
+      System.out.println("Error, connection closed abnormally."); e.printStackTrace(); return null; 
+    }
+    catch (Exception e) { 
+      e.printStackTrace(); return null;
+    }
   }
   
   private void sendObject(Object o) {
     try {
       outObjectStream.writeObject(o);
     }
-    catch (IOException e) { System.out.println("Error sending message."); e.printStackTrace(); }
+    catch (IOException e) { 
+      System.out.println("Error sending message."); e.printStackTrace();
+    }
   }
 }

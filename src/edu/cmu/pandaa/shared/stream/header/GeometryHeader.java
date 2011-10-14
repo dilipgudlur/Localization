@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class GeometryHeader extends StreamHeader implements Serializable{
 	String[] deviceIds ;
+	
 	public static class GeometryFrame extends StreamFrame implements Serializable {
 		double[][] geometry;  
 	}

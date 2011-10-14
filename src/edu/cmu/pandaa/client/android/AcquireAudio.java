@@ -2,6 +2,7 @@ package edu.cmu.pandaa.client.android;
 
 import java.io.Serializable;
 
+import edu.cmu.pandaa.client.shared.audio.AudioTimeStamp;
 import edu.cmu.pandaa.shared.stream.FrameStream;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
@@ -81,7 +82,8 @@ public class AcquireAudio implements Runnable {
 			// Set the header in the stream if it has not already been done
 			if (bufferRead > 0 && !isHeaderSet) {
 				isHeaderSet = true;
-				frameStream.setHeader(new RawAudioHeader(frameTime, this.getFrequency(), this.getChannelConfiguration(), this.getAudioEncoding()));
+				RawAudioHeader header = initHeader();
+				frameStream.setHeader(header);
 			}
 			
 			for (int idxBuffer = 0; idxBuffer < bufferRead; ++idxBuffer) {
@@ -118,6 +120,10 @@ public class AcquireAudio implements Runnable {
 
 		// Close resources…
 		recordInstance.stop();
+	}
+
+	private RawAudioHeader initHeader() {
+		return new RawAudioHeader(AudioTimeStamp.getCurrentTime(), frameTime, this.getFrequency(), this.getChannelConfiguration(), this.getAudioEncoding());
 	}
 
 	/**

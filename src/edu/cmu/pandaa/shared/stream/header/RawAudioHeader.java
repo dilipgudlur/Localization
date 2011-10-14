@@ -10,8 +10,8 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	public int channelConfiguration;
 	public int audioEncoding;
 	
-	public RawAudioHeader(int frameTime, int samplingRate, int channelConf, int audioEncoding) {
-		startTime = AudioTimeStamp.getCurrentTime();
+	public RawAudioHeader(long startTime, int frameTime, int samplingRate, int channelConf, int audioEncoding) {
+		this.startTime = startTime;
 		this.frameTime = frameTime;
 		this.samplingRate = samplingRate;
 		this.channelConfiguration = channelConf;
