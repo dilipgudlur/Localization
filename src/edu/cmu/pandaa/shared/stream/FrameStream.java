@@ -18,4 +18,6 @@ public interface FrameStream {
   // will block until there's a frame available
   public StreamFrame recvFrame() throws Exception;
 
+  // indicates we're done with the stream
+  public void close() throws Exception;
 }

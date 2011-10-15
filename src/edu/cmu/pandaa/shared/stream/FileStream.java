@@ -32,7 +32,7 @@ public class FileStream implements FrameStream {
     os = new FileOutputStream(file);
   }
 
-  protected void close() {
+  public void close() {
     try {
       if (ois != null) {
         ois.close();

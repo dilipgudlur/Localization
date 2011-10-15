@@ -50,4 +50,7 @@ public class MemoryStream implements FrameStream {
     frameBuffer = null;
     return f;
   }
+
+  public void close() {
+  }
 }
