@@ -2,15 +2,15 @@ package edu.cmu.pandaa.client.shared.audio;
 
 
 import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
 
 
 class ExtractFeatures implements Runnable {
 	FrameStream in, out;
-	FeatureFrame featureFrame;
+	ImpulseFrame impulseFrame;
 	double threshold;	// threshold for amplitude
 	double max = 20;
 	int totalSampleBeenProcessed = 0;
@@ -31,7 +31,7 @@ class ExtractFeatures implements Runnable {
 
 		// Write Header to FrameStream
 		RawAudioFrame af;
-		FeatureHeader fh = (FeatureHeader) in.getHeader();
+		ImpulseHeader fh = (ImpulseHeader) in.getHeader();
 		out.setHeader(fh);
 		sampleRate = ((RawAudioHeader)in.getHeader()).samplingRate;
 		nsPerSample = 10^9 / sampleRate;	//nanosecond per sample
@@ -42,10 +42,10 @@ class ExtractFeatures implements Runnable {
 			short[] frame = af.audioData;
 			//frameCount++;
 			try {
-				featureFrame = new FeatureFrame();
-				featureFrame = processAudio(frame);
-				if (featureFrame != null) {
-					out.sendFrame(featureFrame);
+				impulseFrame = new ImpulseFrame();
+				impulseFrame = processAudio(frame);
+				if (impulseFrame != null) {
+					out.sendFrame(impulseFrame);
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -60,9 +60,9 @@ class ExtractFeatures implements Runnable {
 	 * buffer2 is returned.
 	 */
 
-	public FeatureFrame processAudio(short[] buffer1) throws Exception {
+	public ImpulseFrame processAudio(short[] buffer1) throws Exception {
 		int index = 0;
-		FeatureFrame ff = new FeatureFrame();
+		ImpulseFrame ff = new ImpulseFrame();
 
 			double maxHeight = maxHeight(buffer1, 0, frameSample);
 			if (maxHeight > threshold) {

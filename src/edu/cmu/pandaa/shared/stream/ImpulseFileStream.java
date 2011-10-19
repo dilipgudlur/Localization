@@ -1,7 +1,7 @@
 package edu.cmu.pandaa.shared.stream;
 
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
@@ -13,7 +13,7 @@ import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
  */
 
 public class ImpulseFileStream extends FileStream {
-  private FeatureHeader header;
+  private ImpulseHeader header;
 
   public ImpulseFileStream(String filename) throws Exception {
     super(filename);
@@ -24,12 +24,12 @@ public class ImpulseFileStream extends FileStream {
   }
 
   public void sendHeader(StreamHeader h) throws Exception {
-    FeatureHeader header = (FeatureHeader) h;
+    ImpulseHeader header = (ImpulseHeader) h;
     writeString(header.id + " " + header.startTime + " " + header.frameTime);
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
-    FeatureFrame frame = (FeatureFrame) f;
+    ImpulseFrame frame = (ImpulseFrame) f;
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String msg = "" + frame.seqNum;
     for (int i = 0;i < frame.peakOffsets.length; i++) {
@@ -41,14 +41,14 @@ public class ImpulseFileStream extends FileStream {
     writeString(msg);
   }
 
-  public FeatureHeader recvHeader() throws Exception {
+  public ImpulseHeader recvHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
-    header = new FeatureHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
+    header = new ImpulseHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
     return header;
   }
 
-  public FeatureFrame recvFrame() throws Exception {
+  public ImpulseFrame recvFrame() throws Exception {
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String line = readLine();
     String[] parts = line.split(" ");
@@ -71,9 +71,9 @@ public class ImpulseFileStream extends FileStream {
     int[] data1 = { 1, 2, 3 };
     short[] data2 = { 4, 5, 6 };
     ImpulseFileStream foo = new ImpulseFileStream(filename, true);
-    FeatureHeader header = new FeatureHeader("w00t", System.currentTimeMillis(), 100);
+    ImpulseHeader header = new ImpulseHeader("w00t", System.currentTimeMillis(), 100);
     foo.sendHeader(header);
-    FeatureFrame frame1 = header.makeFrame(data1, data2);
+    ImpulseFrame frame1 = header.makeFrame(data1, data2);
     foo.sendFrame(frame1);
     foo.sendFrame(header.makeFrame(data1, data2));
     foo.sendFrame(header.makeFrame(data1, data2));
@@ -82,8 +82,8 @@ public class ImpulseFileStream extends FileStream {
     Thread.sleep(100);  // make sure start times are different
 
     foo = new ImpulseFileStream(filename);
-    FeatureHeader header2 = foo.recvHeader();
-    FeatureFrame frame2 = foo.recvFrame();
+    ImpulseHeader header2 = foo.recvHeader();
+    ImpulseFrame frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     foo.close();

@@ -1,7 +1,7 @@
 package edu.cmu.pandaa.shared.stream;
 
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader;
+import edu.cmu.pandaa.shared.stream.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader;
 import edu.cmu.pandaa.shared.stream.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader;
