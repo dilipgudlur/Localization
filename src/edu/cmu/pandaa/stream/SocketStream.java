@@ -29,13 +29,13 @@ public class SocketStream implements FrameStream {
     }
   }
 
-  public void sendHeader(StreamHeader h) {
+  public void setHeader(StreamHeader h) {
     headerBuffer = h;
     sendObject(h);    // send header over network
     notify();         // if a thread is waiting for the header, wake it up
   }
 
-  public StreamHeader recvHeader() {
+  public StreamHeader getHeader() {
     if (headerBuffer == null) {
       try {
         wait();   // sleep until there's a header
@@ -59,7 +59,7 @@ public class SocketStream implements FrameStream {
         return (StreamFrame) incomingMessage;
       }
       else if (incomingMessage instanceof StreamHeader) {
-        sendHeader((StreamHeader) incomingMessage);
+        setHeader((StreamHeader) incomingMessage);
       }
       return recvFrame();   // return next message if this one wasn't a frame
     }

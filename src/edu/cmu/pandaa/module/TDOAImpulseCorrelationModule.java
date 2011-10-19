@@ -1,11 +1,11 @@
-package edu.cmu.pandaa.module;
+package edu.cmu.pandaa.shared;
 
-import edu.cmu.pandaa.frame.FeatureHeader;
-import edu.cmu.pandaa.frame.FeatureHeader.FeatureFrame;
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
-import edu.cmu.pandaa.stream.FrameStream;
-
+import edu.cmu.pandaa.shared.stream.FrameStream;
+import edu.cmu.pandaa.shared.stream.StreamModule;
+import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
+import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader;
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 
 class TDOAImpulseCorrelationModule implements StreamModule {
   FrameStream inFeatureFrameStream1;
@@ -21,8 +21,8 @@ class TDOAImpulseCorrelationModule implements StreamModule {
   }
   
   public void run() throws Exception {
-    StreamHeader header = init(inFeatureFrameStream1.recvHeader());
-    outDistanceFrameStream.sendHeader(header);
+    StreamHeader header = init(inFeatureFrameStream1.getHeader());
+    outDistanceFrameStream.setHeader(header);
     
     StreamFrame frameIn1, frameIn2, frameOut;
     while ((frameIn1 = inFeatureFrameStream1.recvFrame()) != null && 

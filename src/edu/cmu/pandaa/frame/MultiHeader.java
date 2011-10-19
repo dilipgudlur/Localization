@@ -1,7 +1,12 @@
-package edu.cmu.pandaa.frame;
+package edu.cmu.pandaa.shared.stream.header;
 
+import com.sun.xml.internal.bind.v2.model.core.ID;
+
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -10,36 +15,31 @@ import java.util.Map;
  * Time: 9:26 PM
  */
 public class MultiHeader extends StreamHeader {
-  final StreamHeader[] headers;
   private final Map<StreamHeader, Integer> hmap = new HashMap<StreamHeader, Integer>();
 
-  public MultiHeader(StreamHeader[] headers) {
-    super(makeId(headers), headers[0].startTime, headers[0].frameTime);
-    this.headers = headers;
-    for (int i = 0; i < headers.length; i++) {
-      hmap.put(headers[i], i);
-    }
+  public MultiHeader(String id, StreamHeader header) {
+    super(id, header.startTime, header.frameTime);
+    addHeader(header);
   }
 
-  private static String makeId(StreamHeader[] headers) {
-    StringBuilder ids = new StringBuilder();
-    int frameTime = headers[0].frameTime;
-
-    for (StreamHeader h : headers) {
-      ids.append(',');
-      ids.append(h.id);
-      if (h.frameTime !=frameTime) {
-        throw new RuntimeException("frameTimes do not match");
-      }
-    }
-    return ids.substring(1); // skip leading comma
+  public void addHeader(StreamHeader header) {
+     hmap.put(header, hmap.size());
   }
 
   public class MultiFrame extends StreamFrame {
     final StreamFrame[] frames;
 
     public MultiFrame() {
-      frames = new StreamFrame[headers.length];
+      frames = new StreamFrame[hmap.size()];
+    }
+
+    public void setFrame(StreamFrame f) {
+      int pos = hmap.get(f.getHeader());
+      frames[pos] = f;
+    }
+
+    public Set<StreamHeader> getHeaders() {
+      return hmap.keySet();
     }
   }
 
@@ -47,11 +47,7 @@ public class MultiHeader extends StreamHeader {
     return new MultiFrame();
   }
 
-  public int position(StreamHeader h) {
-    try {
-      return hmap.get(h);
-    } catch (Exception e) {
-      return -1;
-    }
+  public boolean contains(StreamHeader h) {
+    return hmap.containsKey(h);
   }
 }

@@ -17,8 +17,8 @@ class ProcessGeometryModule implements StreamModule{
   }
   
   public void run() throws Exception {
-	  StreamHeader header = init(inGeometryStream.recvHeader());
-	  outGeometryStream.sendHeader(header);
+	  StreamHeader header = init(inGeometryStream.getHeader());
+	  outGeometryStream.setHeader(header);
 	  StreamFrame frameIn,frameOut;
 	  while ((frameIn = inGeometryStream.recvFrame()) != null) {
 		  frameOut = process(frameIn);
