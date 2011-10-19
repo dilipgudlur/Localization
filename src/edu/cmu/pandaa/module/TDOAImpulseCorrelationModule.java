@@ -1,11 +1,11 @@
-package edu.cmu.pandaa.shared;
+package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.StreamModule;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader;
-import edu.cmu.pandaa.shared.stream.header.FeatureHeader.FeatureFrame;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.frame.FeatureHeader;
+import edu.cmu.pandaa.frame.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.frame.StreamHeader;
+import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.stream.FrameStream;
+
 
 class TDOAImpulseCorrelationModule implements StreamModule {
   FrameStream inFeatureFrameStream1;

@@ -1,7 +1,7 @@
-package edu.cmu.pandaa.shared.stream;
+package edu.cmu.pandaa.stream;
 
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.frame.StreamHeader;
+import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.

@@ -52,7 +52,7 @@ public class PandaaAudioActivity extends Activity {
 				e.printStackTrace();
 			}
 
-			StreamHeader h = audioFileStream.recvHeader();
+			StreamHeader h = audioFileStream.getHeader();
 			RawAudioFrame f = null;
 			ObjectOutputStream oos = null;
 

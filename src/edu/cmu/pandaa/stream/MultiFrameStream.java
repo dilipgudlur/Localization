@@ -1,12 +1,12 @@
-package edu.cmu.pandaa.shared.stream;
-
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
-import edu.cmu.pandaa.shared.stream.header.MultiHeader;
-import edu.cmu.pandaa.shared.stream.header.MultiHeader.MultiFrame;
+package edu.cmu.pandaa.stream;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import edu.cmu.pandaa.frame.MultiHeader;
+import edu.cmu.pandaa.frame.MultiHeader.MultiFrame;
+import edu.cmu.pandaa.frame.StreamHeader;
+import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.

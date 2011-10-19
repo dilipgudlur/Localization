@@ -85,7 +85,7 @@ public class AcquireAudio implements Runnable {
 				isHeaderSet = true;
 				audioHeader = initHeader();
 				try {
-					frameStream.sendHeader(audioHeader);
+					frameStream.setHeader(audioHeader);
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

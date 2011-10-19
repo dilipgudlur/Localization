@@ -1,6 +1,4 @@
-package edu.cmu.pandaa.shared.stream.header;
-
-import com.sun.xml.internal.bind.v2.model.core.ID;
+package edu.cmu.pandaa.frame;
 
 import java.io.Serializable;
 import java.util.HashMap;

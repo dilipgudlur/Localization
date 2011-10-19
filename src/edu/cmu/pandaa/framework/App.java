@@ -1,8 +1,15 @@
-package edu.cmu.pandaa.server;
+package edu.cmu.pandaa.framework;
 
 import java.net.ServerSocket;
 
-import edu.cmu.pandaa.shared.stream.*;
+import edu.cmu.pandaa.module.DualPipeline;
+import edu.cmu.pandaa.module.MergePipeline;
+import edu.cmu.pandaa.module.SinglePipeline;
+import edu.cmu.pandaa.module.StreamModule;
+import edu.cmu.pandaa.stream.DummyStream;
+import edu.cmu.pandaa.stream.FrameStream;
+import edu.cmu.pandaa.stream.MultiFrameStream;
+import edu.cmu.pandaa.stream.SocketStream;
 
 // server app
 public class App {

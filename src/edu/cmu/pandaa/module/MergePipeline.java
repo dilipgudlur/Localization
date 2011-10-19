@@ -1,8 +1,7 @@
-package edu.cmu.pandaa.server;
+package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.shared.stream.StreamModule;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.frame.StreamHeader;
+import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.
@@ -18,7 +17,7 @@ public class MergePipeline implements StreamModule {
     return outHeader;
   }
 
-  public StreamHeader.StreamFrame process(StreamFrame inFrame) {
+  public StreamFrame process(StreamFrame inFrame) {
     if (inFrame == null) {
       return null;
     }
