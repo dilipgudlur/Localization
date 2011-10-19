@@ -9,12 +9,12 @@ public class MemoryStream implements FrameStream {
   private StreamHeader headerBuffer;
   private StreamFrame frameBuffer;
 
-  public void setHeader(StreamHeader h) {
+  public void sendHeader(StreamHeader h) {
     headerBuffer = h;
     notify();     // if receiver is waiting for header, wake up
   }
 
-  public StreamHeader getHeader() {
+  public StreamHeader recvHeader() {
     if (headerBuffer == null) {
       try {
         wait();   // sleep until there's a header
@@ -26,13 +26,13 @@ public class MemoryStream implements FrameStream {
     return headerBuffer;
   }
 
-  public void sendFrame(StreamFrame f) throws Exception {
+  public void sendFrame(StreamFrame f) {
     if (frameBuffer == null) {
       frameBuffer = f;
       notify();   // if receiver is sleeping, wake up 
     } 
     else {
-      throw new Exception("Frame Buffer full");
+      throw new RuntimeException("Frame Buffer full");
     }
   }
 
@@ -49,5 +49,8 @@ public class MemoryStream implements FrameStream {
     StreamFrame f = frameBuffer;
     frameBuffer = null;
     return f;
+  }
+
+  public void close() {
   }
 }
