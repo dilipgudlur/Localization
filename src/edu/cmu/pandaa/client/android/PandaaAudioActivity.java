@@ -62,7 +62,7 @@ public class PandaaAudioActivity extends Activity {
 			textArea.append("FrameTime = " + new Long(h.frameTime).toString()
 					+ "\n");
 			textArea.append("StartTime = " + new Date(h.startTime) + "\n");
-			textArea.append("AudioEncoding: " + new Integer(((RawAudioHeader)h).audioEncoding));
+			textArea.append("AudioEncoding: " + new Integer(((RawAudioHeader)h).getAudioFormat()));
 			while ((f = (RawAudioFrame) audioFileStream.recvFrame()) != null) {
 //				textArea.append(new Integer(f.audioData.length).toString());
 				numFrames++;

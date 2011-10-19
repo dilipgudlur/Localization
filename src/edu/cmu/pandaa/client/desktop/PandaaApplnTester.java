@@ -29,6 +29,8 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import edu.cmu.pandaa.shared.stream.FileStream;
+
 import java.nio.ByteBuffer;
 
 public class PandaaApplnTester extends JPanel implements ActionListener {
@@ -76,7 +78,7 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 
 		captureButton.setEnabled(true);
 		stopButton.setEnabled(false);
-		playButton.setEnabled(false);
+//		playButton.setEnabled(false);
 
 		JPanel buttonPanel = new JPanel();
 		// buttonPanel.add(openButton);
@@ -107,7 +109,14 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 			// from the microphone.
 			stopCapture = true;
 		} else if(e.getSource() == playButton) {
-			playAudio();
+//			playAudio();
+			WavConvertor wavPlayer = new WavConvertor("C:\\Users\\Divya_PKV\\Music\\industry_mad.wav");
+			wavPlayer.getBytes();
+			FileStream fs = new FileStream("C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav");
+			wavPlayer.saveInFrameFormat(fs);
+			byte[] audioData = wavPlayer.readFromFrameFormat(fs);
+			wavPlayer.playAudio(audioData);
+			System.out.println("Saved audio in frame format: " + "\n" + wavPlayer.getSummary());
 		} else if (e.getSource() == openButton) {
 			int returnVal = fc.showOpenDialog(PandaaApplnTester.this);
 

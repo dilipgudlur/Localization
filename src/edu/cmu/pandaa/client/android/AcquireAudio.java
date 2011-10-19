@@ -101,7 +101,7 @@ public class AcquireAudio implements Runnable {
 					audioFrame = new RawAudioFrame(frameLength);
 					audioIndex = 0;
 				}
-				audioFrame.audioData[audioIndex++] = tempBuffer[idxBuffer];
+				audioFrame.audioData[audioIndex++] = (byte) tempBuffer[idxBuffer];
 				numberOfBytes++;
 			}
 		}
@@ -123,7 +123,7 @@ public class AcquireAudio implements Runnable {
 	}
 
 	private RawAudioHeader initHeader() {
-		return new RawAudioHeader(AudioTimeStamp.getCurrentTime(), frameTime, this.getFrequency(), this.getChannelConfiguration(), this.getAudioEncoding());
+		return new RawAudioHeader(AudioTimeStamp.getCurrentTime(), frameTime, this.getAudioEncoding(), this.getChannelConfiguration(), this.getFrequency(), 16, 0);
 	}
 
 	/**

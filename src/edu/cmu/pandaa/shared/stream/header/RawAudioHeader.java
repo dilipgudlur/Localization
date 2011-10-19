@@ -1,28 +1,83 @@
 package edu.cmu.pandaa.shared.stream.header;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-import edu.cmu.pandaa.client.shared.audio.AudioTimeStamp;
+/* 
+ * RawAudioFormat to capture the WAV file format
+ * Summary of data fields in WAV file
+ * The canonical WAVE format starts with the RIFF header:
+ *
+ * 0         4   ChunkID          RIFF
+ * 4         4   ChunkSize        36 + SubChunk2Size
+ * 8         4   Format           WAVE
+ * 
+ * The "WAVE" format consists of two subchunks: "fmt " and "data":
+ * The "fmt " subchunk describes the sound data's format:
+ * 12        4   Subchunk1ID      "fmt "
+ * 16        4   Subchunk1Size    16 for PCM. 
+ * 20        2   AudioFormat      PCM = 1 
+ * 22        2   NumChannels      Mono = 1, Stereo = 2, etc.
+ * 24        4   SampleRate       8000, 44100, etc.
+ * 28        4   ByteRate         == SampleRate * NumChannels * BitsPerSample/8
+ * 32        2   BlockAlign       == NumChannels * BitsPerSample/8
+ * 34        2   BitsPerSample    8 bits = 8, 16 bits = 16, etc.
+ * 
+ * The "data" subchunk contains the size of the data and the actual sound:
+ * 36        4   Subchunk2ID      "data"
+ * 40        4   Subchunk2Size    == NumSamples * NumChannels * BitsPerSample/8
+ * 44        *   Data             The actual sound data.
+ */
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
 
-	public int samplingRate;
-	public int channelConfiguration;
-	public int audioEncoding;
+	Long samplingRate;
+	Integer numChannels;
+	Integer audioFormat;
+	Integer bitsPerSample;
+	Long subChunk2Size;
 	
-	public RawAudioHeader(long startTime, int frameTime, int samplingRate, int channelConf, int audioEncoding) {
+	public RawAudioHeader(long startTime, int frameTime, int audioFormat, int numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
 		this.startTime = startTime;
 		this.frameTime = frameTime;
 		this.samplingRate = samplingRate;
-		this.channelConfiguration = channelConf;
-		this.audioEncoding = audioEncoding;
+		this.numChannels = numChannels;
+		this.audioFormat = audioFormat;
+		this.bitsPerSample = bitsPerSample;
+		this.subChunk2Size = subChunk2Size;
+	}
+	
+	public long getSamplingRate() {
+		return samplingRate;
+	}
+
+	public int getNumChannels() {
+		return numChannels;
+	}
+
+	public int getAudioFormat() {
+		return audioFormat;
+	}
+
+	public int getBitsPerSample() {
+		return bitsPerSample;
+	}
+
+	public long getSubChunk2Size() {
+		return subChunk2Size;
 	}
 
 	public static class RawAudioFrame extends StreamFrame implements Serializable {
-		public short[] audioData;
+		public byte[] audioData;
 
 		public RawAudioFrame(int frameLength) {
-			audioData = new short[frameLength];
+			audioData = new byte[frameLength];
+		}
+
+		public byte[] getAudioData() {
+			return audioData;
 		}
 	}
 }
