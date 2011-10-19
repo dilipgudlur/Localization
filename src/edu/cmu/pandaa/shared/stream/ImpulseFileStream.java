@@ -23,7 +23,7 @@ public class ImpulseFileStream extends FileStream {
     super(filename, overwrite);
   }
 
-  public void sendHeader(StreamHeader h) throws Exception {
+  public void setHeader(StreamHeader h) throws Exception {
     ImpulseHeader header = (ImpulseHeader) h;
     writeString(header.id + " " + header.startTime + " " + header.frameTime);
   }
@@ -41,7 +41,7 @@ public class ImpulseFileStream extends FileStream {
     writeString(msg);
   }
 
-  public ImpulseHeader recvHeader() throws Exception {
+  public ImpulseHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
     header = new ImpulseHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
@@ -72,7 +72,7 @@ public class ImpulseFileStream extends FileStream {
     short[] data2 = { 4, 5, 6 };
     ImpulseFileStream foo = new ImpulseFileStream(filename, true);
     ImpulseHeader header = new ImpulseHeader("w00t", System.currentTimeMillis(), 100);
-    foo.sendHeader(header);
+    foo.setHeader(header);
     ImpulseFrame frame1 = header.makeFrame(data1, data2);
     foo.sendFrame(frame1);
     foo.sendFrame(header.makeFrame(data1, data2));
@@ -82,7 +82,7 @@ public class ImpulseFileStream extends FileStream {
     Thread.sleep(100);  // make sure start times are different
 
     foo = new ImpulseFileStream(filename);
-    ImpulseHeader header2 = foo.recvHeader();
+    ImpulseHeader header2 = foo.getHeader();
     ImpulseFrame frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();

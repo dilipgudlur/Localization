@@ -86,7 +86,7 @@ public class FileStream implements FrameStream {
     pw.println(out);
   }
 
-  public void sendHeader(StreamHeader h) throws Exception {
+  public void setHeader(StreamHeader h) throws Exception {
     if (oos != null) {
       throw new RuntimeException("setHeader called twice!");
     }
@@ -100,7 +100,7 @@ public class FileStream implements FrameStream {
     oos.flush();
   }
 
-  public StreamHeader recvHeader() throws Exception {
+  public StreamHeader getHeader() throws Exception {
     if (ois != null) {
       throw new RuntimeException("getHeader called twice!");
     }
@@ -117,7 +117,7 @@ public class FileStream implements FrameStream {
 
     FileStream foo = new FileStream(filename, true);
     StreamHeader header = new StreamHeader("w00t", System.currentTimeMillis(), 100);
-    foo.sendHeader(header);
+    foo.setHeader(header);
     StreamFrame frame1 = header.makeFrame();
     foo.sendFrame(frame1);
     foo.sendFrame(header.makeFrame());
@@ -127,7 +127,7 @@ public class FileStream implements FrameStream {
     Thread.sleep(100);  // make sure start times are different
 
     foo = new FileStream(filename);
-    StreamHeader header2 = foo.recvHeader();
+    StreamHeader header2 = foo.getHeader();
     StreamFrame frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
