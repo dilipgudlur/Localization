@@ -234,7 +234,7 @@ public class WavConvertor {
 	public byte[] readFromFrameFormat(FileStream fs) {
 		try {
 			// FileStream fs = new FileStream(filePath);
-			RawAudioHeader audioHeader = (RawAudioHeader) fs.getHeader();
+			RawAudioHeader audioHeader = (RawAudioHeader) fs.recvHeader();
 			// System.out.println("Got Header:\nFormat: " +
 			// audioHeader.getAudioFormat()
 			// + "\nNumber of channels: " + audioHeader.getNumChannels()
@@ -288,7 +288,7 @@ public class WavConvertor {
 			RawAudioHeader rawAudioHeader = new RawAudioHeader(
 					System.currentTimeMillis(), 100, myFormat,
 					(int) myChannels, mySampleRate, myBitsPerSample, myDataSize);
-			fs.setHeader(rawAudioHeader);
+			fs.sendHeader(rawAudioHeader);
 			int frameLength = (int) (mySampleRate / 1000) * 100;
 			System.out.println("Number of frames: "
 					+ (float) ((float) myDataSize / (float) frameLength));
@@ -308,7 +308,7 @@ public class WavConvertor {
 							e.printStackTrace();
 						}
 					}
-					audioFrame = new RawAudioFrame(frameLength);
+					audioFrame = rawAudioHeader.makeFrame(frameLength);
 					audioIndex = 0;
 				}
 				audioFrame.audioData[audioIndex++] = myData[idxBuffer];

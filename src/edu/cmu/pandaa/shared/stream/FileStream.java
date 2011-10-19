@@ -2,11 +2,8 @@ package edu.cmu.pandaa.shared.stream;
 
 import java.io.*;
 
-import com.sun.xml.internal.org.jvnet.mimepull.Header;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader;
 import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
-
-import javax.imageio.spi.IIOServiceProvider;
 
 public class FileStream implements FrameStream {
   protected OutputStream os;

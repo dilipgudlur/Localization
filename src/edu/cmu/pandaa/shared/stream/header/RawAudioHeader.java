@@ -5,6 +5,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+
 /* 
  * RawAudioFormat to capture the WAV file format
  * Summary of data fields in WAV file
@@ -40,8 +42,7 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	Long subChunk2Size;
 	
 	public RawAudioHeader(long startTime, int frameTime, int audioFormat, int numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
-		this.startTime = startTime;
-		this.frameTime = frameTime;
+		super("", startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
@@ -69,7 +70,7 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		return subChunk2Size;
 	}
 
-	public static class RawAudioFrame extends StreamFrame implements Serializable {
+	public class RawAudioFrame extends StreamFrame implements Serializable {
 		public byte[] audioData;
 
 		public RawAudioFrame(int frameLength) {
@@ -80,4 +81,8 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 			return audioData;
 		}
 	}
+	
+	public RawAudioFrame makeFrame(int frameLength) {
+	    return new RawAudioFrame(frameLength);
+	  }
 }

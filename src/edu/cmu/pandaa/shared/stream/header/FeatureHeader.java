@@ -1,8 +1,5 @@
 package edu.cmu.pandaa.shared.stream.header;
 
-import sun.text.normalizer.IntTrie;
-
-import javax.sound.midi.Sequence;
 import java.io.Serializable;
 
 

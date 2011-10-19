@@ -109,7 +109,7 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 			// from the microphone.
 			stopCapture = true;
 		} else if(e.getSource() == playButton) {
-//			playAudio();
+			try {
 			WavConvertor wavPlayer = new WavConvertor("C:\\Users\\Divya_PKV\\Music\\industry_mad.wav");
 			wavPlayer.getBytes();
 			FileStream fs = new FileStream("C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav");
@@ -117,6 +117,9 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 			byte[] audioData = wavPlayer.readFromFrameFormat(fs);
 			wavPlayer.playAudio(audioData);
 			System.out.println("Saved audio in frame format: " + "\n" + wavPlayer.getSummary());
+			} catch(IOException ioe) {
+				ioe.printStackTrace();
+			}
 		} else if (e.getSource() == openButton) {
 			int returnVal = fc.showOpenDialog(PandaaApplnTester.this);
 
