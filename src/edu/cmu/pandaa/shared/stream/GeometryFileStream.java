@@ -16,7 +16,7 @@ public class GeometryFileStream extends FileStream {
     super(filename, overwrite);
   }
 
-  public void sendHeader(StreamHeader h) throws Exception {
+  public void setHeader(StreamHeader h) throws Exception {
     GeometryHeader header = (GeometryHeader) h;
     writeString(header.id + " " + header.startTime + " " + header.frameTime);
   }
@@ -36,7 +36,7 @@ public class GeometryFileStream extends FileStream {
     writeString(msg);
   }
 
-  public GeometryHeader recvHeader() throws Exception {
+  public GeometryHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
     header = new GeometryHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
@@ -50,7 +50,7 @@ public class GeometryFileStream extends FileStream {
     int size = (parts.length-1)/2;
     int seqNum = Integer.parseInt(parts[0]);
     //TODO: construct the frame
-    double[][] geometry = new double[rows][cols]; //initialize rows, cols using 'size'
+    double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
     //unsure after this step
     
     return header.makeFrame(seqNum, geometry);
@@ -67,7 +67,7 @@ public class GeometryFileStream extends FileStream {
     
     GeometryFileStream foo = new GeometryFileStream(filename, true);
     GeometryHeader header = new GeometryHeader("w00t", System.currentTimeMillis(), 100);
-    foo.sendHeader(header);
+    foo.setHeader(header);
     GeometryFrame frame1 = header.makeFrame(inputDissimilarity);
     foo.sendFrame(frame1);
     foo.sendFrame(header.makeFrame(inputDissimilarity));
@@ -77,7 +77,7 @@ public class GeometryFileStream extends FileStream {
     Thread.sleep(100);  // make sure start times are different
 
     foo = new GeometryFileStream(filename);
-    GeometryHeader header2 = foo.recvHeader();
+    GeometryHeader header2 = foo.getHeader();
     GeometryFrame frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();

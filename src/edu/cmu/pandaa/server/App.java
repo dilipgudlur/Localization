@@ -1,89 +1,95 @@
 package edu.cmu.pandaa.server;
 
-import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 
-import edu.cmu.pandaa.shared.stream.FrameStream;
-import edu.cmu.pandaa.shared.stream.MemoryStream;
-import edu.cmu.pandaa.shared.stream.SocketStream;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.shared.stream.*;
 
 // server app
 public class App {
-    StreamModule decompress;
-    StreamModule concatenate;
+  static final int SERVER_PORT = 12345;
+  MultiFrameStream mixer = new MultiFrameStream("mixer");
+  MultiFrameStream combiner = new MultiFrameStream("combiner");
 
-  App() {
-    // listen for clients
-    AcceptClients acceptClients = new AcceptClients();
+  App(String[] args) throws Exception {
+    if (args.length == 0) {
+      new AcceptClients().start();
+    } else {
+      for (String file : args) {
+        FrameStream in = new DummyStream(file);
+        activateNewDevice(in);
+      }
+    }
+
+    PipeHandler mixpipe = new PipeHandler(mixer, new DualPipeline(), combiner);
+    new Thread(mixpipe, this.mixer.getHeader().id).start();
+
+    PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(), new DummyStream("output"));
+    new Thread(combpipe, this.mixer.getHeader().id).start();
   }
-  
+
   public static void main(String[] args) {
-    App server = new App();    
+    try {
+      new App(args);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
-  
-  
+
+  private synchronized void activateNewDevice(FrameStream in) throws Exception {
+    System.out.println("Activating device " + in.getHeader().id);
+    StreamModule pipeline = new SinglePipeline();
+    PipeHandler client = new PipeHandler(in, pipeline, mixer);
+    new Thread(client, in.getHeader().id).start();
+  }
+
   // server thread, spawning off one client thread per connection
   class AcceptClients extends Thread {
-    
     ServerSocket server;
-    Socket connection;
-    Thread client;
-    
-    AcceptClients() {
-      this.start();
-    }
-    
+
     public void run() {
       try {
-        server = new ServerSocket(0);   // launch server on any free port and start listening for incoming connections
+        server = new ServerSocket(SERVER_PORT);   // launch server on any free port and start listening for incoming connections
         System.out.println("Server started at " + server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
-        
+
         while (true) {
-          connection = server.accept();   // accept incoming connection
-          client = new HandleClient(connection);   // launch new client thread
-          //TODO: add client to client manager, which pairs client.impulsePeaks in instances of TDOAImpulseCorrelationModule
+          activateNewDevice(new SocketStream(server.accept()));
         }
-      } 
-      catch (IOException e) { 
-        System.out.println("Error, connection closed abnormally."); e.printStackTrace(); 
       }
-    }    
-  }
-  
-  // client thread
-  class HandleClient extends Thread {
-    
-    private Socket connection;
-    private FrameStream clientStream;
-    public FrameStream impulsePeaks;
-    private StreamFrame frame;
-    
-    HandleClient(Socket connection) {
-      this.connection = connection;
-      this.clientStream = new SocketStream(connection);
-      this.impulsePeaks = new MemoryStream();
-      this.start();
+      catch (Exception e) {
+        System.out.println("Error, closing connection.");
+        e.printStackTrace();
+      }
     }
-    
-    public void run() {         
-    	StreamHeader header = clientStream.getHeader();
-    	header = decompress.initialize(header);
-    	header = concatenate.initialize(header);
-    
-    	while (true) {
-  	    frame = clientStream.recvFrame();    // message comes in as a compressed frame
-          
-  	    frame = decompress.process(frame);   //TODO: decompress
-  	    frame = concatenate.process(frame);  //TODO: concatenate
-  	    
-        //TODO: align
-        //TODO: detect impulsive peaks
-  	    
-        impulsePeaks.sendFrame(frame);    // put everything in a FrameStream for pair-wise TDOA computation
-    	}
+  }
+
+  class PipeHandler implements Runnable {
+    public final String id;
+    private final FrameStream in, out;
+    private final StreamModule pipeline;
+
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out) throws Exception {
+      this.in = in;
+      this.out = out;
+      this.pipeline = pipeline;
+      id = in.getHeader().id;
+    }
+
+    public void run() {
+      try {
+        out.setHeader(pipeline.init(in.getHeader()));
+        try {
+          System.out.println("Starting pipe " + id);
+          while (true) {
+            out.sendFrame(pipeline.process(in.recvFrame()));
+          }
+        } catch (Exception e) {
+          System.out.println("Done with pipe " + id);
+          pipeline.close();
+          out.close();
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 }
