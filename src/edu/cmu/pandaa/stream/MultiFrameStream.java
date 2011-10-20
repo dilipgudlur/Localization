@@ -3,10 +3,10 @@ package edu.cmu.pandaa.stream;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.cmu.pandaa.frame.MultiHeader;
-import edu.cmu.pandaa.frame.MultiHeader.MultiFrame;
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.MultiHeader;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.

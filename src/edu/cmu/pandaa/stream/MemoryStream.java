@@ -1,7 +1,7 @@
 package edu.cmu.pandaa.stream;
 
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 // a memory buffer
 public class MemoryStream implements FrameStream {

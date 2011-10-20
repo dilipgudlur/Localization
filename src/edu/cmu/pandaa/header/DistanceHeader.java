@@ -1,4 +1,4 @@
-package edu.cmu.pandaa.frame;
+package edu.cmu.pandaa.header;
 
 public class DistanceHeader extends StreamHeader {
   public String[] deviceIds; // the devices providing feature/impulse data for distance calculation

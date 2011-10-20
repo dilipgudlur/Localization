@@ -12,8 +12,8 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 public class FileStream implements FrameStream {
   protected OutputStream os;

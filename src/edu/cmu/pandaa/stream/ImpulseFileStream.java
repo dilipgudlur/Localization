@@ -1,9 +1,9 @@
 package edu.cmu.pandaa.stream;
 
-import edu.cmu.pandaa.frame.ImpulseHeader;
-import edu.cmu.pandaa.frame.ImpulseHeader.ImpulseFrame;
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.ImpulseHeader;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.

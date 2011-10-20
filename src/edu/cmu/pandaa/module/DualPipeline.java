@@ -1,8 +1,8 @@
 package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.frame.MultiHeader;
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.MultiHeader;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 /**
  * Created by IntelliJ IDEA.

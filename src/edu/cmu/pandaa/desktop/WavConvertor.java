@@ -18,8 +18,8 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
-import edu.cmu.pandaa.frame.RawAudioHeader;
-import edu.cmu.pandaa.frame.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.header.RawAudioHeader;
+import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.stream.FileStream;
 
 /**
