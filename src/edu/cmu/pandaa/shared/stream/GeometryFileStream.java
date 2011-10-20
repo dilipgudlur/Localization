@@ -18,7 +18,7 @@ public class GeometryFileStream extends FileStream {
 
   public void sendHeader(StreamHeader h) throws Exception {
     GeometryHeader header = (GeometryHeader) h;
-    writeString(header.id + " " + header.startTime + " " + header.frameTime);
+    writeString(header.deviceIds + " " + header.startTime + " " + header.frameTime);
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
@@ -32,14 +32,15 @@ public class GeometryFileStream extends FileStream {
     	for (int j = 0;i < frame.geometry[0].length; j++) {
     		msg += " " + frame.geometry[i][j];
     	}
-    }
-    writeString(msg);
+    	writeString(msg); //writing each row 
+    }    
   }
 
   public GeometryHeader recvHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
-    header = new GeometryHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
+    String[] deviceIds = parts[0].split(","); //extract the array of deviceIds
+    header = new GeometryHeader(deviceIds,Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
     return header;
   }
 
@@ -50,14 +51,18 @@ public class GeometryFileStream extends FileStream {
     int size = (parts.length-1)/2;
     int seqNum = Integer.parseInt(parts[0]);
     //TODO: construct the frame
-    double[][] geometry = new double[rows][cols]; //initialize rows, cols using 'size'
-    //unsure after this step
-    
+    double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
+    for (int i = 0;i < size;i++) {
+    	for (int j = 0;i < size;i++) {
+    		geometry[i][j] = Double.parseDouble(parts[i + j + 1]);
+    	}
+    }
     return header.makeFrame(seqNum, geometry);
   }
 
   public static void main(String[] args) throws Exception {
     String filename = "test.txt";
+    String[] deviceIds = {"1a","2b","3c","4d","5e"};
 
     double[][] inputDissimilarity = {{0.00,1.00,10.19803903,10.44030651,6.403124237},
     								{1.00,0.00,10.04987562,10.19803903,5.830951895},
@@ -66,7 +71,8 @@ public class GeometryFileStream extends FileStream {
     								{6.403124237,5.830951895,5.385164807,5.099019514,0}};
     
     GeometryFileStream foo = new GeometryFileStream(filename, true);
-    GeometryHeader header = new GeometryHeader("w00t", System.currentTimeMillis(), 100);
+    
+    GeometryHeader header = new GeometryHeader(deviceIds, System.currentTimeMillis(), 100);
     foo.sendHeader(header);
     GeometryFrame frame1 = header.makeFrame(inputDissimilarity);
     foo.sendFrame(frame1);

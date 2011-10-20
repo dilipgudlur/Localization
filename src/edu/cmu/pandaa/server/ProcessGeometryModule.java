@@ -9,7 +9,8 @@ import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
 class ProcessGeometryModule implements StreamModule{
-  FrameStream inGeometryStream, outGeometryStream;
+	FrameStream inGeometryStream, outGeometryStream;
+	GeometryHeader hOut;	
 
   public ProcessGeometryModule(FrameStream inGeometryStream, FrameStream outGeometryStream)
   {
@@ -33,20 +34,21 @@ class ProcessGeometryModule implements StreamModule{
       throw new RuntimeException("Wrong header type");
     
     // TODO: would actually do work here to compute new header
-    //not sure how to go about this part
-    return null;
+    GeometryHeader hIn = (GeometryHeader)inHeader ;    
+	hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
+    return hOut;
   }
 
   public StreamFrame process(StreamFrame inFrame) {
     if (!(inFrame instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
     
-    GeometryFrame gf = (GeometryFrame) inFrame ;    
-    gf.geometry = MDSJ.classicalScaling(gf.geometry); // apply MDS
-	return gf ;
-    
+    GeometryFrame gfIn = (GeometryFrame) inFrame ;
+    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry); //TODO:verify correctness of hOut    
+    gfOut.geometry = MDSJ.classicalScaling(gfOut.geometry); // apply MDS
+	return gfOut ;    
   }
-
+  
   public void close() {
   }
 }
