@@ -1,8 +1,8 @@
 package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.header.RawAudioHeader;
-import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 

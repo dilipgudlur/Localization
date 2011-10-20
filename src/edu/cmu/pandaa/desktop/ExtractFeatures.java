@@ -1,58 +1,61 @@
 package edu.cmu.pandaa.client.shared.audio;
 
-
-import edu.cmu.pandaa.frame.ImpulseHeader;
-import edu.cmu.pandaa.frame.ImpulseHeader.ImpulseFrame;
-import edu.cmu.pandaa.frame.RawAudioHeader;
-import edu.cmu.pandaa.frame.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.header.ImpulseHeader;
+import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
+import edu.cmu.pandaa.header.RawAudioHeader;
+import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 
 
 class ExtractFeatures implements Runnable {
 	FrameStream in, out;
 	ImpulseFrame impulseFrame;
-	double threshold;	// threshold for amplitude
-	double max = 20;
-	int totalSampleBeenProcessed = 0;
-	int sampleRate;
-	int timeFrame = 100;	// ms
-	int frameSample;
-	//int frameCount = 0;
-	//int gjumped = 0;	 //the unit of gJumped is frameSample
-	int nsPerSample;
+  ImpulseHeader impulseHeader;
+  double threshold;	// threshold for amplitude
+  double max = 20;
+  int totalSampleBeenProcessed = 0;
+  long sampleRate;
+  int timeFrame = 100;	// ms
+  int frameSample;
+  //int frameCount = 0;
+  //int gjumped = 0;	 //the unit of gJumped is frameSample
+  int nsPerSample;
 
-	private ExtractFeatures(FrameStream in, FrameStream out) {
-		this.in = in;
-		this.out = out;
-		this.setThreshold(10);
-	}
+  private ExtractFeatures(FrameStream in, FrameStream out) {
+    this.in = in;
+    this.out = out;
+    this.setThreshold(10);
+  }
 
-	public void run() {
+  public void run() {
+    try {
+      // Write Header to FrameStream
+      RawAudioFrame af;
+      impulseHeader = (ImpulseHeader) in.getHeader();
+      out.setHeader(impulseHeader);
+      sampleRate = ((RawAudioHeader)in.getHeader()).samplingRate;
+      nsPerSample = (int) (10^9 / sampleRate);	//nanosecond per sample
+      frameSample = (int) (sampleRate / 1000 * timeFrame);
 
-		// Write Header to FrameStream
-		RawAudioFrame af;
-		ImpulseHeader fh = (ImpulseHeader) in.getHeader();
-		out.setHeader(fh);
-		sampleRate = ((RawAudioHeader)in.getHeader()).samplingRate;
-		nsPerSample = 10^9 / sampleRate;	//nanosecond per sample
-		frameSample = sampleRate / 1000 * timeFrame;
-		
-		// read raw audio from the original audio file
-		while ((af = (RawAudioFrame) in.recvFrame()) != null) {
-			short[] frame = af.audioData;
-			//frameCount++;
-			try {
-				impulseFrame = new ImpulseFrame();
-				impulseFrame = processAudio(frame);
-				if (impulseFrame != null) {
-					out.sendFrame(impulseFrame);
-				}
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
+      // read raw audio from the original audio file
+      while ((af = (RawAudioFrame) in.recvFrame()) != null) {
+        short[] frame = null; // af.audioData; audioData is byte[] for some reason
+        //frameCount++;
+        try {
+          impulseFrame = (ImpulseFrame) impulseHeader.makeFrame();
+          impulseFrame = processAudio(frame);
+          if (impulseFrame != null) {
+            out.sendFrame(impulseFrame);
+          }
+        } catch (Exception e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
 	/*
 	 * this function processes the original audio in buffer1, discard silence,
@@ -62,7 +65,7 @@ class ExtractFeatures implements Runnable {
 
 	public ImpulseFrame processAudio(short[] buffer1) throws Exception {
 		int index = 0;
-		ImpulseFrame ff = new ImpulseFrame();
+		ImpulseFrame ff = (ImpulseFrame) impulseHeader.makeFrame();
 
 			double maxHeight = maxHeight(buffer1, 0, frameSample);
 			if (maxHeight > threshold) {

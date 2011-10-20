@@ -1,8 +1,8 @@
 package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.header.FeatureHeader;
-import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 
