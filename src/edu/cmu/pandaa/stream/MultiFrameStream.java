@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.cmu.pandaa.header.MultiHeader;
-import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 /**
