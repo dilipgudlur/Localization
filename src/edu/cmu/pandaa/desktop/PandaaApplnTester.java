@@ -116,12 +116,12 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 				FileStream fs = new FileStream(
 						"C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav",
 						true);
-				wavPlayer.saveInFrameFormat(fs);
+				//wavPlayer.saveInFrameFormat(fs);
 				fs.close();
 				fs = new FileStream(
 						"C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav");
-				byte[] audioData = wavPlayer.readFromFrameFormat(fs);
-				wavPlayer.playAudio(audioData);
+				byte[] audioData = null; //wavPlayer.readFromFrameFormat(fs);
+				//wavPlayer.playAudio(audioData);
 				System.out.println("Saved audio in frame format: " + "\n"
 						+ wavPlayer.getSummary());
 			} catch (IOException ioe) {

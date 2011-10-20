@@ -6,8 +6,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 public class SocketStream implements FrameStream {
 

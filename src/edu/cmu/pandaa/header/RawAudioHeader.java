@@ -1,4 +1,4 @@
-package edu.cmu.pandaa.frame;
+package edu.cmu.pandaa.header;
 
 import java.io.Serializable;
 
@@ -32,12 +32,11 @@ import java.io.Serializable;
  */
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
-
-	Long samplingRate;
-	Integer numChannels;
-	Integer audioFormat;
-	Integer bitsPerSample;
-	Long subChunk2Size;
+	public long samplingRate;
+	int numChannels;
+	int audioFormat;
+	int bitsPerSample;
+	long subChunk2Size;
 	
 	public RawAudioHeader(long startTime, int frameTime, int audioFormat, int numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
 		super("", startTime, frameTime);

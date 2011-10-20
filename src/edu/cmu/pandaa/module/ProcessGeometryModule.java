@@ -1,10 +1,11 @@
 package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.frame.GeometryHeader;
-import edu.cmu.pandaa.frame.GeometryHeader.GeometryFrame;
-import edu.cmu.pandaa.frame.StreamHeader;
-import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
+import mdsj.MDSJ;
 
 class ProcessGeometryModule implements StreamModule{
   FrameStream inGeometryStream, outGeometryStream;

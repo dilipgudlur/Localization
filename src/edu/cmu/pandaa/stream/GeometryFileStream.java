@@ -1,9 +1,7 @@
-package edu.cmu.pandaa.shared.stream;
+package edu.cmu.pandaa.stream;
 
-import edu.cmu.pandaa.shared.stream.header.GeometryHeader;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader;
-import edu.cmu.pandaa.shared.stream.header.GeometryHeader.GeometryFrame;
-import edu.cmu.pandaa.shared.stream.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.StreamHeader;
 
 public class GeometryFileStream extends FileStream {
   private GeometryHeader header;
@@ -21,8 +19,8 @@ public class GeometryFileStream extends FileStream {
     writeString(header.id + " " + header.startTime + " " + header.frameTime);
   }
 
-  public void sendFrame(StreamFrame f) throws Exception {
-    GeometryFrame frame = (GeometryFrame) f;
+  public void sendFrame(StreamHeader.StreamFrame f) throws Exception {
+    GeometryHeader.GeometryFrame frame = (GeometryHeader.GeometryFrame) f;
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String msg = "" + frame.seqNum;
     
@@ -43,7 +41,7 @@ public class GeometryFileStream extends FileStream {
     return header;
   }
 
-  public GeometryFrame recvFrame() throws Exception {
+  public GeometryHeader.GeometryFrame recvFrame() throws Exception {
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String line = readLine();
     String[] parts = line.split(" ");
@@ -68,7 +66,7 @@ public class GeometryFileStream extends FileStream {
     GeometryFileStream foo = new GeometryFileStream(filename, true);
     GeometryHeader header = new GeometryHeader("w00t", System.currentTimeMillis(), 100);
     foo.setHeader(header);
-    GeometryFrame frame1 = header.makeFrame(inputDissimilarity);
+    GeometryHeader.GeometryFrame frame1 = header.makeFrame(inputDissimilarity);
     foo.sendFrame(frame1);
     foo.sendFrame(header.makeFrame(inputDissimilarity));
     foo.sendFrame(header.makeFrame(inputDissimilarity));
@@ -78,7 +76,7 @@ public class GeometryFileStream extends FileStream {
 
     foo = new GeometryFileStream(filename);
     GeometryHeader header2 = foo.getHeader();
-    GeometryFrame frame2 = foo.recvFrame();
+    GeometryHeader.GeometryFrame frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     frame2 = foo.recvFrame();
     foo.close();

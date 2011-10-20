@@ -45,7 +45,7 @@ public class AcquireAudio implements Runnable {
 		android.os.Process
 				.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
 
-		// Allocate Recorder and Start Recording…
+		// Allocate Recorder and Start Recording
 		int bufferRead = 0;
 		System.out.println("Freq: " + this.getFrequency() + "Channel Configuration: " +
 				this.getChannelConfiguration() + " Audio Encoding: " + this.getAudioEncoding());
@@ -120,7 +120,7 @@ public class AcquireAudio implements Runnable {
 			audioFrame = null;
 		}
 
-		// Close resources…
+		// Close resources
 		recordInstance.stop();
 	}
 
