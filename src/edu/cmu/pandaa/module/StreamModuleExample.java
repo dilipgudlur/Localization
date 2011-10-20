@@ -45,7 +45,8 @@ class StreamModuleExample implements StreamModule {
     }
   }
 
-  public StreamHeader init(StreamHeader inHeader) {
+  @Override
+public StreamHeader init(StreamHeader inHeader) {
     if (!(inHeader instanceof RawAudioHeader))
       throw new RuntimeException("Wrong header type");
 
@@ -53,7 +54,8 @@ class StreamModuleExample implements StreamModule {
     return null;
   }
 
-  public StreamFrame process(StreamFrame inFrame) {
+  @Override
+public StreamFrame process(StreamFrame inFrame) {
     if (!(inFrame instanceof RawAudioFrame))
       throw new RuntimeException("Wrong frame type");
 
@@ -61,6 +63,7 @@ class StreamModuleExample implements StreamModule {
     return null;
   }
 
-  public void close() {
+  @Override
+public void close() {
   }
 }

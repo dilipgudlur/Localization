@@ -10,7 +10,6 @@ import java.util.Date;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.EditText;
-import edu.cmu.pandaa.client.android.R;
 import edu.cmu.pandaa.frame.RawAudioHeader;
 import edu.cmu.pandaa.frame.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.frame.StreamHeader;

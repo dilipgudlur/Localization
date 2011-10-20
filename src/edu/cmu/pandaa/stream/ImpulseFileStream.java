@@ -23,12 +23,14 @@ public class ImpulseFileStream extends FileStream {
     super(filename, overwrite);
   }
 
-  public void setHeader(StreamHeader h) throws Exception {
+  @Override
+public void setHeader(StreamHeader h) throws Exception {
     ImpulseHeader header = (ImpulseHeader) h;
     writeString(header.id + " " + header.startTime + " " + header.frameTime);
   }
 
-  public void sendFrame(StreamFrame f) throws Exception {
+  @Override
+public void sendFrame(StreamFrame f) throws Exception {
     ImpulseFrame frame = (ImpulseFrame) f;
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String msg = "" + frame.seqNum;
@@ -41,14 +43,16 @@ public class ImpulseFileStream extends FileStream {
     writeString(msg);
   }
 
-  public ImpulseHeader getHeader() throws Exception {
+  @Override
+public ImpulseHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
     header = new ImpulseHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
     return header;
   }
 
-  public ImpulseFrame recvFrame() throws Exception {
+  @Override
+public ImpulseFrame recvFrame() throws Exception {
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String line = readLine();
     String[] parts = line.split(" ");

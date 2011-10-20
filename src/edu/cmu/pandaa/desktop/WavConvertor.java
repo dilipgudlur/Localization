@@ -135,9 +135,6 @@ public class WavConvertor {
 		try {
 			inFile = new DataInputStream(new FileInputStream(myPath));
 
-			// System.out.println("Reading wav file...\n"); // for debugging
-			// only
-
 			String chunkID = "" + (char) inFile.readByte()
 					+ (char) inFile.readByte() + (char) inFile.readByte()
 					+ (char) inFile.readByte();
@@ -238,18 +235,10 @@ public class WavConvertor {
 	}
 
 	public byte[] readFromFrameFormat(FileStream fs) {
+		byte[] myAudioData = null;
 		try {
-			// FileStream fs = new FileStream(filePath);
-			RawAudioHeader audioHeader = (RawAudioHeader) fs.getHeader();
-			// System.out.println("Got Header:\nFormat: " +
-			// audioHeader.getAudioFormat()
-			// + "\nNumber of channels: " + audioHeader.getNumChannels()
-			// + "\nNumber of bits per sample: " +
-			// audioHeader.getBitsPerSample()
-			// + "\nSampling rate: " + audioHeader.getSamplingRate()
-			// + "\nData Size: " + audioHeader.getSubChunk2Size());
+			RawAudioHeader audioHeader = (RawAudioHeader)fs.getHeader();
 			RawAudioFrame audioFrame = null;
-			myData = null;
 			String chunkID = "RIFF";
 			myChunkSize = 36 + audioHeader.getSubChunk2Size();
 
@@ -264,28 +253,32 @@ public class WavConvertor {
 			myBlockAlign = (int) (myChannels * myBitsPerSample) / 8;
 			String dataChunkID = "data";
 			myDataSize = audioHeader.getSubChunk2Size();
-			myData = new byte[(int) myDataSize];
+			myAudioData = new byte[(int)myDataSize];
 			int numSamples = 0;
+			boolean dataComplete = false;
 			try {
 				while ((audioFrame = (RawAudioFrame) fs.recvFrame()) != null) {
 					byte[] audioData = audioFrame.getAudioData();
 					for (int i = 0; i < audioData.length; i++) {
-						myData[numSamples] = audioData[i];
-						if (numSamples++ == myDataSize) {
+						myAudioData[numSamples] = audioData[i];
+						if (numSamples++ == myDataSize-1) {
 							System.out.println("Number of samples: "
 									+ numSamples);
+							dataComplete = true;
 							break;
 						}
 					}
+					if(dataComplete)
+						break;
 				}
 			} catch (Exception e) {
-
+				e.printStackTrace();
 			}
 			System.out.println("My Data size length: " + myData.length);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
-		return myData;
+		return myAudioData;
 	}
 
 	// write out the wav file
@@ -297,7 +290,7 @@ public class WavConvertor {
 			fs.setHeader(rawAudioHeader);
 			int frameLength = (int) (mySampleRate / 1000) * 100;
 			System.out.println("Number of frames: "
-					+ (float) ((float) myDataSize / (float) frameLength));
+					+ ((float) myDataSize / (float) frameLength));
 			RawAudioFrame audioFrame = null;
 			int audioIndex = 0, numFrames = 0;
 			for (int idxBuffer = 0; idxBuffer < myDataSize; ++idxBuffer) {
@@ -333,7 +326,7 @@ public class WavConvertor {
 			System.out
 					.println("Number of frames written to file: " + numFrames);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -419,7 +412,7 @@ public class WavConvertor {
 
 	public void playWav(String filePath) {
 		try {
-			AudioClip clip = (AudioClip) Applet.newAudioClip(new File(filePath)
+			AudioClip clip = Applet.newAudioClip(new File(filePath)
 					.toURI().toURL());
 			clip.play();
 		} catch (Exception e) {
@@ -477,6 +470,7 @@ public class WavConvertor {
 
 		byte tempBuffer[] = new byte[10000];
 
+		@Override
 		public void run() {
 			try {
 				int cnt;

@@ -34,7 +34,8 @@ class TDOAImpulseCorrelationModule implements StreamModule {
     close();
   }
   
-  public StreamHeader init(StreamHeader inHeader) {
+  @Override
+public StreamHeader init(StreamHeader inHeader) {
     if (!(inHeader instanceof FeatureHeader))
       throw new RuntimeException("Wrong header type");
 
@@ -42,7 +43,8 @@ class TDOAImpulseCorrelationModule implements StreamModule {
     return null;
   }
 
-  public StreamFrame process(StreamFrame inFrame1) { // StreamFrame inFrame2
+  @Override
+public StreamFrame process(StreamFrame inFrame1) { // StreamFrame inFrame2
     StreamFrame inFrame2 = null;
     if (!(inFrame1 instanceof FeatureFrame) || !(inFrame2 instanceof FeatureFrame))
       throw new RuntimeException("Wrong frame type");
@@ -51,6 +53,7 @@ class TDOAImpulseCorrelationModule implements StreamModule {
     return null;
   }
 
-  public void close() {
+  @Override
+public void close() {
   }
 }

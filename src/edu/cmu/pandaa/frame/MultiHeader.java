@@ -1,8 +1,6 @@
 package edu.cmu.pandaa.frame;
 
-import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +39,8 @@ public class MultiHeader extends StreamHeader {
     }
   }
 
-  public MultiFrame makeFrame() {
+  @Override
+public MultiFrame makeFrame() {
     return new MultiFrame();
   }
 

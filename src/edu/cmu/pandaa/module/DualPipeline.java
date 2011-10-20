@@ -13,19 +13,22 @@ import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
 
 public class DualPipeline implements StreamModule {
   StreamHeader outHeader;
-  public StreamHeader init(StreamHeader inHeader) {
+  @Override
+public StreamHeader init(StreamHeader inHeader) {
     MultiHeader mh = (MultiHeader) inHeader;
     outHeader = new StreamHeader(mh.id + "-mix", inHeader.startTime, inHeader.frameTime);
     return outHeader;
   }
 
-  public StreamHeader.StreamFrame process(StreamFrame inFrame) {
+  @Override
+public StreamHeader.StreamFrame process(StreamFrame inFrame) {
     if (inFrame == null) {
       return null;
     }
     return outHeader.makeFrame();
   }
 
-  public void close() {
+  @Override
+public void close() {
   }
 }

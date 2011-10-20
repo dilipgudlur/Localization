@@ -77,7 +77,7 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 
 		captureButton.setEnabled(true);
 		stopButton.setEnabled(false);
-//		playButton.setEnabled(false);
+		// playButton.setEnabled(false);
 
 		JPanel buttonPanel = new JPanel();
 		// buttonPanel.add(openButton);
@@ -90,6 +90,7 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 		add(logScrollPane, BorderLayout.CENTER);
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent e) {
 
 		if (e.getSource() == captureButton) {
@@ -107,16 +108,23 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 			// Terminate the capturing of input data
 			// from the microphone.
 			stopCapture = true;
-		} else if(e.getSource() == playButton) {
+		} else if (e.getSource() == playButton) {
 			try {
-			WavConvertor wavPlayer = new WavConvertor("C:\\Users\\Divya_PKV\\Music\\industry_mad.wav");
-			wavPlayer.getBytes();
-			FileStream fs = new FileStream("C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav");
-			wavPlayer.saveInFrameFormat(fs);
-			byte[] audioData = wavPlayer.readFromFrameFormat(fs);
-			wavPlayer.playAudio(audioData);
-			System.out.println("Saved audio in frame format: " + "\n" + wavPlayer.getSummary());
-			} catch(IOException ioe) {
+				WavConvertor wavPlayer = new WavConvertor(
+						"C:\\Users\\Divya_PKV\\Music\\industry_mad.wav");
+				wavPlayer.getBytes();
+				FileStream fs = new FileStream(
+						"C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav",
+						true);
+				wavPlayer.saveInFrameFormat(fs);
+				fs.close();
+				fs = new FileStream(
+						"C:\\Users\\Divya_PKV\\Music\\industry_mad_in_frames.wav");
+				byte[] audioData = wavPlayer.readFromFrameFormat(fs);
+				wavPlayer.playAudio(audioData);
+				System.out.println("Saved audio in frame format: " + "\n"
+						+ wavPlayer.getSummary());
+			} catch (IOException ioe) {
 				ioe.printStackTrace();
 			}
 		} else if (e.getSource() == openButton) {
@@ -230,7 +238,6 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 		}
 	}
 
-	
 	private AudioFormat getAudioFormat() {
 		float sampleRate = 8000.0F;
 		int sampleSizeInBits = 16;
@@ -245,12 +252,13 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 	class CaptureThread extends Thread {
 		byte tempBuffer[] = new byte[10000];
 
+		@Override
 		public void run() {
 			byteArrayOutputStream = new ByteArrayOutputStream();
 			stopCapture = false;
 			try {
 				while (!stopCapture) {
-				
+
 					int cnt = targetDataLine.read(tempBuffer, 0,
 							tempBuffer.length);
 					if (cnt > 0) {
@@ -268,6 +276,7 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 	class PlayThread extends Thread {
 		byte tempBuffer[] = new byte[10000];
 
+		@Override
 		public void run() {
 			try {
 				int cnt;
@@ -285,18 +294,19 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 			}
 		}
 	}
-	
-	public static final int byteArrayToInt(byte [] b, boolean bigEndian) {
+
+	public static final int byteArrayToInt(byte[] b, boolean bigEndian) {
 		int x = 0;
-		if(bigEndian)
+		if (bigEndian)
 			x = ByteBuffer.wrap(b).getInt();
 		else
-			x = ByteBuffer.wrap(b).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt();
+			x = ByteBuffer.wrap(b).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+					.getInt();
 		return x;
 	}
-	
+
 	public static final byte[] intToByteArray(int x, boolean bigEndian) {
-		return ByteBuffer.allocate(4).putInt(x).array();		
+		return ByteBuffer.allocate(4).putInt(x).array();
 	}
 
 	private static void createAndShowGUI() {
@@ -307,9 +317,10 @@ public class PandaaApplnTester extends JPanel implements ActionListener {
 		frame.pack();
 		frame.setVisible(true);
 	}
-	
+
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
+			@Override
 			public void run() {
 				UIManager.put("swing.boldMetal", Boolean.FALSE);
 				createAndShowGUI();

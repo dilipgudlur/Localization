@@ -21,23 +21,27 @@ public class DummyStream implements FrameStream {
   }
 
   // set/write the header
-  public void setHeader(StreamHeader h) throws Exception {
+  @Override
+public void setHeader(StreamHeader h) throws Exception {
     System.out.println("Header out " + h.id);
 
   }
 
   // send a frame of data
-  public void sendFrame(StreamFrame m) throws Exception {
+  @Override
+public void sendFrame(StreamFrame m) throws Exception {
     System.out.println("Frame out " + m.getHeader().id + "-" + m.seqNum);
   }
 
   // will block until there's a header (should be set first thing anyway)
-  public StreamHeader getHeader() throws Exception {
+  @Override
+public StreamHeader getHeader() throws Exception {
     return header;
   }
 
   // will block until there's a frame available
-  public StreamHeader.StreamFrame recvFrame() throws Exception {
+  @Override
+public StreamHeader.StreamFrame recvFrame() throws Exception {
     if (count++ > 100) {
       header = null;
       return null;
@@ -47,7 +51,8 @@ public class DummyStream implements FrameStream {
   }
 
   // indicates we're done with the stream
-  public void close() throws Exception {
+  @Override
+public void close() throws Exception {
     header = null;
   }
 }

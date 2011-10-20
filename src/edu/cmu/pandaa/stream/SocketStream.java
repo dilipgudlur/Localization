@@ -29,13 +29,15 @@ public class SocketStream implements FrameStream {
     }
   }
 
-  public void setHeader(StreamHeader h) {
+  @Override
+public void setHeader(StreamHeader h) {
     headerBuffer = h;
     sendObject(h);    // send header over network
     notify();         // if a thread is waiting for the header, wake it up
   }
 
-  public StreamHeader getHeader() {
+  @Override
+public StreamHeader getHeader() {
     if (headerBuffer == null) {
       try {
         wait();   // sleep until there's a header
@@ -47,11 +49,13 @@ public class SocketStream implements FrameStream {
     return headerBuffer;
   }
 
-  public void sendFrame(StreamFrame f) {
+  @Override
+public void sendFrame(StreamFrame f) {
     sendObject(f);    // send frame over network
   }
 
-  public StreamFrame recvFrame() {
+  @Override
+public StreamFrame recvFrame() {
     try {
       incomingMessage = inObjectStream.readObject();
 
@@ -87,7 +91,8 @@ public class SocketStream implements FrameStream {
     }
   }
 
-  public void close() throws Exception {
+  @Override
+public void close() throws Exception {
     connection.close();
     outObjectStream.close();
     inObjectStream.close();

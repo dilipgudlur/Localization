@@ -2,6 +2,9 @@ package edu.cmu.pandaa.frame;
 
 import java.io.Serializable;
 
+
+
+
 /* 
  * RawAudioFormat to capture the WAV file format
  * Summary of data fields in WAV file

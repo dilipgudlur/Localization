@@ -39,7 +39,8 @@ public class FileStream implements FrameStream {
     os = new FileOutputStream(file);
   }
 
-  public void close() {
+  @Override
+public void close() {
     try {
       if (ois != null) {
         ois.close();
@@ -96,7 +97,8 @@ public class FileStream implements FrameStream {
     pw.println(out);
   }
 
-  public void setHeader(StreamHeader h) throws Exception {
+  @Override
+public void setHeader(StreamHeader h) throws Exception {
     if (oos != null) {
       throw new RuntimeException("setHeader called twice!");
     }
@@ -105,12 +107,14 @@ public class FileStream implements FrameStream {
     oos.flush();
   }
 
-  public void sendFrame(StreamFrame m) throws Exception {
+  @Override
+public void sendFrame(StreamFrame m) throws Exception {
     oos.writeObject(m);
     oos.flush();
   }
 
-  public StreamHeader getHeader() throws Exception {
+  @Override
+public StreamHeader getHeader() throws Exception {
     if (ois != null) {
       throw new RuntimeException("getHeader called twice!");
     }
@@ -118,7 +122,8 @@ public class FileStream implements FrameStream {
     return (StreamHeader) ois.readObject();
   }
 
-  public StreamFrame recvFrame() throws Exception {
+  @Override
+public StreamFrame recvFrame() throws Exception {
     return (StreamFrame) ois.readObject();
   }
 

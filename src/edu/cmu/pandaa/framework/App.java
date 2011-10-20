@@ -53,7 +53,8 @@ public class App {
   class AcceptClients extends Thread {
     ServerSocket server;
 
-    public void run() {
+    @Override
+	public void run() {
       try {
         server = new ServerSocket(SERVER_PORT);   // launch server on any free port and start listening for incoming connections
         System.out.println("Server started at " + server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
@@ -81,7 +82,8 @@ public class App {
       id = in.getHeader().id;
     }
 
-    public void run() {
+    @Override
+	public void run() {
       try {
         out.setHeader(pipeline.init(in.getHeader()));
         try {

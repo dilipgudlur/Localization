@@ -12,18 +12,21 @@ import edu.cmu.pandaa.frame.StreamHeader.StreamFrame;
 
 public class SinglePipeline implements StreamModule {
   StreamHeader outHeader;
-  public StreamHeader init(StreamHeader inHeader) {
+  @Override
+public StreamHeader init(StreamHeader inHeader) {
     outHeader = new StreamHeader(inHeader.id + "-imp", inHeader.startTime, inHeader.frameTime);
     return outHeader;
   }
 
-  public StreamFrame process(StreamFrame inFrame) {
+  @Override
+public StreamFrame process(StreamFrame inFrame) {
     if (inFrame == null) {
       return null;
     }
     return outHeader.makeFrame();
   }
 
-  public void close() {
+  @Override
+public void close() {
   }
 }

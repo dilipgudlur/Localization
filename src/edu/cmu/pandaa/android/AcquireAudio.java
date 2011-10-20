@@ -1,16 +1,12 @@
 package edu.cmu.pandaa.android;
 
-import java.io.Serializable;
-
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import edu.cmu.pandaa.frame.RawAudioHeader;
 import edu.cmu.pandaa.frame.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.utils.AudioTimeStamp;
-
-
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 
 public class AcquireAudio implements Runnable {
 

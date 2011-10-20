@@ -27,7 +27,8 @@ public class MultiFrameStream implements FrameStream {
   }
 
   // set/write the header
-  public synchronized void setHeader(StreamHeader h) throws Exception {
+  @Override
+public synchronized void setHeader(StreamHeader h) throws Exception {
     if (outHeader == null && isOpen) {
       outHeader = new MultiHeader(id, h);
       notifyAll();
@@ -37,7 +38,8 @@ public class MultiFrameStream implements FrameStream {
   }
 
   // send a frame of data
-  public synchronized void sendFrame(StreamFrame m) throws Exception {
+  @Override
+public synchronized void sendFrame(StreamFrame m) throws Exception {
     if (frames.put(m.getHeader(), m) == null) {
       dataCount++;
       if (dataCount == frames.size()) {
@@ -46,7 +48,8 @@ public class MultiFrameStream implements FrameStream {
     }
   }
 
-  public synchronized MultiHeader getHeader() throws Exception {
+  @Override
+public synchronized MultiHeader getHeader() throws Exception {
     while (outHeader == null && isOpen) {
       wait();
     }
@@ -54,7 +57,8 @@ public class MultiFrameStream implements FrameStream {
   }
 
   // will block until there's a frame available
-  public synchronized MultiFrame recvFrame() throws Exception {
+  @Override
+public synchronized MultiFrame recvFrame() throws Exception {
     if (outHeader == null) {
       return null;
     }
@@ -73,7 +77,8 @@ public class MultiFrameStream implements FrameStream {
     return frame;
   }
 
-  public synchronized void close() {
+  @Override
+public synchronized void close() {
     isOpen = false;
     outHeader = null;
     notifyAll();

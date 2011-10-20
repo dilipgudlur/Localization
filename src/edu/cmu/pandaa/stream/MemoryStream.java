@@ -9,12 +9,14 @@ public class MemoryStream implements FrameStream {
   private StreamHeader headerBuffer;
   private StreamFrame frameBuffer;
 
-  public synchronized void setHeader(StreamHeader h) {
+  @Override
+public synchronized void setHeader(StreamHeader h) {
     headerBuffer = h;
     notify();     // if receiver is waiting for header, wake up
   }
 
-  public synchronized StreamHeader getHeader() {
+  @Override
+public synchronized StreamHeader getHeader() {
     while (headerBuffer == null && isActive) {
       try {
         wait();   // sleep until there's a header
@@ -26,7 +28,8 @@ public class MemoryStream implements FrameStream {
     return isActive ? headerBuffer : null;
   }
 
-  public synchronized void sendFrame(StreamFrame f) {
+  @Override
+public synchronized void sendFrame(StreamFrame f) {
     if (frameBuffer == null) {
       if (f == null) {
         throw new NullPointerException();
@@ -39,7 +42,8 @@ public class MemoryStream implements FrameStream {
     }
   }
 
-  public synchronized StreamFrame recvFrame() throws Exception {
+  @Override
+public synchronized StreamFrame recvFrame() throws Exception {
     while (frameBuffer == null && isActive) {
       wait();
     }
@@ -49,7 +53,8 @@ public class MemoryStream implements FrameStream {
     return f;
   }
 
-  public synchronized void close() {
+  @Override
+public synchronized void close() {
     isActive = false;
     notify();
   }
