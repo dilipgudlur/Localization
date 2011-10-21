@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 
 public class ImpulseHeader extends StreamHeader implements Serializable {
-
+	
   public ImpulseHeader(String id, long startTime, int frameTime) {
     super(id, startTime, frameTime);
   }
