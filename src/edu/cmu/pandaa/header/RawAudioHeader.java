@@ -33,16 +33,21 @@ import java.io.Serializable;
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
 
-	long samplingRate;
+	public long samplingRate;
 	long numChannels;
 	int audioFormat;
 	int bitsPerSample;
 	long subChunk2Size;
 	
-	public static final int DEAFULT_FRAMETIME = 100;
-	
-	public RawAudioHeader(long startTime, int frameTime, int audioFormat, long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
-		super("", startTime, frameTime);
+  public static final int DEAFULT_FRAMETIME = 100;
+  public static final int DEAFULT_FRAMERATE = -1;
+
+  public RawAudioHeader(String id, long startTime, int frameTime) {
+    super(id, startTime,  frameTime);
+  }
+
+  public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat, long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
+		super(id, startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;

@@ -6,13 +6,12 @@ import java.io.IOException;
 
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
-import edu.cmu.pandaa.utils.WavUtil;
 
 public class RawAudioFileStream extends FileStream {
-
 	public RawAudioFileStream(String fileName) throws IOException {
 		super(fileName);
 	}
+   /* DNC
 
 	public RawAudioFileStream(String fileName, boolean overwrite)
 			throws IOException {
@@ -211,4 +210,5 @@ public class RawAudioFileStream extends FileStream {
 		}
 		return longBytes;
 	}
+	*/
 }

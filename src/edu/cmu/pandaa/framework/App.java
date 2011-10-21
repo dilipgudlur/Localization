@@ -2,9 +2,7 @@ package edu.cmu.pandaa.framework;
 
 import java.net.ServerSocket;
 
-import edu.cmu.pandaa.module.DualPipeline;
-import edu.cmu.pandaa.module.MergePipeline;
-import edu.cmu.pandaa.module.SinglePipeline;
+import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.DummyStream;
 import edu.cmu.pandaa.stream.FrameStream;
@@ -16,13 +14,15 @@ public class App {
   static final int SERVER_PORT = 12345;
   MultiFrameStream mixer = new MultiFrameStream("mixer");
   MultiFrameStream combiner = new MultiFrameStream("combiner");
+  static final int frameTime = 100;
 
   App(String[] args) throws Exception {
     if (args.length == 0) {
       new AcceptClients().start();
     } else {
+      int count = 1;
       for (String file : args) {
-        FrameStream in = new DummyStream(file);
+        FrameStream in = new DummyStream(new RawAudioHeader("dummy" + count++, System.currentTimeMillis(), frameTime));
         activateNewDevice(in);
       }
     }
