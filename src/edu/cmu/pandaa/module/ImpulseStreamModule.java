@@ -8,11 +8,19 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 
-class ImpulseStreamModule implements StreamModule {
+public class ImpulseStreamModule implements StreamModule {
 	FrameStream in, out;
 	double max = 20;
 	double threshold = max / 2; // threshold for amplitude
 	static int sampleProcessed;
+	private ImpulseHeader header;
+
+	public ImpulseStreamModule(FrameStream in, FrameStream out) {
+		super();
+		this.in = in;
+		this.out = out;
+		ImpulseStreamModule.sampleProcessed = 0;
+	}
 
 	/*
 	 * Example1: How this interface would be used to chain two processes
@@ -59,15 +67,9 @@ class ImpulseStreamModule implements StreamModule {
 		if (!(inHeader instanceof RawAudioHeader))
 			throw new RuntimeException("Wrong header type");
 
-		ImpulseHeader ih = (ImpulseHeader) inHeader;
-		try {
-			out.setHeader(ih);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return ih;
+		ImpulseHeader inheader = (ImpulseHeader) inHeader;
+		header = new ImpulseHeader(inheader.id, inheader.startTime, inheader.frameTime);
+		return header;
 	}
 
 	@Override
@@ -78,18 +80,16 @@ class ImpulseStreamModule implements StreamModule {
 		int timeFrame = 100; // ms
 		int sampleRate = 16000;
 		int index = 0;
-		ImpulseHeader ih = null;
 		try {
 			sampleRate = (int) ((RawAudioHeader) in.getHeader())
 					.getSamplingRate();
-			ih = (ImpulseHeader) init(in.getHeader());
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 		int frameSample = sampleRate / 1000 * timeFrame;
-		byte[] peakMagnitudes = new byte[frameSample];
+		short[] peakMagnitudes = new short[frameSample];
 		int[] peakOffsets = new int[frameSample];
 		byte[] frame = ((RawAudioFrame) inFrame).getAudioData();
 		// frameCount++;
@@ -107,7 +107,7 @@ class ImpulseStreamModule implements StreamModule {
 				// store the number of total samples that have been
 				// processed
 			}
-			ImpulseFrame impulseFrame = ih.new ImpulseFrame(peakOffsets,
+			ImpulseFrame impulseFrame = header.new ImpulseFrame(peakOffsets,
 					peakMagnitudes);
 			return impulseFrame;
 			// gjumped = 0;

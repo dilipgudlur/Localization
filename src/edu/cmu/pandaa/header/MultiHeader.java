@@ -12,14 +12,23 @@ import java.util.Set;
  */
 public class MultiHeader extends StreamHeader {
   private final Map<StreamHeader, Integer> hmap = new HashMap<StreamHeader, Integer>();
+  final StreamHeader first;
 
   public MultiHeader(String id, StreamHeader header) {
     super(id, header.startTime, header.frameTime);
+    first = header;
     addHeader(header);
   }
 
   public void addHeader(StreamHeader header) {
-     hmap.put(header, hmap.size());
+    if (header.getClass() != first.getClass()) {
+      throw new IllegalArgumentException("StreamHeaders should match for multi-header");
+    }
+    hmap.put(header, hmap.size());
+  }
+
+  public StreamHeader getOne() {
+    return first;
   }
 
   public class MultiFrame extends StreamFrame {
@@ -37,10 +46,11 @@ public class MultiHeader extends StreamHeader {
     public Set<StreamHeader> getHeaders() {
       return hmap.keySet();
     }
+
   }
 
   @Override
-public MultiFrame makeFrame() {
+  public MultiFrame makeFrame() {
     return new MultiFrame();
   }
 
