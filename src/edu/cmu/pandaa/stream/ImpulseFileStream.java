@@ -59,12 +59,12 @@ public ImpulseFrame recvFrame() throws Exception {
     int size = (parts.length-1)/2;
     int seqNum = Integer.parseInt(parts[0]);
     int[] peaks = new int[size];
-    byte[] mags = new byte[size];
+    short[] mags = new short[size];
     for (int i = 0;i < size;i++) {
        peaks[i] = Integer.parseInt(parts[i + 1]);
     }
     for (int i = 0;i < size;i++) {
-       mags[i] = Byte.parseByte(parts[i + size + 1]);
+       mags[i] = Short.parseShort(parts[i + size + 1]);
     }
     return header.makeFrame(seqNum, peaks, mags);
   }
@@ -73,7 +73,7 @@ public ImpulseFrame recvFrame() throws Exception {
     String filename = "test.txt";
 
     int[] data1 = { 1, 2, 3 };
-    byte[] data2 = { 4, 5, 6 };
+    short[] data2 = { 4, 5, 6 };
     ImpulseFileStream foo = new ImpulseFileStream(filename, true);
     ImpulseHeader header = new ImpulseHeader("w00t", System.currentTimeMillis(), 100);
     foo.setHeader(header);

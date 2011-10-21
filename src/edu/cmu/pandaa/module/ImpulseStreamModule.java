@@ -89,7 +89,7 @@ class ImpulseStreamModule implements StreamModule {
 		}
 		int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 		int frameSample = sampleRate / 1000 * timeFrame;
-		byte[] peakMagnitudes = new byte[frameSample];
+		short[] peakMagnitudes = new short[frameSample];
 		int[] peakOffsets = new int[frameSample];
 		byte[] frame = ((RawAudioFrame) inFrame).getAudioData();
 		// frameCount++;
