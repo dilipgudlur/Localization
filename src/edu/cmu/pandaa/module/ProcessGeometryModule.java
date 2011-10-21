@@ -1,6 +1,7 @@
 package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.stream.FrameStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.StreamHeader;
@@ -8,7 +9,7 @@ import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class ProcessGeometryModule implements StreamModule{
+class ProcessGeometryModule implements StreamModule, Runnable{
 	FrameStream inGeometryStream, outGeometryStream;
 	GeometryHeader hOut;	
 
@@ -18,13 +19,17 @@ class ProcessGeometryModule implements StreamModule{
 	  this.outGeometryStream = outGeometryStream;
   }
   
-  public void run() throws Exception {
-	  StreamHeader header = init(inGeometryStream.getHeader());
-	  outGeometryStream.setHeader(header);
-	  StreamFrame frameIn,frameOut;
-	  while ((frameIn = inGeometryStream.recvFrame()) != null) {
-		  frameOut = process(frameIn);
-	      outGeometryStream.sendFrame(frameOut);
+  public void run() {
+	  try{
+		  StreamHeader header = init(inGeometryStream.getHeader());
+		  outGeometryStream.setHeader(header);
+		  StreamFrame frameIn,frameOut;
+		  while ((frameIn = inGeometryStream.recvFrame()) != null) {
+			  frameOut = process(frameIn);
+		      outGeometryStream.sendFrame(frameOut);
+		  }
+	  }catch(Exception e){
+		  e.printStackTrace();
 	  }
 	  close();
   }
@@ -33,9 +38,9 @@ class ProcessGeometryModule implements StreamModule{
     if (!(inHeader instanceof GeometryHeader))
       throw new RuntimeException("Wrong header type");
     
-    // TODO: would actually do work here to compute new header
-    GeometryHeader hIn = (GeometryHeader)inHeader ;    
-	hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
+    /*compute new header*/
+    GeometryHeader hIn = (GeometryHeader)inHeader ;
+   	hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
     return hOut;
   }
 
@@ -47,6 +52,15 @@ class ProcessGeometryModule implements StreamModule{
     GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry); //TODO:verify correctness of hOut    
     gfOut.geometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
 	return gfOut ;    
+  }
+  
+  public static void main(String[] args) throws Exception
+  {
+	  GeometryFileStream gIn = new GeometryFileStream("gIn.txt");
+	  GeometryFileStream gOut = new GeometryFileStream("gOut.txt");;
+	  ProcessGeometryModule pgm = new ProcessGeometryModule(gIn,gOut);
+	  Thread th = new Thread(pgm);
+	  th.run();	  
   }
   
   public void close() {

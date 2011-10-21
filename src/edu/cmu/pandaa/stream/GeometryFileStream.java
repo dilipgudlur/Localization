@@ -27,7 +27,7 @@ public class GeometryFileStream extends FileStream {
     String msg = "" + frame.seqNum;
       
     for (int i = 0;i < frame.geometry.length; i++) {
-    	for (int j = 0;i < frame.geometry[0].length; j++) {
+    	for (int j = 0;j < frame.geometry[i].length; j++) {
     		msg += " " + frame.geometry[i][j];
     	}
     	writeString(msg); //writing each row 
@@ -48,25 +48,24 @@ public class GeometryFileStream extends FileStream {
     String[] parts = line.split(" ");
     int size = (parts.length-1)/2;
     int seqNum = Integer.parseInt(parts[0]);
-    //TODO: construct the frame
+    /*construct frame*/
     double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
     for (int i = 0;i < size;i++) {
-    	for (int j = 0;i < size;i++) {
+    	for (int j = 0;j < size;j++) {
     		geometry[i][j] = Double.parseDouble(parts[i + j + 1]);
     	}
     }
     return header.makeFrame(seqNum, geometry);
   }
 
-  public static void main(String[] args) throws Exception {
+  /*public static void main(String[] args) throws Exception {
     String filename = "test.txt";
-    String[] deviceIds = {"1a","2b","3c","4d","5e"};
+    String[] deviceIds = {"1a","2b","3c","4d"};
 
-    double[][] inputDissimilarity = {{0.00,1.00,10.19803903,10.44030651,6.403124237},
-    								{1.00,0.00,10.04987562,10.19803903,5.830951895},
-    								{10.19803903,10.04987562,0,1,5.385164807},
-    								{10.44030651,10.19803903,1,0,5.099019514},
-    								{6.403124237,5.830951895,5.385164807,5.099019514,0}};
+    double[][] inputDissimilarity = {{0,1,2,3},
+    								{4,5,6,7},
+    								{8,9,10,11},
+    								{12,13,14,15}};
     
     GeometryFileStream foo = new GeometryFileStream(filename, true);
     
@@ -93,5 +92,5 @@ public class GeometryFileStream extends FileStream {
     if (frame1.seqNum != frame2.seqNum-2) {
       System.err.println("Sequence number mismatch!");
     }
-  }
+  }*/
 }
