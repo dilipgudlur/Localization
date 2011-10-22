@@ -10,6 +10,10 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
+java $OPTS $PACKAGE.module.ConsolidateModule 1-1 consolidate-1.txt impulses-1.txt
+
+exit
+
 java $OPTS $PACKAGE.module.FeatureExtractTest impulses-1.txt sample_input-1.wav
 java $OPTS $PACKAGE.module.FeatureExtractTest impulses-2.txt sample_input-2.wav
 java $OPTS $PACKAGE.module.FeatureExtractTest impulses-3.txt sample_input-3.wav

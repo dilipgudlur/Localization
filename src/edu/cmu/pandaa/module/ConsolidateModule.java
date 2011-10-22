@@ -96,8 +96,8 @@ public class ConsolidateModule implements StreamModule {
   public static void main(String[] args) throws Exception {
     int arg = 0;
     String[] opts = args[arg++].split("-");
-    ImpulseFileStream in = new ImpulseFileStream(args[arg++]);
     ImpulseFileStream out = new ImpulseFileStream(args[arg++], true);
+    ImpulseFileStream in = new ImpulseFileStream(args[arg++]);
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
