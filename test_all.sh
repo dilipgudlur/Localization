@@ -10,7 +10,7 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
-java $OPTS $PACKAGE.module.ConsolidateModule 1-1 consolidate-1.txt impulses-1.txt
+java $OPTS $PACKAGE.module.ConsolidateModule 1-1 consolidated-1.txt impulses-1.txt
 
 exit
 
