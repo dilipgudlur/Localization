@@ -13,6 +13,7 @@ import edu.cmu.pandaa.module.StreamModule;
  */
 
 public class MergePipeline implements StreamModule {
+  /* fields onloy used for constructing the DummyModule -- remove when we have real code */
   final long now = System.currentTimeMillis();
   final int frameTime = 100;
   String[] dummyIds = { "a", "b", "c" };

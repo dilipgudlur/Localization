@@ -4,7 +4,9 @@ import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.module.ConsolidateModule;
 import edu.cmu.pandaa.module.DummyModule;
+import edu.cmu.pandaa.module.ImpulseStreamModule;
 import edu.cmu.pandaa.module.StreamModule;
 
 /**
@@ -15,14 +17,12 @@ import edu.cmu.pandaa.module.StreamModule;
  */
 
 public class SinglePipeline implements StreamModule {
-  final long now = System.currentTimeMillis();
-  final int frameTime = 100;
 
   /* First step is to take in RawAudioFrames and convert them to impulse frames */
-  StreamModule impulse = new DummyModule(new ImpulseHeader("dummyImpulse", now, frameTime));
+  StreamModule impulse = new ImpulseStreamModule(); //new DummyModule(new ImpulseHeader("dummyImpulse", now, frameTime));
 
   /* Then we consolidate bunches of impulse frames into larger consolidated frames for processing */
-  StreamModule consolidate = new DummyModule();
+  StreamModule consolidate = new ConsolidateModule(1,1);
 
   @Override
   public StreamHeader init(StreamHeader inHeader) {

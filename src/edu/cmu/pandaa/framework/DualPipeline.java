@@ -16,6 +16,7 @@ import edu.cmu.pandaa.module.StreamModule;
  */
 
 public class DualPipeline implements StreamModule {
+  /* fileds only used for dummy distance header -- remove when we have real code */
   final long now = System.currentTimeMillis();
   final int frameTime = 100;
 
