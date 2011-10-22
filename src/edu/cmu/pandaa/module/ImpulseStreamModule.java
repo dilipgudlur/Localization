@@ -15,6 +15,9 @@ public class ImpulseStreamModule implements StreamModule {
 	static int sampleProcessed;
 	private ImpulseHeader header;
 
+  public ImpulseStreamModule() {
+  }
+
 	public ImpulseStreamModule(FrameStream in, FrameStream out) {
 		super();
 		this.in = in;
