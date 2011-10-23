@@ -12,7 +12,7 @@ public class ImpulseStreamModule implements StreamModule {
 	FrameStream in, out;
 	double max = 20;
 	double threshold = max / 2; // threshold for amplitude
-	static int sampleProcessed;
+	private static int sampleProcessed;
 	private ImpulseHeader header;
 
   public ImpulseStreamModule() {
