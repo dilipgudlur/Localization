@@ -26,7 +26,7 @@ public class ImpulseStreamModule implements StreamModule {
 	 * Example2: A run method that could be used to create a new thread to test
 	 * just this class
 	 */
-	public void run() {
+	public void main() {
 		try {
 
 			String filename = "testImpulse.txt";
