@@ -1,4 +1,11 @@
-CLASSPATH=$PWD/`find . -name Localization.jar`
+JAR=Localization.jar
+CLASSPATH=$PWD/`find . -name $JAR`
+
+if [ ! -f $CLASSPATH ]; then
+  echo Could not find $JAR
+  exit
+fi
+
 echo CLASSPATH is $CLASSPATH
 OPTS="-classpath $CLASSPATH"
 PACKAGE=edu.cmu.pandaa
