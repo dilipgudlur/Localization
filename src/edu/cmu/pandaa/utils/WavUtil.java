@@ -5,8 +5,6 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
-import javax.sound.sampled.AudioFormat;
-
 public class WavUtil {
 	private long chunkSize;
 	private long subChunk1Size;

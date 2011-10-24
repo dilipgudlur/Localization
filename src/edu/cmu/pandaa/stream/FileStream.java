@@ -23,7 +23,7 @@ public class FileStream implements FrameStream {
   protected ObjectOutputStream oos;
   protected ObjectInputStream ois;
   private int seqNum = 0;
-  private final String fileName;
+  protected final String fileName;
 
   public FileStream(String fileName) throws IOException {
     this.fileName = fileName;

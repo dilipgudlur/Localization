@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.cmu.pandaa.header.MultiHeader;
-import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
+import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 /**
@@ -28,7 +28,7 @@ public class MultiFrameStream implements FrameStream {
 
   // set/write the header
   @Override
-public synchronized void setHeader(StreamHeader h) throws Exception {
+  public synchronized void setHeader(StreamHeader h) throws Exception {
     if (outHeader == null && isOpen) {
       outHeader = new MultiHeader(id, h);
       notifyAll();
@@ -39,7 +39,7 @@ public synchronized void setHeader(StreamHeader h) throws Exception {
 
   // send a frame of data
   @Override
-public synchronized void sendFrame(StreamFrame m) throws Exception {
+  public synchronized void sendFrame(StreamFrame m) throws Exception {
     if (frames.put(m.getHeader(), m) == null) {
       dataCount++;
       if (dataCount == frames.size()) {
@@ -49,7 +49,7 @@ public synchronized void sendFrame(StreamFrame m) throws Exception {
   }
 
   @Override
-public synchronized MultiHeader getHeader() throws Exception {
+  public synchronized MultiHeader getHeader() throws Exception {
     while (outHeader == null && isOpen) {
       wait();
     }
@@ -58,7 +58,7 @@ public synchronized MultiHeader getHeader() throws Exception {
 
   // will block until there's a frame available
   @Override
-public synchronized MultiFrame recvFrame() throws Exception {
+  public synchronized MultiFrame recvFrame() throws Exception {
     if (outHeader == null) {
       return null;
     }
@@ -78,7 +78,7 @@ public synchronized MultiFrame recvFrame() throws Exception {
   }
 
   @Override
-public synchronized void close() {
+  public synchronized void close() {
     isOpen = false;
     outHeader = null;
     notifyAll();

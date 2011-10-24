@@ -3,7 +3,6 @@ package edu.cmu.pandaa.desktop;
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -30,9 +29,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import edu.cmu.pandaa.desktop.PandaaApplnTester.CaptureThread;
-import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
-import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 import edu.cmu.pandaa.utils.WavUtil;

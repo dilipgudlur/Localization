@@ -24,15 +24,17 @@ public class ImpulseFileStream extends FileStream {
   }
 
   @Override
-public void setHeader(StreamHeader h) throws Exception {
+  public void setHeader(StreamHeader h) throws Exception {
     ImpulseHeader header = (ImpulseHeader) h;
-    writeString(header.id + " " + header.startTime + " " + header.frameTime);
+    writeString(header.id + " " + header.startTime + " " + header.frameTime + " " + header.rollingWindow);
   }
 
   @Override
-public void sendFrame(StreamFrame f) throws Exception {
+  public void sendFrame(StreamFrame f) throws Exception {
+    if (f == null) {
+      return;
+    }
     ImpulseFrame frame = (ImpulseFrame) f;
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
     String msg = "" + frame.seqNum;
     for (int i = 0;i < frame.peakOffsets.length; i++) {
       msg += " " + frame.peakOffsets[i];
@@ -44,36 +46,44 @@ public void sendFrame(StreamFrame f) throws Exception {
   }
 
   @Override
-public ImpulseHeader getHeader() throws Exception {
+  public ImpulseHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
     header = new ImpulseHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
+    header.rollingWindow = Integer.parseInt(parts[3]);
     return header;
   }
 
   @Override
-public ImpulseFrame recvFrame() throws Exception {
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
+  public ImpulseFrame recvFrame() throws Exception {
     String line = readLine();
-    String[] parts = line.split(" ");
-    int size = (parts.length-1)/2;
-    int seqNum = Integer.parseInt(parts[0]);
-    int[] peaks = new int[size];
-    byte[] mags = new byte[size];
-    for (int i = 0;i < size;i++) {
-       peaks[i] = Integer.parseInt(parts[i + 1]);
+    if (line == null || line.trim().equals(""))
+      return null;
+    try {
+      String[] parts = line.split(" ");
+      int size = (parts.length - 1)/2;
+      int[] peaks = new int[size];
+      int seqNum = 0;
+      seqNum = Integer.parseInt(parts[0]);
+      short[] mags = new short[size];
+      for (int i = 0;i < size;i++) {
+        peaks[i] = Integer.parseInt(parts[i + 1]);
+      }
+      for (int i = 0;i < size;i++) {
+        mags[i] = Short.parseShort(parts[i + size + 1]);
+      }
+      return header.makeFrame(seqNum, peaks, mags);
+    } catch (NumberFormatException e) {
+      System.out.println("Error parsing: " + line + " from " + fileName);
+      throw e;
     }
-    for (int i = 0;i < size;i++) {
-       mags[i] = Byte.parseByte(parts[i + size + 1]);
-    }
-    return header.makeFrame(seqNum, peaks, mags);
   }
 
   public static void main(String[] args) throws Exception {
     String filename = "test.txt";
 
     int[] data1 = { 1, 2, 3 };
-    byte[] data2 = { 4, 5, 6 };
+    short[] data2 = { 4, 5, 6 };
     ImpulseFileStream foo = new ImpulseFileStream(filename, true);
     ImpulseHeader header = new ImpulseHeader("w00t", System.currentTimeMillis(), 100);
     foo.setHeader(header);

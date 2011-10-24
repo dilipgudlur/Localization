@@ -7,32 +7,20 @@ import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
+import edu.cmu.pandaa.stream.ImpulseFileStream;
+import edu.cmu.pandaa.stream.RawAudioFileStream;
 
-class ImpulseStreamModule implements StreamModule {
-	FrameStream in, out;
-	double max = 20;
-	double threshold = max / 2; // threshold for amplitude
-	static int sampleProcessed;
+public class ImpulseStreamModule implements StreamModule {
+	private double max = 20;
+	private int sampleRate = 16000;
+	private double threshold = max / 2; // threshold for amplitude
+	private static int sampleProcessed; // store the number of total samples that have
+								// been processed
+	private ImpulseHeader header;
 
-	/*
-	 * Example1: How this interface would be used to chain two processes
-	 * together
-	 */
-	public void go(StreamModule m1, StreamModule m2) throws Exception {
-		StreamHeader header = in.getHeader();
-		header = m1.init(header);
-		header = m2.init(header);
-		out.setHeader(header);
-
-		StreamFrame frame;
-		while ((frame = in.recvFrame()) != null) {
-			frame = m1.process(frame);
-			frame = m2.process(frame);
-			out.sendFrame(frame);
-		}
-
-		m1.close();
-		m2.close();
+	public ImpulseStreamModule() {
+		super();
+		sampleProcessed = 0;
 	}
 
 	/*
@@ -41,14 +29,33 @@ class ImpulseStreamModule implements StreamModule {
 	 */
 	public void run() {
 		try {
-			out.setHeader(init(in.getHeader()));
-			setSampleProcessed(0); // set the number of samples being processed
-									// as zero
-			while (true) {
-				StreamFrame sf = process(in.recvFrame());
-				if (sf != null)
-					out.sendFrame(sf);
+
+			String filename = "testImpulse.txt";
+			ImpulseFileStream foo = new ImpulseFileStream(filename, true);
+
+			RawAudioFileStream rfs = new RawAudioFileStream(
+					"sample_music_in_frames.wav");
+
+			ImpulseStreamModule ism = new ImpulseStreamModule();
+
+			RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
+			ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
+			foo.setHeader(iHeader);
+
+			RawAudioFrame audioFrame = null;
+			while ((audioFrame = (RawAudioFrame) rfs.recvFrame()) != null) {
+				// impulseDetectionModuleObject.process(audioFrame)
+				StreamFrame streamFrame = ism.process(audioFrame);
+				if (streamFrame != null) {
+					foo.sendFrame(streamFrame);
+				}
 			}
+
+			ImpulseHeader header2 = foo.getHeader();
+			ImpulseFrame frame2 = foo.recvFrame();
+			frame2 = foo.recvFrame();
+			foo.close();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -58,16 +65,13 @@ class ImpulseStreamModule implements StreamModule {
 	public StreamHeader init(StreamHeader inHeader) {
 		if (!(inHeader instanceof RawAudioHeader))
 			throw new RuntimeException("Wrong header type");
-
-		ImpulseHeader ih = (ImpulseHeader) inHeader;
-		try {
-			out.setHeader(ih);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		return ih;
+		int tmp = (int) ((RawAudioHeader) inHeader).getSamplingRate();
+		if (tmp != 0)
+			sampleRate = tmp;
+		ImpulseHeader inheader = (ImpulseHeader) inHeader;
+		header = new ImpulseHeader(inheader.id, inheader.startTime,
+				inheader.frameTime);
+		return header;
 	}
 
 	@Override
@@ -76,23 +80,12 @@ class ImpulseStreamModule implements StreamModule {
 			throw new RuntimeException("Wrong frame type");
 
 		int timeFrame = 100; // ms
-		int sampleRate = 16000;
 		int index = 0;
-		ImpulseHeader ih = null;
-		try {
-			sampleRate = (int) ((RawAudioHeader) in.getHeader())
-					.getSamplingRate();
-			ih = (ImpulseHeader) init(in.getHeader());
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 		int frameSample = sampleRate / 1000 * timeFrame;
-		byte[] peakMagnitudes = new byte[frameSample];
+		short[] peakMagnitudes = new short[frameSample];
 		int[] peakOffsets = new int[frameSample];
 		byte[] frame = ((RawAudioFrame) inFrame).getAudioData();
-		// frameCount++;
 
 		double maxHeight = maxHeight(frame, 0, frameSample);
 		if (maxHeight > threshold) {
@@ -104,15 +97,12 @@ class ImpulseStreamModule implements StreamModule {
 					index++;
 				}
 				sampleProcessed++;
-				// store the number of total samples that have been
-				// processed
+
 			}
-			ImpulseFrame impulseFrame = ih.new ImpulseFrame(peakOffsets,
+			ImpulseFrame impulseFrame = header.new ImpulseFrame(peakOffsets,
 					peakMagnitudes);
 			return impulseFrame;
-			// gjumped = 0;
 		} else {
-			// gjumped++; // jumping counter
 			sampleProcessed += frameSample;
 			return null;
 		}
@@ -151,6 +141,7 @@ class ImpulseStreamModule implements StreamModule {
 	public void close() {
 		max = 20;
 		threshold = max / 2;
+		setSampleProcessed(0);
 	}
 
 	public static void setSampleProcessed(int sample) {
