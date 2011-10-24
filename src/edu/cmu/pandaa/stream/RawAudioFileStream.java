@@ -1,34 +1,184 @@
 package edu.cmu.pandaa.stream;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.utils.DataConversionUtil;
 import edu.cmu.pandaa.utils.WavUtil;
 
-public class RawAudioFileStream extends FileStream {
+public class RawAudioFileStream implements FrameStream {
+
+	int wavFrameLength;
+	private OutputStream os;
+	private InputStream is;
+	DataInputStream dis;
+	ObjectOutputStream oos;
+	ObjectInputStream ois = null;
+	private final String fileName;
+	RawAudioHeader rawAudioHeaderRef;
 
 	public RawAudioFileStream(String fileName) throws IOException {
-		super(fileName);
+		this.fileName = fileName;
+		is = new FileInputStream(fileName);
+		wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
 	}
 
-	public RawAudioFileStream(String fileName, boolean overwrite)
-			throws IOException {
-		super(fileName, overwrite);
+	public RawAudioFileStream(String fileName, boolean overwrite) throws IOException {
+		this.fileName = fileName;
+		File file = new File(fileName);
+		if (file.exists() && !overwrite) {
+			throw new IOException("File exists");
+		}
+		os = new FileOutputStream(file);
+		wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
+	}
+
+	@Override
+	public StreamHeader getHeader() throws Exception {
+		if (dis != null) {
+			throw new RuntimeException("getHeader called twice!");
+		}
+		dis = new DataInputStream(new FileInputStream(fileName));
+		byte[] tmpLong = new byte[4];
+		byte[] tmpInt = new byte[2];
+
+		long wavChunkSize = 0, wavSubChunk1Size = 0, wavDataSize = 0;
+		long wavByteRate = 0, wavSamplingRate = 0;
+		int wavFormat = 0, wavChannels = 0, wavBlockAlign = 0, wavBitsPerSample = 0;
+
+		byte[] chunkID = new byte[4];
+		int retval = dis.read(chunkID, 0, 4);
+
+		dis.read(tmpLong);
+		wavChunkSize = DataConversionUtil.byteArrayToLong(tmpLong);
+
+		String format = "" + (char) dis.readByte() + (char) dis.readByte() + (char) dis.readByte()
+				+ (char) dis.readByte();
+
+		String subChunk1ID = "" + (char) dis.readByte() + (char) dis.readByte()
+				+ (char) dis.readByte() + (char) dis.readByte();
+
+		dis.read(tmpLong);
+		wavSubChunk1Size = DataConversionUtil.byteArrayToLong(tmpLong);
+
+		dis.read(tmpInt);
+		wavFormat = DataConversionUtil.byteArrayToInt(tmpInt);
+
+		dis.read(tmpInt);
+		wavChannels = DataConversionUtil.byteArrayToInt(tmpInt);
+
+		dis.read(tmpLong);
+		wavSamplingRate = DataConversionUtil.byteArrayToLong(tmpLong);
+
+		dis.read(tmpLong);
+		wavByteRate = DataConversionUtil.byteArrayToLong(tmpLong);
+
+		dis.read(tmpInt);
+		wavBlockAlign = DataConversionUtil.byteArrayToInt(tmpInt);
+
+		dis.read(tmpInt);
+		wavBitsPerSample = DataConversionUtil.byteArrayToInt(tmpInt);
+
+		String dataChunkID = "" + (char) dis.readByte() + (char) dis.readByte()
+				+ (char) dis.readByte() + (char) dis.readByte();
+
+		dis.read(tmpLong);
+		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
+
+		rawAudioHeaderRef = new RawAudioHeader(System.currentTimeMillis(), wavFrameLength,
+				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
+		return rawAudioHeaderRef;
+	}
+
+	@Override
+	public StreamFrame recvFrame() throws Exception {
+		RawAudioFrame rawAudioFrame = rawAudioHeaderRef.makeFrame(wavFrameLength);
+		byte[] audioData = new byte[wavFrameLength];
+		int bytesRead = dis.read(audioData);
+		for (int i = 0; i < audioData.length; i++) {
+			rawAudioFrame.audioData[i] = audioData[i];
+		}
+		if (bytesRead <= 0)
+			return null;
+		else
+			return rawAudioFrame;
+	}
+
+	@Override
+	public void setHeader(StreamHeader h) throws Exception {
+		if (oos != null) {
+			throw new RuntimeException("setHeader called twice!");
+		}
+		oos = new ObjectOutputStream(os);
+		oos.writeObject(h);
+		oos.flush();
+	}
+
+	@Override
+	public void sendFrame(StreamFrame m) throws Exception {
+		oos.writeObject(m);
+		oos.flush();
+	}
+
+	@Override
+	public void close() {
+		try {
+			if (dis != null) {
+				dis.close();
+				dis = null;
+			}
+			if (oos != null) {
+				oos.close();
+				oos = null;
+			}
+			if (os != null) {
+				os.close();
+				os = null;
+			}
+			if (is != null) {
+				is.close();
+				is = null;
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public RawAudioHeader getHeaderFromFrameFormat() throws Exception {
+		if (ois != null) {
+			throw new RuntimeException("getHeader called twice!");
+		}
+		ois = new ObjectInputStream(is);
+		return (RawAudioHeader)ois.readObject();
+	}
+
+	public StreamFrame recvFrameFromFrameFormat() throws Exception {
+		return (StreamFrame) ois.readObject();
 	}
 
 	public boolean saveInFrameFormat(WavUtil wavUtil) {
 		try {
-			RawAudioHeader rawAudioHeader = new RawAudioHeader(
-					System.currentTimeMillis(),
-					RawAudioHeader.DEAFULT_FRAMETIME, wavUtil.getFormat(),
+			RawAudioHeader rawAudioHeader = new RawAudioHeader(System.currentTimeMillis(),
+					RawAudioHeader.DEFAULT_FRAMETIME, wavUtil.getFormat(),
 					wavUtil.getNumChannels(), wavUtil.getSamplingRate(),
 					wavUtil.getBitsPerSample(), wavUtil.getDataSize());
+			System.out.println(rawAudioHeader);
 			setHeader(rawAudioHeader);
-			
-			int frameLength = (int) (wavUtil.getSamplingRate() / 1000) * 100;
+
+			int frameLength = (int) (wavUtil.getSamplingRate() / 1000)
+					* RawAudioHeader.DEFAULT_FRAMETIME;
+
 			RawAudioFrame audioFrame = null;
 			int audioIndex = 0;
 			for (int idxBuffer = 0; idxBuffer < wavUtil.getDataSize(); ++idxBuffer) {
@@ -64,24 +214,26 @@ public class RawAudioFileStream extends FileStream {
 		return true;
 	}
 
-	public byte[] readFromFrameFormat() {
-		byte[] audioData = null;
+	public WavUtil readFromFrameFormat() {
+		WavUtil wavUtil = null;
 		try {
-			RawAudioHeader audioHeader = (RawAudioHeader) getHeader();
+			RawAudioHeader audioHeader = (RawAudioHeader) getHeaderFromFrameFormat();
+			System.out.println("Reading from frame file:\n" + audioHeader);
+			wavUtil = new WavUtil(audioHeader.getAudioFormat(), audioHeader.getNumChannels(),
+					audioHeader.getSamplingRate(), audioHeader.getBitsPerSample(),
+					audioHeader.getSubChunk2Size());
 			RawAudioFrame audioFrame = null;
 
 			long wavDataSize = audioHeader.getSubChunk2Size();
-			audioData = new byte[(int) wavDataSize];
+			wavUtil.audioData = new byte[(int) wavDataSize];
 			int numSamples = 0;
 			boolean dataComplete = false;
 			try {
-				while ((audioFrame = (RawAudioFrame) recvFrame()) != null) {
-					byte[] data = audioFrame.getAudioData();
+				while ((audioFrame = (RawAudioFrame) recvFrameFromFrameFormat()) != null) {
+					short[] data = audioFrame.getAudioData();
 					for (int i = 0; i < data.length; i++) {
-						audioData[numSamples] = data[i];
+						wavUtil.audioData[numSamples] = (byte) data[i];
 						if (numSamples++ == wavDataSize - 1) {
-							System.out.println("Number of samples: "
-									+ numSamples);
 							dataComplete = true;
 							break;
 						}
@@ -92,123 +244,9 @@ public class RawAudioFileStream extends FileStream {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			System.out.println("My Data size length: " + audioData.length);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return audioData;
-	}
-
-	public WavUtil readWavFile(String filePath) {
-		DataInputStream inFile = null;
-		byte[] tmpLong = new byte[4];
-		byte[] tmpInt = new byte[2];
-
-		long wavChunkSize = 0, wavSubChunk1Size = 0, wavDataSize = 0;
-		long wavByteRate = 0, wavSamplingRate = 0;
-		int wavFormat = 0, wavChannels = 0, wavBlockAlign = 0, wavBitsPerSample = 0;
-		byte[] wavData;
-
-		try {
-			inFile = new DataInputStream(new FileInputStream(filePath));
-
-			String chunkID = "" + (char) inFile.readByte()
-					+ (char) inFile.readByte() + (char) inFile.readByte()
-					+ (char) inFile.readByte();
-
-			inFile.read(tmpLong);
-			wavChunkSize = byteArrayToLong(tmpLong);
-
-			String format = "" + (char) inFile.readByte()
-					+ (char) inFile.readByte() + (char) inFile.readByte()
-					+ (char) inFile.readByte();
-
-			String subChunk1ID = "" + (char) inFile.readByte()
-					+ (char) inFile.readByte() + (char) inFile.readByte()
-					+ (char) inFile.readByte();
-
-			inFile.read(tmpLong);
-			wavSubChunk1Size = byteArrayToLong(tmpLong);
-
-			inFile.read(tmpInt);
-			wavFormat = byteArrayToInt(tmpInt);
-
-			inFile.read(tmpInt);
-			wavChannels = byteArrayToInt(tmpInt);
-
-			inFile.read(tmpLong);
-			wavSamplingRate = byteArrayToLong(tmpLong);
-
-			inFile.read(tmpLong);
-			wavByteRate = byteArrayToLong(tmpLong);
-
-			inFile.read(tmpInt);
-			wavBlockAlign = byteArrayToInt(tmpInt);
-
-			inFile.read(tmpInt);
-			wavBitsPerSample = byteArrayToInt(tmpInt);
-
-			String dataChunkID = "" + (char) inFile.readByte()
-					+ (char) inFile.readByte() + (char) inFile.readByte()
-					+ (char) inFile.readByte();
-
-			inFile.read(tmpLong);
-			wavDataSize = byteArrayToLong(tmpLong);
-
-			wavData = new byte[(int) wavDataSize];
-			inFile.read(wavData);
-			
-
-			inFile.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-
-		WavUtil wavUtil = new WavUtil(wavFormat, wavChannels, wavSamplingRate,
-				wavBitsPerSample, wavDataSize);
-		wavUtil.audioData = wavData;
 		return wavUtil;
-	}
-
-	// ===========================
-	// CONVERT BYTES TO JAVA TYPES
-	// ===========================
-	public static long byteArrayToLong(byte[] b) {
-		long value = 0;
-		for (int i = 0; i < b.length; i++) {
-			value += (b[i] & 0xff) << (8 * i);
-		}
-		return value;
-	}
-
-	public static final int byteArrayToInt(byte[] b) {
-		int value = 0;
-		for (int i = 0; i < b.length; i++) {
-			value += (b[i] & 0xff) << (8 * i);
-		}
-		byte[] check = intToByteArray(value);
-		return value;
-	}
-
-	// convert a short to a byte array
-	public static byte[] shortToByteArray(short data) {
-		return new byte[] { (byte) (data & 0xff), (byte) ((data >>> 8) & 0xff) };
-	}
-
-	public static final byte[] intToByteArray(int value) {
-		byte[] intBytes = new byte[2];
-		for (int i = 0; i < intBytes.length; i++) {
-			intBytes[i] = (byte) (value >>> (8 * (i)));
-		}
-		return intBytes;
-	}
-
-	public static byte[] longToByteArray(long value) {
-		byte[] longBytes = new byte[4];
-		for (int i = 0; i < longBytes.length; i++) {
-			longBytes[i] = (byte) (value >>> (8 * (i)));
-		}
-		return longBytes;
 	}
 }
