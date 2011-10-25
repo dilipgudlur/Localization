@@ -39,6 +39,11 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
 
+  public RawAudioHeader(String id, long startTime, int frameTime) {
+    super(id, startTime, frameTime);
+    // ideally fill in fields with some reasonable default -- this constructor is for simple testing
+  }
+
 	public RawAudioHeader(long startTime, int frameTime, int audioFormat, long numChannels,
 			long samplingRate, int bitsPerSample, long subChunk2Size) {
 		super("", startTime, frameTime);
