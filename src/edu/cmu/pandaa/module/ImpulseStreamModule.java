@@ -11,12 +11,15 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 public class ImpulseStreamModule implements StreamModule {
-	private double max = 1;
+	private double max = 0.00305;
 	private int sampleRate = 16000;
+	int frameSample = 1600;
+	int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 	private double threshold = max / 2; // threshold for amplitude
 	private static int sampleProcessed; // store the number of total samples
 										// that have
 	// been processed
+	int timeFrame = 100; // ms
 	private ImpulseHeader header;
 
 	public ImpulseStreamModule() {
@@ -35,7 +38,7 @@ public class ImpulseStreamModule implements StreamModule {
 			ImpulseFileStream foo = new ImpulseFileStream(filename, true);
 
 			RawAudioFileStream rfs = new RawAudioFileStream(
-					"sample_music_in_frames.wav");
+					"clap.wav");
 
 			ImpulseStreamModule ism = new ImpulseStreamModule();
 
@@ -52,9 +55,11 @@ public class ImpulseStreamModule implements StreamModule {
 				}
 			}
 
+			/*
 			ImpulseHeader header2 = foo.getHeader();
 			ImpulseFrame frame2 = foo.recvFrame();
 			frame2 = foo.recvFrame();
+			*/
 			foo.close();
 
 		} catch (Exception e) {
@@ -69,9 +74,10 @@ public class ImpulseStreamModule implements StreamModule {
 		int tmp = (int) ((RawAudioHeader) inHeader).getSamplingRate();
 		if (tmp != 0)
 			sampleRate = tmp;
-		ImpulseHeader inheader = (ImpulseHeader) inHeader;
-		header = new ImpulseHeader(inheader.id, inheader.startTime,
-				inheader.frameTime);
+		nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
+		frameSample = sampleRate / 1000 * timeFrame;
+		header = new ImpulseHeader(inHeader.id, inHeader.startTime,
+				inHeader.frameTime);
 		return header;
 	}
 
@@ -80,14 +86,12 @@ public class ImpulseStreamModule implements StreamModule {
 		if (!(inFrame instanceof RawAudioFrame))
 			throw new RuntimeException("Wrong frame type");
 
-		int timeFrame = 100; // ms
+
 		int index = 0;
-		int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
-		int frameSample = sampleRate / 1000 * timeFrame;
+
 		short[] peakMagnitudes = new short[frameSample];
 		int[] peakOffsets = new int[frameSample];
 		short[] frame = ((RawAudioFrame) inFrame).getAudioData();
-
 		double maxHeight = maxHeight(frame, 0, frameSample);
 		if (maxHeight > threshold) {
 			for (int i = 0; i < frameSample; i++) {
@@ -95,6 +99,7 @@ public class ImpulseStreamModule implements StreamModule {
 				if (value > threshold) {
 					peakMagnitudes[index] = frame[i];
 					peakOffsets[index] = sampleProcessed * nsPerSample;
+					//peakOffsets[index] = -2;
 					index++;
 				}
 				sampleProcessed++;
@@ -127,8 +132,8 @@ public class ImpulseStreamModule implements StreamModule {
 	}
 
 	private void adaptThreshold(double maxH) {
-			setThreshold(0.5 * maxH);
-			max = maxH;
+			//setThreshold(0.5 * maxH);
+			//max = maxH;
 	}
 
 	public double getThreshold() {
@@ -139,13 +144,14 @@ public class ImpulseStreamModule implements StreamModule {
 		threshold = thr;
 	}
 
-	public void close() {
-		max = 20;
-		threshold = max / 2;
-		setSampleProcessed(0);
-	}
-
 	public static void setSampleProcessed(int sample) {
 		sampleProcessed = sample;
 	}
+	
+	public void close() {
+		max = 0.00305;
+		threshold = max / 2;
+		setSampleProcessed(0);
+	}
+	
 }
