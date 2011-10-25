@@ -11,11 +11,12 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 public class ImpulseStreamModule implements StreamModule {
-	private double max = 20;
+	private double max = 1;
 	private int sampleRate = 16000;
 	private double threshold = max / 2; // threshold for amplitude
-	private static int sampleProcessed; // store the number of total samples that have
-								// been processed
+	private static int sampleProcessed; // store the number of total samples
+										// that have
+	// been processed
 	private ImpulseHeader header;
 
 	public ImpulseStreamModule() {
@@ -85,12 +86,12 @@ public class ImpulseStreamModule implements StreamModule {
 		int frameSample = sampleRate / 1000 * timeFrame;
 		short[] peakMagnitudes = new short[frameSample];
 		int[] peakOffsets = new int[frameSample];
-		byte[] frame = ((RawAudioFrame) inFrame).getAudioData();
+		short[] frame = ((RawAudioFrame) inFrame).getAudioData();
 
 		double maxHeight = maxHeight(frame, 0, frameSample);
 		if (maxHeight > threshold) {
 			for (int i = 0; i < frameSample; i++) {
-				double value = java.lang.Math.abs((double) frame[i]) / 65536.0;
+				double value = java.lang.Math.abs((double) frame[i]) / 65535.0;
 				if (value > threshold) {
 					peakMagnitudes[index] = frame[i];
 					peakOffsets[index] = sampleProcessed * nsPerSample;
@@ -108,26 +109,26 @@ public class ImpulseStreamModule implements StreamModule {
 		}
 	}
 
-	private double maxHeight(byte[] frame, int start_index, long frameSample) {
+	private double maxHeight(short[] frame, int start_index, long frameSample) {
 
 		double max = 0.0;
 		int i = 0;
 		while (i < frameSample) {
-			double value = java.lang.Math.abs((double) frame[start_index + i]) / 65536.0; // TODO
+			double value = java.lang.Math.abs((double) frame[start_index + i]) / 65535.0; // TODO
 			if (value > max) {
 				max = value;
 			}
 			i++;
 		}
-		adaptThreshold(max);
+		if (max > this.max) {
+			adaptThreshold(max);
+		}
 		return max;
 	}
 
 	private void adaptThreshold(double maxH) {
-		if (maxH > max) {
 			setThreshold(0.5 * maxH);
 			max = maxH;
-		}
 	}
 
 	public double getThreshold() {
