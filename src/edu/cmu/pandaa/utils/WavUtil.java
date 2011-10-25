@@ -23,7 +23,7 @@ public class WavUtil {
 	private final String subChunk2String 		= "data";
 	private final int 	DEFAULT_FORMAT 			= 1; //PCM
 	private final long 	DEFAULT_CHANNELS 		= 2; //STEREO
-	private final long 	DEFAULT_SAMPLING_RATE 	= 8000;
+	private final long 	DEFAULT_SAMPLING_RATE 	= 16000;
 	private final int 	DEFAULT_BITS_PER_SAMPLE = 16;
 	private final long 	DEFAULT_SUBCHUNK1_SIZE 	= 16; // For PCM
 	private final long 	DEFAULT_DATA_SIZE 		= 0;

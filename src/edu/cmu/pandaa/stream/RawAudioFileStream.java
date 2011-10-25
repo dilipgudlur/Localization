@@ -103,8 +103,10 @@ public class RawAudioFileStream implements FrameStream {
 
 	@Override
 	public StreamFrame recvFrame() throws Exception {
-		RawAudioFrame rawAudioFrame = rawAudioHeaderRef.makeFrame(wavFrameLength);
-		byte[] audioData = new byte[wavFrameLength];
+		
+		int frameLength = (int) (rawAudioHeaderRef.getSamplingRate() / 1000) * wavFrameLength;
+		RawAudioFrame rawAudioFrame = rawAudioHeaderRef.makeFrame(frameLength);
+		byte[] audioData = new byte[frameLength];
 		int bytesRead = dis.read(audioData);
 		for (int i = 0; i < audioData.length; i++) {
 			rawAudioFrame.audioData[i] = audioData[i];
