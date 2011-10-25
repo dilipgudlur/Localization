@@ -16,14 +16,14 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 public class FileStream implements FrameStream {
-  protected OutputStream os;
-  protected InputStream is;
+  private OutputStream os;
+  private InputStream is;
   private BufferedReader br;
   private PrintWriter pw;
-  private ObjectOutputStream oos;
-  private ObjectInputStream ois;
+  protected ObjectOutputStream oos;
+  protected ObjectInputStream ois;
   private int seqNum = 0;
-  private final String fileName;
+  protected final String fileName;
 
   public FileStream(String fileName) throws IOException {
     this.fileName = fileName;

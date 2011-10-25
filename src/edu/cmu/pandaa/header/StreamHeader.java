@@ -8,6 +8,12 @@ public class StreamHeader implements Serializable {
   public final int frameTime;  // duration of each frame, measured in ms
   private int nextSeq; // next sequence number to use by frame constructor
 
+  public StreamHeader(StreamHeader prototype) {
+    this.id = prototype.id;
+    this.startTime = prototype.startTime;
+    this.frameTime = prototype.frameTime;
+  }
+
   public StreamHeader(String id, long startTime, int frameTime) {
     this.id = id;
     this.startTime = startTime;

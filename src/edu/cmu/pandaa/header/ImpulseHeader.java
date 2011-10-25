@@ -4,7 +4,12 @@ import java.io.Serializable;
 
 
 public class ImpulseHeader extends StreamHeader implements Serializable {
-	
+  public int rollingWindow = 1;
+
+  public ImpulseHeader(StreamHeader src) {
+    super(src);
+  }
+
   public ImpulseHeader(String id, long startTime, int frameTime) {
     super(id, startTime, frameTime);
   }

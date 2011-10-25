@@ -2,5 +2,9 @@ bin/
 *.classpath
 *.project
 *~
+Localization.iml
+Localization.ipr
+Localization.iws
 gen/
+out/
 android-app/default.properties

@@ -2,9 +2,6 @@ package edu.cmu.pandaa.header;
 
 import java.io.Serializable;
 
-
-
-
 /* 
  * RawAudioFormat to capture the WAV file format
  * Summary of data fields in WAV file
@@ -33,28 +30,30 @@ import java.io.Serializable;
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
 
-	public long samplingRate;
+	long samplingRate;
 	long numChannels;
 	int audioFormat;
 	int bitsPerSample;
 	long subChunk2Size;
-	
-  public static final int DEAFULT_FRAMETIME = 100;
-  public static final int DEAFULT_FRAMERATE = -1;
+
+	public static final int DEFAULT_FRAMETIME = 100;
+	public static final int WAV_FILE_HEADER_LENGTH = 44;
 
   public RawAudioHeader(String id, long startTime, int frameTime) {
-    super(id, startTime,  frameTime);
+    super(id, startTime, frameTime);
+    // ideally fill in fields with some reasonable default -- this constructor is for simple testing
   }
 
-  public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat, long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
-		super(id, startTime, frameTime);
+	public RawAudioHeader(long startTime, int frameTime, int audioFormat, long numChannels,
+			long samplingRate, int bitsPerSample, long subChunk2Size) {
+		super("", startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
 		this.bitsPerSample = bitsPerSample;
 		this.subChunk2Size = subChunk2Size;
 	}
-	
+
 	public long getSamplingRate() {
 		return samplingRate;
 	}
@@ -75,19 +74,25 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		return subChunk2Size;
 	}
 
+	public String toString() {
+		return new String("Sampling rate: " + samplingRate + "\nChannels: " + numChannels
+				+ "\nAudio Format: " + audioFormat + "\nBits per sample: " + bitsPerSample
+				+ "\nData size: " + subChunk2Size);
+	}
+
 	public class RawAudioFrame extends StreamFrame implements Serializable {
-		public byte[] audioData;
+		public short[] audioData;
 
 		public RawAudioFrame(int frameLength) {
-			audioData = new byte[frameLength];
+			audioData = new short[frameLength];
 		}
 
-		public byte[] getAudioData() {
+		public short[] getAudioData() {
 			return audioData;
 		}
 	}
-	
+
 	public RawAudioFrame makeFrame(int frameLength) {
-	    return new RawAudioFrame(frameLength);
-	  }
+		return new RawAudioFrame(frameLength);
+	}
 }

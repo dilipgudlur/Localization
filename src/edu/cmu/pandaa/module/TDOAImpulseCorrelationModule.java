@@ -1,7 +1,7 @@
 package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.header.FeatureHeader;
-import edu.cmu.pandaa.header.FeatureHeader.FeatureFrame;
+import edu.cmu.pandaa.header.ImpulseHeader;
+import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
@@ -36,7 +36,7 @@ class TDOAImpulseCorrelationModule implements StreamModule {
   
   @Override
 public StreamHeader init(StreamHeader inHeader) {
-    if (!(inHeader instanceof FeatureHeader))
+    if (!(inHeader instanceof ImpulseHeader))
       throw new RuntimeException("Wrong header type");
 
     // TODO: would actually do work here to compute new header
@@ -46,7 +46,7 @@ public StreamHeader init(StreamHeader inHeader) {
   @Override
 public StreamFrame process(StreamFrame inFrame1) { // StreamFrame inFrame2
     StreamFrame inFrame2 = null;
-    if (!(inFrame1 instanceof FeatureFrame) || !(inFrame2 instanceof FeatureFrame))
+    if (!(inFrame1 instanceof ImpulseFrame) || !(inFrame2 instanceof ImpulseFrame))
       throw new RuntimeException("Wrong frame type");
 
     // TODO: Would actually do work here to compute new frame
