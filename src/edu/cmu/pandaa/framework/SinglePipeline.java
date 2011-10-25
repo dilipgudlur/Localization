@@ -5,6 +5,7 @@ import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.ConsolidateModule;
+import edu.cmu.pandaa.module.ImpulseStreamModule;
 import edu.cmu.pandaa.module.StreamModule;
 
 /**
