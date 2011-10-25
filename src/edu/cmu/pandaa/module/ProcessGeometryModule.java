@@ -15,19 +15,10 @@ class ProcessGeometryModule implements StreamModule{
 	FrameStream inGeometryStream, outGeometryStream;
 	GeometryHeader hOut;	
 
-  public ProcessGeometryModule(String[] args) throws Exception
+  public ProcessGeometryModule()
   {
-	  if (args.length == 0) {
-		  throw new RuntimeException("No arguments provided");
-	    } else {
-	      int count = 1;
-	      for (String file : args) {
-	        FrameStream in = new DummyStream(new GeometryHeader("dummy" + count++, System.currentTimeMillis(), frameTime));
-	        activateNewDevice(in);
-	      }
-	    }
-  }
-  
+	  
+  }  
   
   public void runModule(FrameStream inGeometryStream, FrameStream outGeometryStream) {
 	  try{
@@ -67,13 +58,11 @@ class ProcessGeometryModule implements StreamModule{
   public static void main(String[] args) throws Exception
   {
 	  //GeometryFileStream gIn = new GeometryFileStream(args[1]);
-	  //GeometryFileStream gOut = new GeometryFileStream(args[2]);
-	  // = new ProcessGeometryModule();
-	   
+	  //GeometryFileStream gOut = new GeometryFileStream(args[2]);	   
 	  
 	  try {
-		  ProcessGeometryModule pgm = new ProcessGeometryModule(args);
-		  pgm.runModule();
+		  ProcessGeometryModule pgm = new ProcessGeometryModule();
+		  //pgm.runModule(gIn,gOut);
 	    } catch (Exception e) {
 	      e.printStackTrace();
 	    }
