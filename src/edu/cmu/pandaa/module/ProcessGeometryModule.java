@@ -1,25 +1,35 @@
 package edu.cmu.pandaa.module;
 
+import edu.cmu.pandaa.stream.DummyStream;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class ProcessGeometryModule implements StreamModule, Runnable{
+class ProcessGeometryModule implements StreamModule{
 	FrameStream inGeometryStream, outGeometryStream;
 	GeometryHeader hOut;	
 
-  public ProcessGeometryModule(FrameStream inGeometryStream, FrameStream outGeometryStream)
+  public ProcessGeometryModule(String[] args) throws Exception
   {
-	  this.inGeometryStream = inGeometryStream;
-	  this.outGeometryStream = outGeometryStream;
+	  if (args.length == 0) {
+		  throw new RuntimeException("No arguments provided");
+	    } else {
+	      int count = 1;
+	      for (String file : args) {
+	        FrameStream in = new DummyStream(new GeometryHeader("dummy" + count++, System.currentTimeMillis(), frameTime));
+	        activateNewDevice(in);
+	      }
+	    }
   }
   
-  public void run() {
+  
+  public void runModule(FrameStream inGeometryStream, FrameStream outGeometryStream) {
 	  try{
 		  StreamHeader header = init(inGeometryStream.getHeader());
 		  outGeometryStream.setHeader(header);
@@ -56,12 +66,19 @@ class ProcessGeometryModule implements StreamModule, Runnable{
   
   public static void main(String[] args) throws Exception
   {
-	  GeometryFileStream gIn = new GeometryFileStream("gIn.txt");
-	  GeometryFileStream gOut = new GeometryFileStream("gOut.txt");;
-	  ProcessGeometryModule pgm = new ProcessGeometryModule(gIn,gOut);
-	  Thread th = new Thread(pgm);
-	  th.run();	  
-  }
+	  //GeometryFileStream gIn = new GeometryFileStream(args[1]);
+	  //GeometryFileStream gOut = new GeometryFileStream(args[2]);
+	  // = new ProcessGeometryModule();
+	   
+	  
+	  try {
+		  ProcessGeometryModule pgm = new ProcessGeometryModule(args);
+		  pgm.runModule();
+	    } catch (Exception e) {
+	      e.printStackTrace();
+	    }
+	  }
+  
   
   public void close() {
   }
