@@ -1,5 +1,7 @@
 package edu.cmu.pandaa.header;
 
+import sun.security.krb5.internal.SeqNumber;
+
 import java.io.Serializable;
 
 public class StreamHeader implements Serializable {
@@ -33,6 +35,10 @@ public class StreamHeader implements Serializable {
 
     public StreamHeader getHeader() {
       return StreamHeader.this;
+    }
+
+    public String toString() {
+      return id + "#" + seqNum;
     }
   }
 

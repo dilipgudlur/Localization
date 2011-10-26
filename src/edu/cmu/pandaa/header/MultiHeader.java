@@ -27,6 +27,14 @@ public class MultiHeader extends StreamHeader {
     hmap.put(header, hmap.size());
   }
 
+  public boolean contains(StreamHeader h) {
+    return hmap.containsKey(h);
+  }
+
+  public Set<StreamHeader> getHeaders() {
+    return hmap.keySet();
+  }
+
   public StreamHeader getOne() {
     return first;
   }
@@ -52,9 +60,5 @@ public class MultiHeader extends StreamHeader {
   @Override
   public MultiFrame makeFrame() {
     return new MultiFrame();
-  }
-
-  public boolean contains(StreamHeader h) {
-    return hmap.containsKey(h);
   }
 }
