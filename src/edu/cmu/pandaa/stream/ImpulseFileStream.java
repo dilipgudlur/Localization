@@ -42,7 +42,7 @@ public class ImpulseFileStream extends FileStream {
     for (int i = 0;i < frame.peakMagnitudes.length; i++) {
       msg += " " + frame.peakMagnitudes[i];
     }
-    msg += "\r\n";
+    msg += "\n";
     writeString(msg);
   }
 
