@@ -41,6 +41,9 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public synchronized StreamFrame process(StreamFrame inFrame) {
+    if (inFrame == null)
+        return null;
+
     frames[frameCnt % combine] = inFrame;
     frameCnt++;
     return (frameCnt >= combine) && ((frameCnt-combine) % rolling == 0) ? factory.makeFrame() : null;
