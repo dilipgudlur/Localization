@@ -86,8 +86,11 @@ public class ImpulseStreamModule implements StreamModule {
 		int index = 0;
 		short[] frame = ((RawAudioFrame) inFrame).getAudioData();
 		int peakNum = maxHeight(frame, 0, frame.length);
-		short[] peakMagnitudes = new short[peakNum];
-		int[] peakOffsets = new int[peakNum];
+		short[] peakMagnitudes = new short[1];
+		int[] peakOffsets = new int[1];
+    peakMagnitudes[0] = frame[0];
+    peakOffsets[0] = peakNum * nsPerSample;
+    /*
 		if (peakNum > 0) {
 			for (int i = 0; i < frame.length; i++) {
 				double value = java.lang.Math.abs((double) frame[i]) / 65535.0;
@@ -99,6 +102,7 @@ public class ImpulseStreamModule implements StreamModule {
 				}
 			}
 		}
+		*/
 		ImpulseFrame impulseFrame = header.new ImpulseFrame(peakOffsets,
 				peakMagnitudes);
 		return impulseFrame;

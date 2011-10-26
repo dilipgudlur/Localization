@@ -96,7 +96,7 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpLong);
 		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-		rawAudioHeaderRef = new RawAudioHeader(System.currentTimeMillis(), wavFrameLength,
+		rawAudioHeaderRef = new RawAudioHeader(fileName, System.currentTimeMillis(), wavFrameLength,
 				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return rawAudioHeaderRef;
 	}
@@ -171,7 +171,7 @@ public class RawAudioFileStream implements FrameStream {
 
 	public boolean saveInFrameFormat(WavUtil wavUtil) {
 		try {
-			RawAudioHeader rawAudioHeader = new RawAudioHeader(System.currentTimeMillis(),
+			RawAudioHeader rawAudioHeader = new RawAudioHeader("x", System.currentTimeMillis(),
 					RawAudioHeader.DEFAULT_FRAMETIME, wavUtil.getFormat(),
 					wavUtil.getNumChannels(), wavUtil.getSamplingRate(),
 					wavUtil.getBitsPerSample(), wavUtil.getDataSize());
