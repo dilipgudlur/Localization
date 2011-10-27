@@ -58,7 +58,7 @@ public class GeometryFileStream extends FileStream {
     return header.makeFrame(seqNum, geometry);
   }
 
-  /*public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
     String filename = "test.txt";
     String[] deviceIds = {"1a","2b","3c","4d"};
 
@@ -92,5 +92,5 @@ public class GeometryFileStream extends FileStream {
     if (frame1.seqNum != frame2.seqNum-2) {
       System.err.println("Sequence number mismatch!");
     }
-  }*/
+  }
 }
