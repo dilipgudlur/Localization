@@ -57,18 +57,25 @@ class ProcessGeometryModule implements StreamModule{
   
   public static void main(String[] args) throws Exception
   {
-	  //GeometryFileStream gIn = new GeometryFileStream(args[1]);
-	  //GeometryFileStream gOut = new GeometryFileStream(args[2]);	   
+	  	int arg = 0;
+	    String inArg = args[arg++];
+	    String outArg = args[arg++];
+	    if (args.length > arg || args.length < arg) {
+	      throw new IllegalArgumentException("Invalid number of arguments");
+	    }
+	    
+	    System.out.println("Consolidate " + inArg + " to " + outArg);
+	    GeometryFileStream gOut = new GeometryFileStream(outArg, true);
+	    GeometryFileStream gIn = new GeometryFileStream(inArg);
 	  
 	  try {
 		  ProcessGeometryModule pgm = new ProcessGeometryModule();
-		  //pgm.runModule(gIn,gOut);
+		  pgm.runModule(gIn,gOut);
 	    } catch (Exception e) {
 	      e.printStackTrace();
 	    }
 	  }
-  
-  
+    
   public void close() {
   }
 }
