@@ -96,8 +96,8 @@ public class ConsolidateModule implements StreamModule {
   public static void main(String[] args) throws Exception {
     int arg = 0;
     String[] opts = args[arg++].split("-");
-    String outName = args[arg++];
     String inName = args[arg++];
+    String outName = args[arg++];
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
