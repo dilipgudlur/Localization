@@ -12,7 +12,7 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
 class ProcessGeometryModule implements StreamModule{
-	FrameStream inGeometryStream, outGeometryStream;
+	//FrameStream inGeometryStream, outGeometryStream;
 	GeometryHeader hOut;	
 
   public ProcessGeometryModule()
@@ -20,19 +20,25 @@ class ProcessGeometryModule implements StreamModule{
 	  
   }  
   
-  public void runModule(FrameStream inGeometryStream, FrameStream outGeometryStream) {
+  public void runModule(FrameStream inGeometryStream, FrameStream outGeometryStream) throws Exception {
 	  try{
 		  StreamHeader header = init(inGeometryStream.getHeader());
 		  outGeometryStream.setHeader(header);
 		  StreamFrame frameIn,frameOut;
-		  while ((frameIn = inGeometryStream.recvFrame()) != null) {
+		  //while ((frameIn = inGeometryStream.recvFrame()) != null) {
+		  //}
+		  frameIn = inGeometryStream.recvFrame();
+		  if(frameIn != null){
 			  frameOut = process(frameIn);
-		      outGeometryStream.sendFrame(frameOut);
+			  outGeometryStream.sendFrame(frameOut);
 		  }
+		  else
+			  throw new Exception("No frame received");
 	  }catch(Exception e){
 		  e.printStackTrace();
 	  }
-	  close();
+	  outGeometryStream.close();
+	  //close();
   }
 
   public StreamHeader init(StreamHeader inHeader) {
