@@ -56,7 +56,6 @@ public class GeometryFileStream extends FileStream {
 
   public GeometryFrame recvFrame() throws Exception {
     nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
-	//InputStream is = new FileInputStream("/test/gIn_0.txt");
 	String line = readLine();
     int k =0;
     String[] parts = line.split(" ");

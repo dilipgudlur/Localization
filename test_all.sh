@@ -27,5 +27,5 @@ java $OPTS $PACKAGE.module.FeatureExtractTest sample_input-3.wav impulses-3.txt
 java $OPTS $PACKAGE.module.TDOAImpulseCorrelationModule impulses-1.txt impulses-2.txt tdoa-12.txt
 java $OPTS $PACKAGE.module.TDOAImpulseCorrelationModule impulses-1.txt impulses-3.txt tdoa-13.txt
 java $OPTS $PACKAGE.module.TDOAImpulseCorrelationModule impulses-2.txt impulses-3.txt tdoa-23.txt
-java $OPTS $PACKAGE.module.ProcessGeometryModule tdoa-12.txt tdoa-23.txt tdoa-13.txt geometry.txt
+java $OPTS $PACKAGE.module.ProcessGeometryModule geometryIn.txt geometryOut.txt
 
