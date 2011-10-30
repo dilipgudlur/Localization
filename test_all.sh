@@ -17,6 +17,7 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
+java -jar ../Localization.jar geometryIn.txt geometryOut.txt
 java $OPTS $PACKAGE.module.ConsolidateModule 1-1 impulses-1.txt consolidated-1.txt
 
 exit
