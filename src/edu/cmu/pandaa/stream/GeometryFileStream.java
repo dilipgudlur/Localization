@@ -21,29 +21,28 @@ public class GeometryFileStream extends FileStream {
   }
 
   public void setHeader(StreamHeader h) throws Exception {
-	
+
     GeometryHeader header = (GeometryHeader) h;
     writeString(header.deviceIds + " " + header.startTime + " " + header.frameTime);
-	  /*if (oos != null) {
-			throw new RuntimeException("setHeader called twice!");
-		}
-		oos = new ObjectOutputStream(os);
-		oos.writeObject(h);
-		oos.flush();*/
+    /*if (oos != null) {
+        throw new RuntimeException("setHeader called twice!");
+      }
+      oos = new ObjectOutputStream(os);
+      oos.writeObject(h);
+      oos.flush();*/
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
-    String msg = "" + frame.seqNum;
-      
+    nextFile();
+    writeString(frame.seqNum + " " + frame.geometry.length);
     for (int i = 0;i < frame.geometry.length; i++) {
-    	for (int j = 0;j < frame.geometry[i].length; j++) {
-    		msg += " " + frame.geometry[i][j];
-    	}
-    	writeString(msg); //writing each row 
-    	msg = "";
-    }    
+      String msg = "";
+      for (int j = 0;j < frame.geometry[i].length; j++) {
+        msg += " " + frame.geometry[i][j];
+      }
+      writeString(msg.trim()); //writing each row
+    }
   }
 
   public GeometryHeader getHeader() throws Exception {
@@ -55,20 +54,24 @@ public class GeometryFileStream extends FileStream {
   }
 
   public GeometryFrame recvFrame() throws Exception {
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
-	String line = readLine();
-    int k =0;
+    if (!nextFile())
+      return null;
+    String line = readLine();
     String[] parts = line.split(" ");
-    int size = (int) Math.sqrt(parts.length-1);
-    //int size = (parts.length-1);
     int seqNum = Integer.parseInt(parts[0]);
-    /*construct frame*/
+    int size = Integer.parseInt(parts[1]);
+
+    int k =0;
     double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
     for (int i = 0;i < size;i++) {
-    	k = i*(size-1) ;
-    	for (int j = 0;j < size;j++) {
-    		geometry[i][j] = Double.parseDouble(parts[ i + j + k + 1]);
-    	}    	    	
+      line = readLine();
+      parts = line.split(" ");
+      if (parts.length != size) {
+        throw new IllegalArgumentException("Currently only works with square matrix");
+      }
+      for (int j = 0;j < size;j++) {
+        geometry[i][j] = Double.parseDouble(parts[j]);
+      }
     }
     return header.makeFrame(seqNum, geometry);
   }
