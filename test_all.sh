@@ -18,6 +18,7 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
+java $OPTS $PACKAGE.stream.RawAudioFileStream mangled_audio.wav sample_input-1.wav
 java $OPTS $PACKAGE.module.ProcessGeometryModule geometryOut.txt geometryIn.txt
 java $OPTS $PACKAGE.module.ConsolidateModule 1-1 consolidated-1.txt impulses-1.txt 
 
