@@ -6,6 +6,7 @@ if [ ! -f $CLASSPATH ]; then
   exit
 fi
 
+CLASSPATH=$CLASSPATH:$PWD/lib/mdsj.jar
 echo CLASSPATH is $CLASSPATH
 OPTS="-classpath $CLASSPATH"
 PACKAGE=edu.cmu.pandaa
@@ -17,7 +18,7 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
-java -jar ../Localization.jar geometryIn.txt geometryOut.txt
+java $OPTS $PACKAGE.module.ProcessGeometryModule geometryIn.txt geometryOut.txt
 java $OPTS $PACKAGE.module.ConsolidateModule 1-1 impulses-1.txt consolidated-1.txt
 
 exit
