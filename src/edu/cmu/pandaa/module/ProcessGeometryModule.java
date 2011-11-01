@@ -65,7 +65,7 @@ class ProcessGeometryModule implements StreamModule{
       throw new IllegalArgumentException("Invalid number of arguments");
     }
 
-    System.out.println("Consolidate " + inArg + " to " + outArg);
+    System.out.println("Geometry: " + inArg + " to " + outArg);
     GeometryFileStream gOut = new GeometryFileStream(outArg, true);
     GeometryFileStream gIn = new GeometryFileStream(inArg);
 

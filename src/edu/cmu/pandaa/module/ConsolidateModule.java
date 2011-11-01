@@ -96,12 +96,12 @@ public class ConsolidateModule implements StreamModule {
   public static void main(String[] args) throws Exception {
     int arg = 0;
     String[] opts = args[arg++].split("-");
-    String inName = args[arg++];
     String outName = args[arg++];
+    String inName = args[arg++];
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
-    System.out.println("Consolidate " + inName + " to " + outName);
+    System.out.println("Consolidate: " + inName + " to " + outName);
     ImpulseFileStream out = new ImpulseFileStream(outName, true);
     ImpulseFileStream in = new ImpulseFileStream(inName);
     int combine = Integer.parseInt(opts[0]);
