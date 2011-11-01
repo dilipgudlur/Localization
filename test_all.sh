@@ -18,7 +18,7 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
-java $OPTS $PACKAGE.module.ProcessGeometryModule geometryIn.txt geometryOut.txt
+java $OPTS $PACKAGE.module.ProcessGeometryModule geometryOut.txt geometryIn.txt
 java $OPTS $PACKAGE.module.ConsolidateModule 1-1 impulses-1.txt consolidated-1.txt
 
 exit
