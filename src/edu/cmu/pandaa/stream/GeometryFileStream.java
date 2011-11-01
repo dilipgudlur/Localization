@@ -23,25 +23,25 @@ public class GeometryFileStream extends FileStream {
   public void setHeader(StreamHeader h) throws Exception {
 
     GeometryHeader header = (GeometryHeader) h;
-    writeString(header.deviceIds + " " + header.startTime + " " + header.frameTime);
-    /*if (oos != null) {
-        throw new RuntimeException("setHeader called twice!");
-      }
-      oos = new ObjectOutputStream(os);
-      oos.writeObject(h);
-      oos.flush();*/
+    String tempId="";
+    for(int i=0;i<header.deviceIds.length;i++){
+    	tempId += header.deviceIds[i];
+    	tempId+=",";
+    }
+    tempId = tempId.substring(0,tempId.length()-1);    	
+    writeString(tempId + " " + header.startTime + " " + header.frameTime);    
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
+    String msg = "";
     nextFile();
-    writeString(frame.seqNum + " " + frame.geometry.length);
-    for (int i = 0;i < frame.geometry.length; i++) {
-      String msg = "";
-      for (int j = 0;j < frame.geometry[i].length; j++) {
-        msg += " " + frame.geometry[i][j];
-      }
-      writeString(msg.trim()); //writing each row
+    int len = frame.geometry[0].length;
+    writeString(frame.seqNum + " " + frame.geometry[0].length);
+    for (int i = 0;i < len; i++) {      
+        msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";      
+        writeString(msg.trim()); //writing each row
+        msg="";
     }
   }
 

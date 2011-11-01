@@ -59,8 +59,8 @@ class ProcessGeometryModule implements StreamModule{
   public static void main(String[] args) throws Exception
   {
     int arg = 0;
-    String inArg = args[arg++];
     String outArg = args[arg++];
+    String inArg = args[arg++];
     if (args.length > arg || args.length < arg) {
       throw new IllegalArgumentException("Invalid number of arguments");
     }
