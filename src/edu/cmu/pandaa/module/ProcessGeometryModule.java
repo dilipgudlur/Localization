@@ -25,7 +25,6 @@ class ProcessGeometryModule implements StreamModule{
       outGeometryStream.setHeader(header);
       StreamFrame frameIn,frameOut;
       while ((frameIn = inGeometryStream.recvFrame()) != null) {
-        //if(frameIn != null){
         frameOut = process(frameIn);
         outGeometryStream.sendFrame(frameOut);
       }
