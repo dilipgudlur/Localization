@@ -8,7 +8,8 @@ fi
 
 CLASSPATH=$CLASSPATH:$PWD/lib/mdsj.jar
 echo CLASSPATH is $CLASSPATH
-OPTS="-classpath $CLASSPATH"
+OPTS="-classpath $CLASSPATH" #use with Linux
+#OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
 cd test/

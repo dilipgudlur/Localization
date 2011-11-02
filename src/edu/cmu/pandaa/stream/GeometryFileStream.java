@@ -39,21 +39,10 @@ public class GeometryFileStream extends FileStream {
     nextFile();
     int len = frame.geometry[0].length;
     writeString(frame.seqNum + " " + frame.geometry[0].length);
-    if(frame.geometry[0][0] < 0)
-    	flagX = true;
-    if(frame.geometry[1][0] < 0)
-    	flagY = true;
     for (int i = 0;i < len; i++) {
-    	if(flagX == true && flagY == false)
-    		msg = (-1) * frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
-    	else if(flagX == false && flagY == false)
-    		msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
-    	else if(flagX == true && flagY == true)
-    		msg = (-1) * frame.geometry[0][i] + " " + (-1) * frame.geometry[1][i] + " ";
-    	else if(flagX == false && flagY == true)
-    		msg = frame.geometry[0][i] + " " + (-1) * frame.geometry[1][i] + " ";
-        writeString(msg.trim()); //writing each row
-        msg="";
+    	msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
+    	writeString(msg.trim()); //writing each row
+    	msg="";
     }
   }
 

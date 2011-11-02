@@ -48,11 +48,26 @@ class ProcessGeometryModule implements StreamModule{
   public StreamFrame process(StreamFrame inFrame) {
     if (!(inFrame instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
-
+    double[][] tempGeometry;
     GeometryFrame gfIn = (GeometryFrame) inFrame ;
-    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry); //TODO:verify correctness of hOut
-    gfOut.geometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
+    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry);
+    tempGeometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
+    gfOut.geometry = adjustAxes(tempGeometry);    
     return gfOut ;
+  }
+  
+  public double[][] adjustAxes(double[][] tempGeometry)
+  {
+	  int len = tempGeometry[0].length;	  
+	  if(tempGeometry[0][0] < 0){ //x coordinate of 1st device is -ve
+		  for (int i = 0;i < len; i++)  //invert x coordinates of all devices
+			  tempGeometry[0][i] = -1 * tempGeometry[0][i];			  
+	  }
+	  if(tempGeometry[1][0] < 0){ //x coordinate of 1st device is -ve
+		  for (int i = 0;i < len; i++) //invert x coordinates of all devices
+			  tempGeometry[1][i] = -1 * tempGeometry[1][i];			  
+	  }
+	  return tempGeometry;
   }
 
   public static void main(String[] args) throws Exception
