@@ -90,6 +90,14 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		public short[] getAudioData() {
 			return audioData;
 		}
+		
+		public String toString() {
+			String result=" Length = " + audioData.length + " Data: ";
+			for(int i=0;i<100;i++) {
+				result += (((int)audioData[i] & 0xFFFF)) + " ";
+			}
+			return result;
+		}
 	}
 
 	public RawAudioFrame makeFrame(int frameLength) {

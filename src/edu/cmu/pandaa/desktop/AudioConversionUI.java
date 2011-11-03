@@ -29,12 +29,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 import edu.cmu.pandaa.utils.WavUtil;
 
 public class AudioConversionUI extends JPanel {
-	JButton convertWavToFrameButton, playWavAudioButton, playFrmAudioButton;
+	JButton convertWavToFrameButton, playWavAudioButton;
 	JButton captureAudioButton, stopAudioButton, saveAudioButton;
 	JButton openWavButton, saveAsButton;
 	JTextField wavFilePath, frameFilePath;
@@ -173,14 +174,14 @@ public class AudioConversionUI extends JPanel {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				fc.setFileFilter(new FileNameExtensionFilter("Frame file (.frm)", "frm"));
+				fc.setFileFilter(new FileNameExtensionFilter("Wav file (.wav)", "wav"));
 				int returnVal = fc.showSaveDialog(AudioConversionUI.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					String filePath = fc.getSelectedFile().getAbsolutePath();
 					int extensionIndex = filePath.lastIndexOf('.');
 					if (extensionIndex != -1)
 						filePath = filePath.substring(0, extensionIndex);
-					frameFilePath.setText(filePath + ".frm");
+					frameFilePath.setText(filePath + ".wav");
 				} else {
 					log.append("Save command cancelled by user.\n");
 				}
@@ -200,26 +201,27 @@ public class AudioConversionUI extends JPanel {
 				} else if (frameFilePath.getText().length() == 0) {
 					log.append("No output frame file specified.\n");
 				} else {
-					RawAudioFileStream rfs = null;
+					RawAudioFileStream rfsInput = null;
+					RawAudioFileStream rfsOutput = null;
+					RawAudioFrame rawFrame = null;
 					try {
-						rfs = new RawAudioFileStream(frameFilePath.getText(), true);
-						WavUtil wavData = WavUtil.readWavFile(wavFilePath.getText());
-						if (wavData != null) {
-							rfs.saveInFrameFormat(wavData);
-							log.append("Conversion completed.\n");
-						} else {
-							log.append("Error in reading wav file.\n");
+						rfsInput = new RawAudioFileStream(wavFilePath.getText());
+						rfsOutput = new RawAudioFileStream(frameFilePath.getText(),true);
+						rfsOutput.setHeader(rfsInput.getHeader());
+						while((rawFrame = (RawAudioFrame)rfsInput.recvFrame()) != null) {
+							rfsOutput.sendFrame(rawFrame);
 						}
 					} catch (IOException ex) {
 						ex.printStackTrace();
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					} finally {
-						if (rfs != null)
-							rfs.close();
+						if (rfsInput != null)
+							rfsInput.close();
+						if (rfsOutput != null)
+							rfsOutput.close();
 					}
-				}
-				
+				}				
 			}
 		});
 
@@ -278,37 +280,7 @@ public class AudioConversionUI extends JPanel {
 				}
 			}
 		});
-
-		playFrmAudioButton = new JButton("Play .frm file");
-		playFrmAudioButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				fc.setFileFilter(new FileNameExtensionFilter("FRAME file (.frm)", "frm"));
-				int returnVal = fc.showOpenDialog(AudioConversionUI.this);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					RawAudioFileStream rfs = null;
-					try {
-						rfs = new RawAudioFileStream(fc.getSelectedFile().getAbsolutePath());
-						WavUtil frmWavUtil = rfs.readFromFrameFormat();
-						playWavFile(frmWavUtil);
-					} catch (IOException ex) {
-						ex.printStackTrace();
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					} finally {
-						if (rfs != null)
-							rfs.close();
-					}
-				} else {
-					log.append("No .wav file selected for playing.\n");
-				}
-			}
-		});
-
 		playAudioPanel.add(playWavAudioButton);
-		playAudioPanel.add(playFrmAudioButton);
-
 	}
 
 	private void createAndShowGUI() {
@@ -338,7 +310,7 @@ public class AudioConversionUI extends JPanel {
 			// Get everything set up for capture
 			// audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
 			// 16000.0F, 16, 1, 2,
-			// 16000.0F, true);
+			// 16000.0F, true);io
 			// audioFormat = new AudioFormat(8000.0f, 16, 1, true, true);
 
 			DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
