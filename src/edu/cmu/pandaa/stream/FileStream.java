@@ -71,16 +71,21 @@ public class FileStream implements FrameStream {
     }
   }
 
-  protected void nextFile() throws IOException {
+  protected boolean nextFile() throws IOException {
     boolean isRead = is != null;
     close();
     int mark = fileName.lastIndexOf('.');
     String nextFile = fileName.substring(0,mark) + "_" + (seqNum++) + fileName.substring(mark);
+    is = null;
+    os = null;
+    if (isRead && !new File(nextFile).exists())
+      return false;
     if (isRead) {
       is = new FileInputStream(nextFile);
     } else {
       os = new FileOutputStream(nextFile);
     }
+    return true;
   }
 
   protected String readLine() throws IOException {

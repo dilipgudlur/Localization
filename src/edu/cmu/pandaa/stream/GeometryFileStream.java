@@ -1,5 +1,9 @@
 package edu.cmu.pandaa.stream;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.ObjectOutputStream;
+
 import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
@@ -17,21 +21,29 @@ public class GeometryFileStream extends FileStream {
   }
 
   public void setHeader(StreamHeader h) throws Exception {
+
     GeometryHeader header = (GeometryHeader) h;
-    writeString(header.deviceIds + " " + header.startTime + " " + header.frameTime);
+    String tempId="";
+    for(int i=0;i<header.deviceIds.length;i++){
+    	tempId += header.deviceIds[i];
+    	tempId+=",";
+    }
+    tempId = tempId.substring(0,tempId.length()-1);    	
+    writeString(tempId + " " + header.startTime + " " + header.frameTime);    
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
-    String msg = "" + frame.seqNum;
-      
-    for (int i = 0;i < frame.geometry.length; i++) {
-    	for (int j = 0;j < frame.geometry[i].length; j++) {
-    		msg += " " + frame.geometry[i][j];
-    	}
-    	writeString(msg); //writing each row 
-    }    
+    String msg = "";
+    boolean flagX=false, flagY=false;
+    nextFile();
+    int len = frame.geometry[0].length;
+    writeString(frame.seqNum + " " + frame.geometry[0].length);
+    for (int i = 0;i < len; i++) {
+    	msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
+    	writeString(msg.trim()); //writing each row
+    	msg="";
+    }
   }
 
   public GeometryHeader getHeader() throws Exception {
@@ -43,17 +55,24 @@ public class GeometryFileStream extends FileStream {
   }
 
   public GeometryFrame recvFrame() throws Exception {
-    nextFile();  // I wouldn't actually recommend this for ImpulseFileStream, but doing it as a demonstraiton
+    if (!nextFile())
+      return null;
     String line = readLine();
     String[] parts = line.split(" ");
-    int size = (parts.length-1)/2;
     int seqNum = Integer.parseInt(parts[0]);
-    /*construct frame*/
+    int size = Integer.parseInt(parts[1]);
+
+    int k =0;
     double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
     for (int i = 0;i < size;i++) {
-    	for (int j = 0;j < size;j++) {
-    		geometry[i][j] = Double.parseDouble(parts[i + j + 1]);
-    	}
+      line = readLine();
+      parts = line.split(" ");
+      if (parts.length != size) {
+        throw new IllegalArgumentException("Currently only works with square matrix");
+      }
+      for (int j = 0;j < size;j++) {
+        geometry[i][j] = Double.parseDouble(parts[j]);
+      }
     }
     return header.makeFrame(seqNum, geometry);
   }

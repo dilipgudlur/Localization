@@ -15,6 +15,9 @@ public class StreamHeader implements Serializable {
   }
 
   public StreamHeader(String id, long startTime, int frameTime) {
+    if (id == null || id.trim().equals("") || id.indexOf(" ") >= 0) {
+      throw new IllegalArgumentException("ID can not be null/empty");
+    }
     this.id = id;
     this.startTime = startTime;
     this.frameTime = frameTime;
@@ -33,6 +36,10 @@ public class StreamHeader implements Serializable {
 
     public StreamHeader getHeader() {
       return StreamHeader.this;
+    }
+
+    public String toString() {
+      return id + "#" + seqNum;
     }
   }
 

@@ -1,68 +1,96 @@
 package edu.cmu.pandaa.module;
 
+import edu.cmu.pandaa.stream.DummyStream;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class ProcessGeometryModule implements StreamModule, Runnable{
-	FrameStream inGeometryStream, outGeometryStream;
-	GeometryHeader hOut;	
+class ProcessGeometryModule implements StreamModule{
+  //FrameStream inGeometryStream, outGeometryStream;
+  GeometryHeader hOut;
 
-  public ProcessGeometryModule(FrameStream inGeometryStream, FrameStream outGeometryStream)
+  public ProcessGeometryModule()
   {
-	  this.inGeometryStream = inGeometryStream;
-	  this.outGeometryStream = outGeometryStream;
   }
-  
-  public void run() {
-	  try{
-		  StreamHeader header = init(inGeometryStream.getHeader());
-		  outGeometryStream.setHeader(header);
-		  StreamFrame frameIn,frameOut;
-		  while ((frameIn = inGeometryStream.recvFrame()) != null) {
-			  frameOut = process(frameIn);
-		      outGeometryStream.sendFrame(frameOut);
-		  }
-	  }catch(Exception e){
-		  e.printStackTrace();
-	  }
-	  close();
+
+  public void runModule(FrameStream inGeometryStream, FrameStream outGeometryStream) throws Exception {
+    try{
+      StreamHeader header = init(inGeometryStream.getHeader());
+      outGeometryStream.setHeader(header);
+      StreamFrame frameIn,frameOut;
+      while ((frameIn = inGeometryStream.recvFrame()) != null) {
+        frameOut = process(frameIn);
+        outGeometryStream.sendFrame(frameOut);
+      }
+    }catch(Exception e){
+      e.printStackTrace();
+    }
+    outGeometryStream.close();
+    //close();
   }
 
   public StreamHeader init(StreamHeader inHeader) {
     if (!(inHeader instanceof GeometryHeader))
       throw new RuntimeException("Wrong header type");
-    
+
     /*compute new header*/
     GeometryHeader hIn = (GeometryHeader)inHeader ;
-   	hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
+    hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
     return hOut;
   }
 
   public StreamFrame process(StreamFrame inFrame) {
     if (!(inFrame instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
-    
+    double[][] tempGeometry;
     GeometryFrame gfIn = (GeometryFrame) inFrame ;
-    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry); //TODO:verify correctness of hOut    
-    gfOut.geometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
-	return gfOut ;    
+    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry);
+    tempGeometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
+    gfOut.geometry = adjustAxes(tempGeometry);    
+    return gfOut ;
   }
   
+  public double[][] adjustAxes(double[][] tempGeometry)
+  {
+	  int len = tempGeometry[0].length;	  
+	  if(tempGeometry[0][0] < 0){ //x coordinate of 1st device is -ve
+		  for (int i = 0;i < len; i++)  //invert x coordinates of all devices
+			  tempGeometry[0][i] = -tempGeometry[0][i];
+	  }
+	  if(tempGeometry[1][0] < 0){ //x coordinate of 1st device is -ve
+		  for (int i = 0;i < len; i++) //invert x coordinates of all devices
+			  tempGeometry[1][i] = -tempGeometry[1][i];
+	  }
+	  return tempGeometry;
+  }
+
   public static void main(String[] args) throws Exception
   {
-	  GeometryFileStream gIn = new GeometryFileStream("gIn.txt");
-	  GeometryFileStream gOut = new GeometryFileStream("gOut.txt");;
-	  ProcessGeometryModule pgm = new ProcessGeometryModule(gIn,gOut);
-	  Thread th = new Thread(pgm);
-	  th.run();	  
+    int arg = 0;
+    String outArg = args[arg++];
+    String inArg = args[arg++];
+    if (args.length > arg || args.length < arg) {
+      throw new IllegalArgumentException("Invalid number of arguments");
+    }
+
+    System.out.println("Geometry: " + inArg + " to " + outArg);
+    GeometryFileStream gOut = new GeometryFileStream(outArg, true);
+    GeometryFileStream gIn = new GeometryFileStream(inArg);
+
+    try {
+      ProcessGeometryModule pgm = new ProcessGeometryModule();
+      pgm.runModule(gIn,gOut);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
-  
+
   public void close() {
   }
 }

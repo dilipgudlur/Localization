@@ -41,6 +41,9 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public synchronized StreamFrame process(StreamFrame inFrame) {
+    if (inFrame == null)
+        return null;
+
     frames[frameCnt % combine] = inFrame;
     frameCnt++;
     return (frameCnt >= combine) && ((frameCnt-combine) % rolling == 0) ? factory.makeFrame() : null;
@@ -98,7 +101,7 @@ public class ConsolidateModule implements StreamModule {
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
-    System.out.println("Consolidate " + inName + " to " + outName);
+    System.out.println("Consolidate: " + inName + " to " + outName);
     ImpulseFileStream out = new ImpulseFileStream(outName, true);
     ImpulseFileStream in = new ImpulseFileStream(inName);
     int combine = Integer.parseInt(opts[0]);

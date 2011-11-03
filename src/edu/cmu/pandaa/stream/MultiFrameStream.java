@@ -65,6 +65,9 @@ public class MultiFrameStream implements FrameStream {
     while ((dataCount < frames.size() || dataCount == 0) && isOpen) {
       wait();
     }
+    if (!isOpen) {
+      return null;
+    }
     MultiFrame frame = outHeader.makeFrame();
     for (StreamHeader in : frames.keySet()) {
       StreamFrame f = frames.get(in);

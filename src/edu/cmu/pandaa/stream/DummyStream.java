@@ -34,7 +34,7 @@ public class DummyStream implements FrameStream {
   // send a frame of data
   @Override
   public void sendFrame(StreamFrame m) throws Exception {
-    System.out.println("Frame out " + m.getHeader().id + "-" + m.seqNum);
+    System.out.println("Frame out " + m.toString());
   }
 
   // will block until there's a header (should be set first thing anyway)
