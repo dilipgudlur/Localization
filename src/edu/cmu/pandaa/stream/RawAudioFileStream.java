@@ -7,8 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 import edu.cmu.pandaa.header.RawAudioHeader;
@@ -16,7 +14,6 @@ import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.utils.DataConversionUtil;
-import edu.cmu.pandaa.utils.WavUtil;
 
 public class RawAudioFileStream implements FrameStream {
 
@@ -97,7 +94,7 @@ public class RawAudioFileStream implements FrameStream {
 
 		dis.read(tmpLong);
 		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
-		headerRef = new RawAudioHeader(System.currentTimeMillis(), wavFrameLength, wavFormat,
+		headerRef = new RawAudioHeader("Device1", System.currentTimeMillis(), wavFrameLength, wavFormat,
 				wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return headerRef;
 	}
