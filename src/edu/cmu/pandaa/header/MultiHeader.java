@@ -31,8 +31,8 @@ public class MultiHeader extends StreamHeader {
     return hmap.containsKey(h);
   }
 
-  public Set<StreamHeader> getHeaders() {
-    return hmap.keySet();
+  public StreamHeader[] getHeaders() {
+    return hmap.keySet().toArray(new StreamHeader[0]);
   }
 
   public StreamHeader getOne() {
@@ -55,6 +55,9 @@ public class MultiHeader extends StreamHeader {
       return hmap.keySet();
     }
 
+    public StreamFrame[] getFrames() {
+      return frames;
+    }
   }
 
   @Override
