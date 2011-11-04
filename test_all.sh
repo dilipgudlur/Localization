@@ -22,6 +22,7 @@ cd test/
 java $OPTS $PACKAGE.stream.RawAudioFileStream mangled_audio.wav sample_input-1.wav
 java $OPTS $PACKAGE.module.ProcessGeometryModule geometryOut.txt geometryIn.txt
 java $OPTS $PACKAGE.module.ConsolidateModule 1-1 consolidated-1.txt impulses-1.txt 
+java $OPTS $PACKAGE.module.TDOACorrelationModule distances.txt impulses-1.txt impulses-2.txt 
 
 exit
 

@@ -1,6 +1,7 @@
 package edu.cmu.pandaa.header;
 
 public class DistanceHeader extends StreamHeader {
+  public int rollingWindow;
   public String[] deviceIds; // the devices providing feature/impulse data for distance calculation
 
   public DistanceHeader(String id, long startTime, int frameTime, String[] ids) {

@@ -111,7 +111,7 @@ public class RawAudioFileStream implements FrameStream {
 			return null;
 		else {
 			rawAudioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioDataByte);
-			System.out.println(rawAudioFrame);
+			//System.out.println(rawAudioFrame);
 			return rawAudioFrame;
 		}
 	}
@@ -205,8 +205,8 @@ public class RawAudioFileStream implements FrameStream {
 		aOut.setHeader(aIn.getHeader());
 		RawAudioFrame frame;
 		while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
-			// frame.audioData[0] = Short.MIN_VALUE;
-			// frame.audioData[frame.audioData.length-1] = Short.MAX_VALUE;
+			frame.audioData[0] = Short.MIN_VALUE;
+			frame.audioData[frame.audioData.length-1] = Short.MAX_VALUE;
 			aOut.sendFrame(frame);
 		}
 		aOut.close();
