@@ -47,7 +47,7 @@ public class TDOACorrelationModule implements StreamModule {
     }
 
     // compute only for first peak in each frame for now
-    short[] peakDeltas = new short[] {(short) (((ImpulseFrame) frames[0]).peakOffsets[0] - ((ImpulseFrame) frames[1]).peakOffsets[0])};
+    double[] peakDeltas = new double[] {(double) (((ImpulseFrame) frames[0]).peakOffsets[0] - ((ImpulseFrame) frames[1]).peakOffsets[0])};
     double[] peakMagnitudes = new double[] {(((ImpulseFrame) frames[0]).peakMagnitudes[0] + ((ImpulseFrame) frames[1]).peakMagnitudes[0]) / 2};
 
     return header.makeFrame(peakDeltas, peakMagnitudes);

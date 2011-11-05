@@ -62,12 +62,12 @@ public class DistanceFileStream extends FileStream {
       return null;
     try {
       String[] parts = line.split(" ");
-      int size = (parts.length - 1)/2;
-      short[] peaks = new short[size];
       int seqNum = Integer.parseInt(parts[0]);
+      int size = (parts.length - 1)/2;
+      double[] peaks = new double[size];
       double[] mags = new double[size];
       for (int i = 0;i < size;i++) {
-        peaks[i] = Short.parseShort(parts[i + 1]);
+        peaks[i] = Double.parseDouble(parts[i + 1]);
       }
       for (int i = 0;i < size;i++) {
         mags[i] = Double.parseDouble(parts[i + size + 1]);
@@ -82,7 +82,7 @@ public class DistanceFileStream extends FileStream {
   public static void main(String[] args) throws Exception {
     String filename = "test.txt";
 
-    short[] data1 = { 1, 2, 3 };
+    double[] data1 = { 1, 2, 3 };
     double[] data2 = { 4, 5, 6 };
     DistanceFileStream foo = new DistanceFileStream(filename, true);
     String[] ids = { "a", "b" };
