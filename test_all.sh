@@ -24,5 +24,6 @@ java $OPTS $PACKAGE.stream.RawAudioFileStream mangled_audio.wav sample_input-1.w
 java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
 java $OPTS $PACKAGE.module.TDOACorrelationModule distances.txt impulses-1.txt impulses-2.txt 
 java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
+#java $OPTS $PACKAGE.module.MatrixConstruction ???
 java $OPTS $PACKAGE.module.ProcessGeometryModule geometryOut.txt geometryIn.txt
 
