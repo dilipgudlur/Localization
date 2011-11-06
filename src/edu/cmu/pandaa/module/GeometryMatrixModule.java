@@ -1,21 +1,18 @@
 package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.stream.DummyStream;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
-import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.header.GeometryHeader;
-import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class GeometryModule implements StreamModule{
+class GeometryMatrixModule implements StreamModule{
   //FrameStream inGeometryStream, outGeometryStream;
   GeometryHeader hOut;
 
-  public GeometryModule()
+  public GeometryMatrixModule()
   {
   }
 
@@ -84,7 +81,7 @@ class GeometryModule implements StreamModule{
     GeometryFileStream gIn = new GeometryFileStream(inArg);
 
     try {
-      GeometryModule pgm = new GeometryModule();
+      GeometryMatrixModule pgm = new GeometryMatrixModule();
       pgm.runModule(gIn,gOut);
     } catch (Exception e) {
       e.printStackTrace();

@@ -35,6 +35,14 @@ public class MultiHeader extends StreamHeader {
     return hmap.keySet().toArray(new StreamHeader[0]);
   }
 
+  public StreamHeader[] getHeaders(StreamHeader[] arrayType) {
+    return hmap.keySet().toArray(arrayType);
+  }
+
+  public int size() {
+    return hmap.size();
+  }
+
   public StreamHeader getOne() {
     return first;
   }

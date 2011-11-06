@@ -40,6 +40,8 @@ public class MultiFrameStream implements FrameStream {
   // send a frame of data
   @Override
   public synchronized void sendFrame(StreamFrame m) throws Exception {
+    if (m == null)
+      return;
     if (frames.put(m.getHeader(), m) == null) {
       dataCount++;
       if (dataCount == frames.size()) {
@@ -56,13 +58,17 @@ public class MultiFrameStream implements FrameStream {
     return outHeader;
   }
 
+  public boolean isReady() {
+    return (dataCount == frames.size() && dataCount > 0);
+  }
+
   // will block until there's a frame available
   @Override
   public synchronized MultiFrame recvFrame() throws Exception {
     if (outHeader == null) {
       return null;
     }
-    while ((dataCount < frames.size() || dataCount == 0) && isOpen) {
+    while (!isReady() && isOpen) {
       wait();
     }
     if (!isOpen) {

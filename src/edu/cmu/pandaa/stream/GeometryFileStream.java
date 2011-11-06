@@ -34,15 +34,15 @@ public class GeometryFileStream extends FileStream {
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    String msg = "";
     boolean flagX=false, flagY=false;
     nextFile();
     int len = frame.geometry[0].length;
     writeString(frame.seqNum + " " + frame.geometry[0].length);
     for (int i = 0;i < len; i++) {
-    	msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
-    	writeString(msg.trim()); //writing each row
-    	msg="";
+      String msg = "";
+      for (int j = 0;j < frame.geometry[0].length;j++)
+        msg += frame.geometry[0][i] + " ";
+      writeString(msg.trim()); //writing each row
     }
   }
 
