@@ -11,11 +11,11 @@ import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class ProcessGeometryModule implements StreamModule{
+class GeometryModule implements StreamModule{
   //FrameStream inGeometryStream, outGeometryStream;
   GeometryHeader hOut;
 
-  public ProcessGeometryModule()
+  public GeometryModule()
   {
   }
 
@@ -84,7 +84,7 @@ class ProcessGeometryModule implements StreamModule{
     GeometryFileStream gIn = new GeometryFileStream(inArg);
 
     try {
-      ProcessGeometryModule pgm = new ProcessGeometryModule();
+      GeometryModule pgm = new GeometryModule();
       pgm.runModule(gIn,gOut);
     } catch (Exception e) {
       e.printStackTrace();
