@@ -136,13 +136,14 @@ public class ImpulseStreamModule implements StreamModule {
 
 	}
 
+	/*
+	 * Check whether there are lower points around the sample.
+	 */
 	private boolean isPeak(short[] frame, int i) {
-		if (frame[i]>0 && frame[i]>frame[i-1] && frame[i]>frame[i+1])
-		{
+		if (frame[i] > 0 && frame[i] > frame[i - 1] && frame[i] > frame[i + 1]) {
 			return true;
 		}
-		if (frame[i]<0 && frame[i]<frame[i-1] && frame[i]<frame[i+1])
-		{
+		if (frame[i] < 0 && frame[i] < frame[i - 1] && frame[i] < frame[i + 1]) {
 			return true;
 		}
 		return false;
