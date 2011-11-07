@@ -1,10 +1,12 @@
 package edu.cmu.pandaa.module;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.cmu.pandaa.header.DistanceHeader;
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
+import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
+import edu.cmu.pandaa.header.DistanceHeader;
 import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
@@ -46,9 +48,11 @@ public class ConstructGeometryModule implements StreamModule {
 
   public String[] generateDeviceIds(DistanceHeader[] distanceHeaders)
   {
-    int argLen = distanceHeaders.length;
-    String[] tempDeviceidBuffer = new String[2*(argLen-1)];
-    for(int i=0;i<argLen-1;i++){
+    int D = (int) Math.sqrt(1-(4)*(1)*(-2*distanceHeaders.length)); //D = sqrt(b*b - 4ac)    
+    int numDevices = (D + 1)/2;
+    
+    String[] tempDeviceidBuffer = new String[2*(numDevices-1)];
+    for(int i=0;i<numDevices-1;i++){
       for(int j=0;j<2;j++) //j<2 coz each DistanceHeader has only 2 elements
         tempDeviceidBuffer[2*i+j] = distanceHeaders[i].deviceIds[j];
     }
@@ -63,6 +67,14 @@ public class ConstructGeometryModule implements StreamModule {
 
     return set.toArray(new String[0]);
   }
+  
+  /*calculates num of devices from the input number of files*/
+  /*public int getNumDevice()
+  {
+	  int D = (int) Math.sqrt(1-(4)*(-1)*(2*frames.length)); //D = sqrt(b*b - 4ac)
+	  int numDevices = (D - 1)/2;
+	  return numDevices;	  
+  }*/
 
   public StreamFrame process(StreamFrame inFrame) {
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
@@ -75,13 +87,31 @@ public class ConstructGeometryModule implements StreamModule {
           throw new IllegalArgumentException("Input multiframe should contain two elements");
         }*/
 
-    // compute only for first peak in each frame for now
-    /* short[] peakDeltas = new short[] {(short) (((ImpulseFrame) frames[0]).peakOffsets[0] - ((ImpulseFrame) frames[1]).peakOffsets[0])};
-        double[] peakMagnitudes = new double[] {(((ImpulseFrame) frames[0]).peakMagnitudes[0] + ((ImpulseFrame) frames[1]).peakMagnitudes[0]) / 2};
-
-        return header.makeFrame(peakDeltas, peakMagnitudes);*/
-    double[][] dummy = new double[1][1];
-    return gHeader.makeFrame(dummy);
+    DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
+    
+    int D = (int) Math.sqrt(1-(4)*(1)*(-2*frames.length)); //D = sqrt(b*b - 4ac)    
+    int numDevices = (D + 1)/2;
+    double[][] distanceMatrix = new double[numDevices][numDevices];
+    int count = 0,k;
+    for(int i=0;i<numDevices;i++){
+    	k=i*numDevices;
+    	for(int j=0;j<numDevices;j++){
+    		if(i == j){
+    			distanceMatrix[i][j] = 0.0;
+    			count++;
+    		}
+    		else
+    			distanceMatrix[i][j] = dfIn[i+j-1].peakDeltas[0];
+    	}
+    }
+    /*for(int i=0;i<distanceMatrix.length;i++){
+    	for(int j=0;j<distanceMatrix[0].length;j++){
+    		System.out.println("Output Matrix="+distanceMatrix[i][j]+" ");
+    	}
+    }*/
+            
+    GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
+    return gfOut;    
   }
 
   public void close() {
@@ -122,8 +152,9 @@ public class ConstructGeometryModule implements StreamModule {
     ofs.setHeader(ppd.init(mfs.getHeader()));
 
     try {
-      while (true) {
-        for(i=0;i<argLen-1;i++){
+    	
+    	while(true){
+    	  for(i=0;i<argLen-1;i++){
           mfs.sendFrame(ifs[i].recvFrame());
         }
         if (!mfs.isReady())
