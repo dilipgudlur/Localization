@@ -24,6 +24,6 @@ java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-1.txt sample_input-1.wav
 java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
 java $OPTS $PACKAGE.module.TDOACorrelationModule distances.txt impulses-1.txt impulses-2.txt 
 java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
-java $OPTS $PACKAGE.module.ConstructGeometryModule geometry123.txt distance12.txt distance13.txt distance23.txt
+java $OPTS $PACKAGE.module.ConstructGeometryModule distance1234.txt distance12.txt distance13.txt distance14.txt distance23.txt distance24.txt distance34.txt
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryIn.txt
 
