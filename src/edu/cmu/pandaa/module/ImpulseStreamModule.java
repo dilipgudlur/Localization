@@ -11,7 +11,7 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 public class ImpulseStreamModule implements StreamModule {
-	private double max = 1.80;
+	private double max = 0.20;
 	private int sampleRate = 16000;
 	int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 	private double threshold = max / 2; // threshold for amplitude
@@ -87,7 +87,7 @@ public class ImpulseStreamModule implements StreamModule {
 		int peakNum = maxHeight(frame, 0, frame.length);
 		short[] peakMagnitudes = new short[peakNum];
 		int[] peakOffsets = new int[peakNum];
-
+		System.out.print(peakNum + " ");
 		if (peakNum > 0) {
 			for (int i = 0; i < frame.length; i++) {
 				double value = java.lang.Math.abs((double) frame[i]) / 32768.0;
@@ -113,25 +113,26 @@ public class ImpulseStreamModule implements StreamModule {
 	}
 
 	private int maxHeight(short[] frame, int start_index, long frameSample) {
-
+		threshold = 0.1;
 		double max = 0.0;
-		int i = 0;
-		int peakNum = 0;
-		while (i < frameSample) {
-			double value = java.lang.Math.abs((double) frame[start_index + i]) / 32768.0;
+		int peakNum;
+		while (true) {
+			int i = 0;
+			peakNum = 0;
+			while (i < frameSample) {
+				double value = java.lang.Math.abs((double) frame[start_index
+						+ i]) / 32768.0;
 
-			if (value >= threshold && isPeak(frame, start_index + i)) {
-				peakNum++;
+				if (value >= threshold && isPeak(frame, start_index + i)) {
+					peakNum++;
+				}
+				i++;
 			}
-			if (value > max) {
-				max = value;
-			}
-			i++;
+			if (peakNum <= 10)
+				break;
+			else
+				setThreshold(threshold * 1.05);
 		}
-		if (max > this.max) {
-			// adaptThreshold(max);
-		}
-
 		return peakNum;
 
 	}
@@ -140,12 +141,33 @@ public class ImpulseStreamModule implements StreamModule {
 	 * Check whether there are lower points around the sample.
 	 */
 	private boolean isPeak(short[] frame, int i) {
-		if (frame[i] > 0 && frame[i] > frame[i - 1] && frame[i] > frame[i + 1]) {
-			return true;
+		if (i == frame.length - 1) {
+			if (frame[i] > 0 && frame[i] > frame[i - 1]) {
+				return true;
+			}
+			if (frame[i] < 0 && frame[i] < frame[i - 1]) {
+				return true;
+			}
+			return false;
+		} else if (i == 0) {
+			if (frame[i] > 0 && frame[i] > frame[i + 1]) {
+				return true;
+			}
+			if (frame[i] < 0 && frame[i] < frame[i + 1]) {
+				return true;
+			}
+			return false;
+		} else {
+			if (frame[i] > 0 && frame[i] > frame[i - 1]
+					&& frame[i] > frame[i + 1]) {
+				return true;
+			}
+			if (frame[i] < 0 && frame[i] < frame[i - 1]
+					&& frame[i] < frame[i + 1]) {
+				return true;
+			}
 		}
-		if (frame[i] < 0 && frame[i] < frame[i - 1] && frame[i] < frame[i + 1]) {
-			return true;
-		}
+
 		return false;
 	}
 
@@ -163,7 +185,7 @@ public class ImpulseStreamModule implements StreamModule {
 	}
 
 	public void close() {
-		max = 1.80;
+		max = 0.2;
 		threshold = max / 2;
 	}
 
