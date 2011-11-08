@@ -68,14 +68,6 @@ public class ConstructGeometryModule implements StreamModule {
     return set.toArray(new String[0]);
   }
   
-  /*calculates num of devices from the input number of files*/
-  /*public int getNumDevice()
-  {
-	  int D = (int) Math.sqrt(1-(4)*(-1)*(2*frames.length)); //D = sqrt(b*b - 4ac)
-	  int numDevices = (D - 1)/2;
-	  return numDevices;	  
-  }*/
-
   public StreamFrame process(StreamFrame inFrame) {
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     for(int i=0;i<frames.length;i++){
@@ -92,24 +84,18 @@ public class ConstructGeometryModule implements StreamModule {
     int D = (int) Math.sqrt(1-(4)*(1)*(-2*frames.length)); //D = sqrt(b*b - 4ac)    
     int numDevices = (D + 1)/2;
     double[][] distanceMatrix = new double[numDevices][numDevices];
-    int count = 0,k;
+    int count = 0;
     for(int i=0;i<numDevices;i++){
-    	k=i*numDevices;
     	for(int j=0;j<numDevices;j++){
     		if(i == j){
     			distanceMatrix[i][j] = 0.0;
-    			count++;
     		}
+    		else if(j < i)
+    			distanceMatrix[i][j] = -1 * distanceMatrix[j][i];
     		else
-    			distanceMatrix[i][j] = dfIn[i+j-1].peakDeltas[0];
+    			distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
     	}
-    }
-    /*for(int i=0;i<distanceMatrix.length;i++){
-    	for(int j=0;j<distanceMatrix[0].length;j++){
-    		System.out.println("Output Matrix="+distanceMatrix[i][j]+" ");
-    	}
-    }*/
-            
+    }            
     GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
     return gfOut;    
   }
@@ -153,14 +139,14 @@ public class ConstructGeometryModule implements StreamModule {
 
     try {
     	
-    	while(true){
+    	//while(true){
     	  for(i=0;i<argLen-1;i++){
           mfs.sendFrame(ifs[i].recvFrame());
         }
-        if (!mfs.isReady())
-          break;
+        //if (!mfs.isReady())
+         // break;
         ofs.sendFrame(ppd.process(mfs.recvFrame()));
-      }
+      //}
     } catch (Exception e) {
       e.printStackTrace();
     }

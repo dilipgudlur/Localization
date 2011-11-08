@@ -55,16 +55,25 @@ class GeometryMatrixModule implements StreamModule{
   
   public double[][] adjustAxes(double[][] tempGeometry)
   {
-	  int len = tempGeometry[0].length;	  
+	  int rows = tempGeometry.length;
+	  int cols = tempGeometry[0].length;	
+	  double[][] tempGeometry2 = new double[cols][rows];
+	  
 	  if(tempGeometry[0][0] < 0){ //x coordinate of 1st device is -ve
-		  for (int i = 0;i < len; i++)  //invert x coordinates of all devices
+		  for (int i = 0;i < cols; i++)  //invert x coordinates of all devices
 			  tempGeometry[0][i] = -tempGeometry[0][i];
 	  }
 	  if(tempGeometry[1][0] < 0){ //x coordinate of 1st device is -ve
-		  for (int i = 0;i < len; i++) //invert x coordinates of all devices
+		  for (int i = 0;i < cols; i++) //invert x coordinates of all devices
 			  tempGeometry[1][i] = -tempGeometry[1][i];
 	  }
-	  return tempGeometry;
+	  
+	  for(int i=0;i<rows;i++){
+		  for(int j=0;j<cols;j++){
+			 tempGeometry2[j][i] = tempGeometry[i][j];
+		  }
+	  }
+	  return tempGeometry2;
   }
 
   public static void main(String[] args) throws Exception

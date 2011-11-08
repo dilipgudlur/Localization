@@ -34,10 +34,9 @@ public class GeometryFileStream extends FileStream {
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    boolean flagX=false, flagY=false;
     nextFile();
     int len = frame.geometry.length;
-    writeString(frame.seqNum + " " + frame.geometry.length + " " + frame.geometry[0].length);
+    writeString(frame.seqNum + " " + frame.geometry.length);
     for (int i = 0;i < len; i++) {
       String msg = "";
       for (int j = 0;j < frame.geometry[i].length;j++)
@@ -61,14 +60,14 @@ public class GeometryFileStream extends FileStream {
     String[] parts = line.split(" ");
     int seqNum = Integer.parseInt(parts[0]);
     int w = Integer.parseInt(parts[1]);
-    int h = Integer.parseInt(parts[2]);
+    //int h = Integer.parseInt(parts[2]);
 
     int k =0;
-    double[][] geometry = new double[w][h]; //initialize rows, cols using 'size'
+    double[][] geometry = new double[w][w]; //initialize rows, cols using 'size'
     for (int i = 0;i < w;i++) {
       line = readLine();
       parts = line.split(" ");
-      for (int j = 0;j < h;j++) {
+      for (int j = 0;j < w;j++) {
         geometry[i][j] = Double.parseDouble(parts[j]);
       }
     }
