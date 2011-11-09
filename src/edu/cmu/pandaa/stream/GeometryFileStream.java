@@ -35,11 +35,12 @@ public class GeometryFileStream extends FileStream {
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
     nextFile();
-    int len = frame.geometry.length;
-    writeString(frame.seqNum + " " + frame.geometry.length);
-    for (int i = 0;i < len; i++) {
+    int rows = frame.geometry.length;
+    int cols = frame.geometry[0].length;
+    writeString(frame.seqNum + " " + frame.geometry.length + " " + frame.geometry[0].length);
+    for (int i = 0;i < rows; i++) {
       String msg = "";
-      for (int j = 0;j < frame.geometry[i].length;j++)
+      for (int j = 0; j < cols; j++)
         msg += frame.geometry[i][j] + " ";
       writeString(msg.trim()); //writing each row
     }
@@ -60,14 +61,13 @@ public class GeometryFileStream extends FileStream {
     String[] parts = line.split(" ");
     int seqNum = Integer.parseInt(parts[0]);
     int w = Integer.parseInt(parts[1]);
-    //int h = Integer.parseInt(parts[2]);
-
-    int k =0;
-    double[][] geometry = new double[w][w]; //initialize rows, cols using 'size'
+    int h = Integer.parseInt(parts[2]);
+    
+    double[][] geometry = new double[w][h]; //initialize rows, cols using 'size'
     for (int i = 0;i < w;i++) {
       line = readLine();
       parts = line.split(" ");
-      for (int j = 0;j < w;j++) {
+      for (int j = 0; j < h; j++) {
         geometry[i][j] = Double.parseDouble(parts[j]);
       }
     }

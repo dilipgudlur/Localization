@@ -39,7 +39,6 @@ public class ConstructGeometryModule implements StreamModule {
       if(distanceHeaders[0].frameTime != distanceHeaders[j].frameTime)
         throw new IllegalArgumentException("Frame duration must be equal for all input frames");
     }
-
     /*generate unique device id array*/
     String[] deviceIds = generateDeviceIds(distanceHeaders);
     setNumDevices(deviceIds.length);
@@ -62,8 +61,8 @@ public class ConstructGeometryModule implements StreamModule {
     int rows = distanceHeaders.length;
     int cols = distanceHeaders[0].deviceIds.length;
 	Set<String> set = new HashSet<String>();
-    for(int i=0; i < rows; i++){
-    	for(int j=0;j< cols;j++){
+    for(int i = 0; i < rows; i++){
+    	for(int j = 0; j < cols; j++){
     		if(set.contains(distanceHeaders[i].deviceIds[j]));
     		else
     			set.add(distanceHeaders[i].deviceIds[j]);
@@ -73,8 +72,9 @@ public class ConstructGeometryModule implements StreamModule {
   }
   
   public StreamFrame process(StreamFrame inFrame) {
-    StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
-    for(int i=0;i<frames.length;i++){
+    int numDevices = getNumDevices();
+	StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
+    for(int i = 0; i < frames.length; i++){
       if (!(frames[i] instanceof DistanceFrame)) {
         throw new IllegalArgumentException("Input multiframe should contain DistanceFrames");
       }
@@ -86,8 +86,8 @@ public class ConstructGeometryModule implements StreamModule {
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
-    for(int i=0;i<numDevices;i++){
-    	for(int j=0;j<numDevices;j++){
+    for(int i = 0; i < numDevices; i++){
+    	for(int j = 0; j < numDevices; j++){
     		if(i == j){
     			distanceMatrix[i][j] = 0.0;
     		}
@@ -109,27 +109,27 @@ public class ConstructGeometryModule implements StreamModule {
     int argLen = args.length;
     String[] inArg = new String[argLen-1];
     String outArg = args[i];
-    for(i=0;i<argLen-1;i++){
+    for(i = 0; i < argLen - 1; i++){
       inArg[i] = args[i+1];
     }
     if (i != argLen-1)
       throw new IllegalArgumentException("Invalid number of arguments");
 
     System.out.print("Combine "+(argLen - 1)+" pairwise distances: ");
-    for(i=0;i<argLen-1;i++){
+    for(i = 0; i < argLen - 1; i++){
       System.out.print((i > 0 ? ", " : "") + inArg[i]);
     }
     System.out.println(" to "+outArg);
 
     FileStream[] ifs = new DistanceFileStream[argLen-1];
 
-    for(i=0;i<argLen-1;i++){
+    for(i = 0; i < argLen - 1; i++){
       ifs[i] = new DistanceFileStream(inArg[i]);
     }
 
     MultiFrameStream mfs = new MultiFrameStream("tdoa123");
 
-    for(i=0;i<argLen-1;i++){
+    for(i = 0; i < argLen - 1; i++){
       mfs.setHeader(ifs[i].getHeader());
     }
 
@@ -141,7 +141,7 @@ public class ConstructGeometryModule implements StreamModule {
     try {
     	
     	//while(true){
-    	  for(i=0;i<argLen-1;i++){
+    	  for(i = 0; i < argLen - 1; i++){
           mfs.sendFrame(ifs[i].recvFrame());
         }
         //if (!mfs.isReady())
