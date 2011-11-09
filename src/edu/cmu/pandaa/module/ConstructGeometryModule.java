@@ -21,6 +21,7 @@ import edu.cmu.pandaa.stream.MultiFrameStream;
 public class ConstructGeometryModule implements StreamModule {
   GeometryHeader gHeader;
   DistanceHeader[] distanceHeaders;
+  int numDevices;
 
   public ConstructGeometryModule()
   {
@@ -41,30 +42,33 @@ public class ConstructGeometryModule implements StreamModule {
 
     /*generate unique device id array*/
     String[] deviceIds = generateDeviceIds(distanceHeaders);
-
+    setNumDevices(deviceIds.length);
     gHeader = new GeometryHeader(deviceIds, distanceHeaders[0].startTime, distanceHeaders[0].frameTime);
     return gHeader;
+  }
+  
+  public void setNumDevices(int num)
+  {
+	  this.numDevices = num; 
+  }
+  
+  public int getNumDevices()
+  {
+	  return numDevices;
   }
 
   public String[] generateDeviceIds(DistanceHeader[] distanceHeaders)
   {
-    int D = (int) Math.sqrt(1-(4)*(1)*(-2*distanceHeaders.length)); //D = sqrt(b*b - 4ac)    
-    int numDevices = (D + 1)/2;
-    
-    String[] tempDeviceidBuffer = new String[2*(numDevices-1)];
-    for(int i=0;i<numDevices-1;i++){
-      for(int j=0;j<2;j++) //j<2 coz each DistanceHeader has only 2 elements
-        tempDeviceidBuffer[2*i+j] = distanceHeaders[i].deviceIds[j];
+    int rows = distanceHeaders.length;
+    int cols = distanceHeaders[0].deviceIds.length;
+	Set<String> set = new HashSet<String>();
+    for(int i=0; i < rows; i++){
+    	for(int j=0;j< cols;j++){
+    		if(set.contains(distanceHeaders[i].deviceIds[j]));
+    		else
+    			set.add(distanceHeaders[i].deviceIds[j]);
+        }
     }
-
-    Set<String> set = new HashSet<String>();
-    for(int i=0; i < tempDeviceidBuffer.length; i++){
-      if(set.contains(tempDeviceidBuffer[i])){
-      } else {
-        set.add(tempDeviceidBuffer[i]);
-      }
-    }
-
     return set.toArray(new String[0]);
   }
   
@@ -80,9 +84,6 @@ public class ConstructGeometryModule implements StreamModule {
         }*/
 
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
-    
-    int D = (int) Math.sqrt(1-(4)*(1)*(-2*frames.length)); //D = sqrt(b*b - 4ac)    
-    int numDevices = (D + 1)/2;
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
     for(int i=0;i<numDevices;i++){
@@ -91,7 +92,7 @@ public class ConstructGeometryModule implements StreamModule {
     			distanceMatrix[i][j] = 0.0;
     		}
     		else if(j < i)
-    			distanceMatrix[i][j] = -1 * distanceMatrix[j][i];
+    			distanceMatrix[i][j] = distanceMatrix[j][i];
     		else
     			distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
     	}
