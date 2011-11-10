@@ -19,11 +19,17 @@ cd test/
 # java ... (options) output_file input_file(s)
 #
 
-java $OPTS $PACKAGE.stream.RawAudioFileStream mangled_audio.wav sample_input-1.wav
-java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-1.txt sample_input-1.wav 
-java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
-java $OPTS $PACKAGE.module.TDOACorrelationModule distances.txt impulses-1.txt impulses-2.txt 
-java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
-java $OPTS $PACKAGE.module.ConstructGeometryModule geometry1234.txt distance12.txt distance13.txt distance14.txt distance23.txt distance24.txt distance34.txt
-java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryIn.txt
+java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-1.wav triangle_clap-01.wav
+java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-2.wav triangle_clap-02.wav
+java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-3.wav triangle_clap-03.wav
+java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-1.txt triangle_clap-01.wav
+java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-2.txt triangle_clap-02.wav
+java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-3.txt triangle_clap-03.wav
+java $OPTS $PACKAGE.module.TDOACorrelationModule distance12.txt impulses-1.txt impulses-2.txt 
+java $OPTS $PACKAGE.module.TDOACorrelationModule distance13.txt impulses-1.txt impulses-3.txt 
+java $OPTS $PACKAGE.module.TDOACorrelationModule distance23.txt impulses-2.txt impulses-3.txt 
+java $OPTS $PACKAGE.module.ConstructGeometryModule geometry123.txt distance12.txt distance13.txt distance23.txt
+java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometry123.txt
+#java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
+#java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
 
