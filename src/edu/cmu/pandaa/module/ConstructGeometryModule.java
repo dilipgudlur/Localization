@@ -71,7 +71,7 @@ public class ConstructGeometryModule implements StreamModule {
     return set.toArray(new String[0]);
   }
   
-  public StreamFrame process(StreamFrame inFrame) {
+  public StreamFrame process(StreamFrame inFrame){
     int numDevices = getNumDevices();
 	StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     for(int i = 0; i < frames.length; i++){
@@ -86,6 +86,7 @@ public class ConstructGeometryModule implements StreamModule {
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
+    
     for(int i = 0; i < numDevices; i++){
     	for(int j = 0; j < numDevices; j++){
     		if(i == j){
@@ -93,8 +94,11 @@ public class ConstructGeometryModule implements StreamModule {
     		}
     		else if(j < i)
     			distanceMatrix[i][j] = distanceMatrix[j][i];
-    		else
-    			distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
+    		else{
+    			try{
+    				distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
+    			}catch(Exception e){}
+    		}    			
     	}
     }            
     GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
@@ -138,16 +142,20 @@ public class ConstructGeometryModule implements StreamModule {
     ConstructGeometryModule ppd = new ConstructGeometryModule();
     ofs.setHeader(ppd.init(mfs.getHeader()));
 
-    try {
-    	
-    	//while(true){
-    	  for(i = 0; i < argLen - 1; i++){
+    try {    	
+    	while(true){
+    	  for(i=0; i < argLen - 1; i++){
           mfs.sendFrame(ifs[i].recvFrame());
         }
-        //if (!mfs.isReady())
-         // break;
-        ofs.sendFrame(ppd.process(mfs.recvFrame()));
-      //}
+        if (!mfs.isReady())
+          break;
+        
+        StreamFrame frameOut = ppd.process(mfs.recvFrame());
+        if(frameOut != null)
+        	ofs.sendFrame(frameOut);
+        else
+        	break;
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
