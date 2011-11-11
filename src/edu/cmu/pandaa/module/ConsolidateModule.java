@@ -2,12 +2,15 @@ package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.header.DistanceHeader;
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
+import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 
 /**
@@ -18,16 +21,18 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
  */
 
 public class ConsolidateModule implements StreamModule {
-  final int combine, rolling;
+  final int combine, rolling, weight;
   final StreamFrame[] frames;
   StreamHeader header;
   Factory factory;
   int frameCnt;
   FileStream out, in;
+  char consolidateType;
 
   public ConsolidateModule(int combine, int rolling) {
     this.combine = combine;
     this.rolling = rolling;
+    this.weight = 1;
     if (combine < 1 || rolling < 1) {
       throw new IllegalArgumentException("Arguments both need to be >0");
     }
@@ -38,15 +43,24 @@ public class ConsolidateModule implements StreamModule {
     String nid = inHeader.id + "." + combine + "-" + rolling;
     int frameTime = inHeader.frameTime * rolling;
     long startTime = inHeader.startTime;
-    if (inHeader instanceof ImpulseHeader) {
-      header = new ImpulseHeader(nid, startTime, frameTime * rolling, rolling);
-      factory = new impulseFactory();
-    } else if (inHeader instanceof DistanceHeader) {
-      DistanceHeader dHeader = (DistanceHeader) inHeader;
-      header = new DistanceHeader(nid, startTime, frameTime * rolling, rolling, dHeader.deviceIds);
-      factory = new distanceFactory();
-    } else {
-      throw new IllegalArgumentException("Don't know how to consolidate " + inHeader.getClass().getSimpleName());
+
+    switch (consolidateType) {
+      case 'i':
+        header = new ImpulseHeader(nid, startTime, frameTime * rolling, rolling);
+        factory = new impulseFactory();
+        break;
+      case 'd':
+        DistanceHeader dHeader = (DistanceHeader) inHeader;
+        header = new DistanceHeader(nid, startTime, frameTime * rolling, rolling, dHeader.deviceIds);
+        factory = new distanceFactory();
+        break;
+      case 'm':
+        GeometryHeader gHeader = (GeometryHeader) inHeader;
+        header = new GeometryHeader(nid, startTime, frameTime * rolling, gHeader.rows, gHeader.cols);
+        factory = new geometryFactory((GeometryHeader) header);
+        break;
+      default:
+        throw new IllegalArgumentException("Don't know how to consolidate " + inHeader.getClass().getSimpleName());
     }
     return header;
   }
@@ -93,8 +107,43 @@ public class ConsolidateModule implements StreamModule {
     }
   }
 
-  class impulseFactory implements Factory {
+  class geometryFactory implements Factory {
+    double[][] geometry;
+    int rows, cols;
+
+    public geometryFactory(GeometryHeader gHeader) {
+      rows = gHeader.rows;
+      cols = gHeader.cols;
+      geometry = new double[rows][cols];
+      for (int i = 0;i < rows; i++)
+        for (int j = 0; j < cols; j++) {
+          geometry[i][j] = Double.NaN;
+        }
+    }
+
     public StreamFrame makeFrame() {
+      for (int f = 0; f < combine; f++) {
+        GeometryFrame frame = (GeometryFrame) getFrame(f);
+        if (frame == null)
+          break;
+
+        double[][] input = frame.geometry;
+        for (int i = 0;i < rows; i++)
+          for (int j = 0; j < cols; j++)
+            if (Double.isNaN(geometry[i][j]))
+              geometry[i][j] = input[i][j];
+            else if (!Double.isNaN(input[i][j]))
+              geometry[i][j] = (geometry[i][j]*weight + input[i][j])/( weight + 1);
+            else
+              geometry[i][j] = geometry[i][j]; // NOP placeholder
+
+      }
+      return ((GeometryHeader) header).makeFrame(geometry);
+    }
+  }
+
+class impulseFactory implements Factory {
+  public StreamFrame makeFrame() {
       int size = 0;
       for (int i = 0; i < combine; i++) {
         ImpulseFrame frame = (ImpulseFrame) getFrame(i);
@@ -135,7 +184,8 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public void open_streams(String type, String outName, String inName) throws Exception {
-    switch(type.charAt(0)) {
+    consolidateType = type.charAt(0);
+    switch(consolidateType) {
       case 'd':
         out = new DistanceFileStream(outName, true);
         in = new DistanceFileStream(inName);
@@ -143,6 +193,10 @@ public class ConsolidateModule implements StreamModule {
       case 'i':
         out = new ImpulseFileStream(outName, true);
         in = new ImpulseFileStream(inName);
+        break;
+      case 'm':
+        out = new GeometryFileStream(outName, true);
+        in = new GeometryFileStream(inName);
         break;
       default:
         throw new IllegalArgumentException("Consolidate type not recognized: " + type);

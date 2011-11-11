@@ -13,6 +13,13 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     this.cols = cols;
   }
 
+  public GeometryHeader(String id, long startTime, int frameTime, int rows, int cols) {
+    super(id, startTime, frameTime);
+    this.deviceIds = getIds(id);
+    this.rows = rows;
+    this.cols = cols;
+  }
+
   private static String makeId(String[] DeviceIds) {
     StringBuilder ids = new StringBuilder();
     for (int i=0; i<DeviceIds.length;i++) {
@@ -20,6 +27,10 @@ public class GeometryHeader extends StreamHeader implements Serializable {
       ids.append(DeviceIds[i]);
     }
     return ids.substring(1); // return a single string(pseudo-master ID)
+  }
+
+  private static String[] getIds(String id) {
+    return id.split(",");
   }
 
   public class GeometryFrame extends StreamFrame implements Serializable {

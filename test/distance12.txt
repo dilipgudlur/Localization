@@ -1,4 +1,4 @@
-tdoa 0 100 1 triangle_clap-02,triangle_clap-01
+tdoa 0 100 1 triangle_clap-01,triangle_clap-02
 0
 1
 2

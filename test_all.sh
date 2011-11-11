@@ -28,8 +28,9 @@ java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-3.txt triangle_clap-03.w
 java $OPTS $PACKAGE.module.TDOACorrelationModule distance12.txt impulses-1.txt impulses-2.txt 
 java $OPTS $PACKAGE.module.TDOACorrelationModule distance13.txt impulses-1.txt impulses-3.txt 
 java $OPTS $PACKAGE.module.TDOACorrelationModule distance23.txt impulses-2.txt impulses-3.txt 
-java $OPTS $PACKAGE.module.ConstructGeometryModule geometry123.txt distance12.txt distance13.txt distance23.txt
-java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometry123.txt
+java $OPTS $PACKAGE.module.DistanceMatrixModule geometry123.txt distance12.txt distance13.txt distance23.txt
+java $OPTS $PACKAGE.module.ConsolidateModule m 1-1 geometryAll.txt geometry123.txt
+java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
 #java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
 #java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
 

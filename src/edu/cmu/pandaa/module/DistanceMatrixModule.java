@@ -18,12 +18,12 @@ import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.stream.MultiFrameStream;
 
 
-public class ConstructGeometryModule implements StreamModule {
+public class DistanceMatrixModule implements StreamModule {
   GeometryHeader gHeader;
   DistanceHeader[] distanceHeaders;
   int numDevices;
 
-  public ConstructGeometryModule()
+  public DistanceMatrixModule()
   {
   }
 
@@ -122,7 +122,7 @@ public class ConstructGeometryModule implements StreamModule {
     if (i != argLen-1)
       throw new IllegalArgumentException("Invalid number of arguments");
 
-    System.out.print("ConstructGeometry: " + outArg);
+    System.out.print("DistanceMatrix: " + outArg);
     for(i = 0; i < argLen - 1; i++) {
       System.out.print(" " + inArg[i]);
     }
@@ -142,7 +142,7 @@ public class ConstructGeometryModule implements StreamModule {
 
     FileStream ofs = new GeometryFileStream(outArg, true);
 
-    ConstructGeometryModule ppd = new ConstructGeometryModule();
+    DistanceMatrixModule ppd = new DistanceMatrixModule();
     ofs.setHeader(ppd.init(mfs.getHeader()));
 
     try {
