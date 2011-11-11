@@ -9,9 +9,11 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
+import java.lang.Math;
 
 public class ImpulseStreamModule implements StreamModule {
-	private double max = 0.20;
+	private double max = 0.2;
+	private double std = 0.0;
 	private int sampleRate = 16000;
 	int nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
 	private double threshold = max / 2; // threshold for amplitude
@@ -87,11 +89,12 @@ public class ImpulseStreamModule implements StreamModule {
 		int peakNum = maxHeight(frame, 0, frame.length);
 		short[] peakMagnitudes = new short[peakNum];
 		int[] peakOffsets = new int[peakNum];
-		System.out.print(peakNum + " ");
 		if (peakNum > 0) {
 			for (int i = 0; i < frame.length; i++) {
 				double value = java.lang.Math.abs((double) frame[i]) / 32768.0;
-				if (value > threshold && isPeak(frame, i)) {
+
+				if (index < peakNum && value > threshold && isPeak(frame, i)) {
+
 					peakMagnitudes[index] = frame[i];
 					peakOffsets[index] = sampleToTimeOffset(i);
 					index++;
@@ -116,25 +119,64 @@ public class ImpulseStreamModule implements StreamModule {
 		threshold = 0.1;
 		double max = 0.0;
 		int peakNum;
+		boolean flag = false;
 		while (true) {
 			int i = 0;
 			peakNum = 0;
 			while (i < frameSample) {
 				double value = java.lang.Math.abs((double) frame[start_index
 						+ i]) / 32768.0;
-
-				if (value >= threshold && isPeak(frame, start_index + i)) {
+				if (value > max)
+					max = value;
+				if (value >= threshold && isPeak(frame, start_index + i)
+				// TODO: && std(frame, start_index + i)
+				) {
 					peakNum++;
+					flag = true;
 				}
 				i++;
+			}
+			if (flag == true && peakNum == 0) {
+				threshold = threshold / 1.001;
+				peakNum = 10;
+				break;
 			}
 			if (peakNum <= 10)
 				break;
 			else
-				setThreshold(threshold * 1.05);
+				setThreshold(threshold * 1.001);
 		}
 		return peakNum;
 
+	}
+
+	private boolean std(short[] frame, int i) {
+		if (i > 1 && i < frame.length - 1) {
+			if (computeStd(frame, i, 5) > std)
+				return true;
+			else
+				return false;
+		}
+		return false;
+	}
+
+	private double computeStd(short[] frame, int i, int len) {
+		/* compute mean */
+		double sum = 0;
+		int j = 0;
+		for (j = i - 2; j < i + 3; j++) {
+			sum += frame[j];
+		}
+		double mean = sum / len;
+
+		/* compute std */
+		j = 0;
+		sum = 0;
+		for (j = i - 2; j < i + 3; j++) {
+			sum += java.lang.Math.exp(frame[j] - mean);
+		}
+		double std = java.lang.Math.sqrt(sum / len);
+		return std;
 	}
 
 	/*
