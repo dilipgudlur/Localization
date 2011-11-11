@@ -46,9 +46,23 @@ public class TDOACorrelationModule implements StreamModule {
       throw new IllegalArgumentException("Input multiframe should contain two elements");
     }
 
-    // compute only for first peak in each frame for now
-    double[] peakDeltas = new double[] {(double) (((ImpulseFrame) frames[0]).peakOffsets[0] - ((ImpulseFrame) frames[1]).peakOffsets[0])};
-    double[] peakMagnitudes = new double[] {(((ImpulseFrame) frames[0]).peakMagnitudes[0] + ((ImpulseFrame) frames[1]).peakMagnitudes[0]) / 2};
+    /* Run through all the peaks that presumably occur at both devices.
+     * Right now, we're assuming that impulses reach devices in the same 
+     * order, within the same frame, and within less than 58ms (speed of
+     * sound over 20m, a generous room size). Tweaking needed.
+     */    
+    int sharedPeakCount = (((ImpulseFrame) frames[0]).peakOffsets.length < ((ImpulseFrame) frames[1]).peakOffsets.length) 
+        ? ((ImpulseFrame) frames[0]).peakOffsets.length 
+        : ((ImpulseFrame) frames[1]).peakOffsets.length;
+    
+    double[] peakDeltas = new double[sharedPeakCount];
+    double[] peakMagnitudes = new double[sharedPeakCount];
+    for (int i = 0; i < sharedPeakCount; i++) {
+      // subtract peak offsets
+      peakDeltas[i] = ((ImpulseFrame) frames[0]).peakOffsets[i] - ((ImpulseFrame) frames[1]).peakOffsets[i];
+      // average peak magnitudes
+      peakMagnitudes[i] = (((ImpulseFrame) frames[0]).peakMagnitudes[i] + ((ImpulseFrame) frames[1]).peakMagnitudes[i]) / 2;
+    }
 
     return header.makeFrame(peakDeltas, peakMagnitudes);
   }
