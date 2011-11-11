@@ -27,6 +27,10 @@ public class RawAudioFileStream implements FrameStream {
 	private long numSamplesWritten = 0;
 	private final int BITS_PER_BYTE = 8;
 
+	private final short MONO = 1;
+	private final short STEREO = 2;
+	private final int PCM_FORMAT = 1;
+
 	public RawAudioFileStream(String fileName) throws IOException {
 		this.fileName = fileName;
 		is = new FileInputStream(fileName);
@@ -74,6 +78,9 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpInt);
 		wavFormat = DataConversionUtil.byteArrayToInt(tmpInt);
 
+		if (wavFormat != PCM_FORMAT)
+			throw new RuntimeException("Format not supported for conversion");
+
 		dis.read(tmpInt);
 		wavChannels = DataConversionUtil.byteArrayToInt(tmpInt);
 
@@ -94,9 +101,23 @@ public class RawAudioFileStream implements FrameStream {
 
 		dis.read(tmpLong);
 		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
-		headerRef = new RawAudioHeader("Device1", System.currentTimeMillis(), wavFrameLength, wavFormat,
-				wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
+
+		headerRef = new RawAudioHeader(getDeviceID(), System.currentTimeMillis(), wavFrameLength,
+				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return headerRef;
+	}
+
+	private String getDeviceID() {
+		int startIndex = 0, endIndex;
+		startIndex = fileName.lastIndexOf("\\");
+		endIndex = fileName.lastIndexOf(".");
+		if (startIndex == -1) {
+			startIndex = 0;
+		}
+		if (endIndex == -1) {
+			endIndex = fileName.length();
+		}
+		return fileName.substring(startIndex + 1, endIndex);
 	}
 
 	@Override
@@ -105,13 +126,20 @@ public class RawAudioFileStream implements FrameStream {
 		int frameLength = (int) (headerRef.getSamplingRate() / 1000) * wavFrameLength;
 		RawAudioFrame rawAudioFrame = headerRef.makeFrame(frameLength);
 		int numBytesInSample = headerRef.getBitsPerSample() / BITS_PER_BYTE;
-		byte[] audioDataByte = new byte[frameLength * numBytesInSample];
-		int bytesRead = dis.read(audioDataByte);
+		byte[] audioDataBytes = new byte[(int) (frameLength * numBytesInSample * headerRef
+				.getNumChannels())];
+		int bytesRead = dis.read(audioDataBytes);
 		if (bytesRead <= 0)
 			return null;
 		else {
-			rawAudioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioDataByte);
-			System.out.println(rawAudioFrame);
+			short[] audioDataShort = DataConversionUtil.byteArrayToShortArray(audioDataBytes);
+			if (headerRef.getNumChannels() == STEREO) {
+				short[] monoAudioData = new short[audioDataShort.length / 2];
+				for (int i = 0, j = 0; i < audioDataShort.length; i += 2, j++)
+					monoAudioData[j] = (short) ((audioDataShort[i] + audioDataShort[i + 1]) / 2);
+				audioDataShort = monoAudioData;
+			}
+			rawAudioFrame.audioData = audioDataShort;
 			return rawAudioFrame;
 		}
 	}
@@ -130,10 +158,12 @@ public class RawAudioFileStream implements FrameStream {
 		}
 		dos = new DataOutputStream(new FileOutputStream(fileName));
 
-		long chunkSize = 36 + headerRef.getSubChunk2Size();
-		long byteRate = (headerRef.getSamplingRate() * headerRef.getNumChannels() * headerRef
-				.getBitsPerSample()) / 8;
-		int blockAlign = (int) (headerRef.getNumChannels() * headerRef.getBitsPerSample()) / 8;
+		long dataSize = headerRef.getSubChunk2Size();
+		if (headerRef.getNumChannels() == STEREO)
+			dataSize = headerRef.getSubChunk2Size() / 2;
+		long chunkSize = 36 + dataSize;
+		long byteRate = (headerRef.getSamplingRate() * MONO * headerRef.getBitsPerSample()) / 8;
+		int blockAlign = (int) (MONO * headerRef.getBitsPerSample()) / 8;
 		long subChunk1Size = DEFAULT_SUBCHUNK1_SIZE;
 
 		dos.writeBytes(riffString);
@@ -142,13 +172,13 @@ public class RawAudioFileStream implements FrameStream {
 		dos.writeBytes(subChunk1String);
 		dos.write(DataConversionUtil.intToByteArray((int) subChunk1Size), 0, 4);
 		dos.write(DataConversionUtil.shortToByteArray((short) headerRef.getAudioFormat()), 0, 2);
-		dos.write(DataConversionUtil.shortToByteArray((short) headerRef.getNumChannels()), 0, 2);
+		dos.write(DataConversionUtil.shortToByteArray(MONO), 0, 2);
 		dos.write(DataConversionUtil.intToByteArray((int) headerRef.getSamplingRate()), 0, 4);
 		dos.write(DataConversionUtil.intToByteArray((int) byteRate), 0, 4);
 		dos.write(DataConversionUtil.shortToByteArray((short) blockAlign), 0, 2);
 		dos.write(DataConversionUtil.shortToByteArray((short) headerRef.getBitsPerSample()), 0, 2);
 		dos.writeBytes(subChunk2String);
-		dos.write(DataConversionUtil.intToByteArray((int) headerRef.getSubChunk2Size()), 0, 4);
+		dos.write(DataConversionUtil.intToByteArray((int) dataSize), 0, 4);
 		dos.flush();
 		numSamplesWritten = 0;
 	}
@@ -205,8 +235,6 @@ public class RawAudioFileStream implements FrameStream {
 		aOut.setHeader(aIn.getHeader());
 		RawAudioFrame frame;
 		while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
-			// frame.audioData[0] = Short.MIN_VALUE;
-			// frame.audioData[frame.audioData.length-1] = Short.MAX_VALUE;
 			aOut.sendFrame(frame);
 		}
 		aOut.close();

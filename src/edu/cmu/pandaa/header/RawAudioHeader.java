@@ -2,6 +2,8 @@ package edu.cmu.pandaa.header;
 
 import java.io.Serializable;
 
+import edu.cmu.pandaa.utils.DataConversionUtil;
+
 /* 
  * RawAudioFormat to capture the WAV file format
  * Summary of data fields in WAV file
@@ -34,24 +36,25 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	long numChannels;
 	int audioFormat;
 	int bitsPerSample;
-	long subChunk2Size;
+	long dataSize;
 
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
 
-  public RawAudioHeader(String id, long startTime, int frameTime) {
-    super(id, startTime, frameTime);
-    // ideally fill in fields with some reasonable default -- this constructor is for simple testing
-  }
+	public RawAudioHeader(String id, long startTime, int frameTime) {
+		super(id, startTime, frameTime);
+		// ideally fill in fields with some reasonable default -- this constructor
+		// is for simple testing
+	}
 
-	public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat, long numChannels,
-			long samplingRate, int bitsPerSample, long subChunk2Size) {
+	public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
+			long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
 		super(id, startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
 		this.bitsPerSample = bitsPerSample;
-		this.subChunk2Size = subChunk2Size;
+		this.dataSize = subChunk2Size;
 	}
 
 	public long getSamplingRate() {
@@ -71,13 +74,13 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	}
 
 	public long getSubChunk2Size() {
-		return subChunk2Size;
+		return dataSize;
 	}
 
 	public String toString() {
-		return new String("Sampling rate: " + samplingRate + "\nChannels: " + numChannels
-				+ "\nAudio Format: " + audioFormat + "\nBits per sample: " + bitsPerSample
-				+ "\nData size: " + subChunk2Size);
+		return new String("Device ID: " + id + "\nSampling rate: " + samplingRate + "\nChannels: "
+				+ numChannels + "\nAudio Format: " + audioFormat + "\nBits per sample: " + bitsPerSample
+				+ "\nData size: " + dataSize);
 	}
 
 	public class RawAudioFrame extends StreamFrame implements Serializable {
@@ -90,21 +93,21 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		public short[] getAudioData() {
 			return audioData;
 		}
-		
+
 		public String toString() {
-			String result=" Length = " + audioData.length + " Data: ";
-			for(int i=0;i<100;i++) {
-				result += (((int)audioData[i] & 0xFFFF)) + " ";
+			String result = " Length = " + audioData.length + " Data: ";
+			for (int i = 0; i < 100; i++) {
+				result += DataConversionUtil.shortToUnsignedShortVal(audioData[i]) + " ";
 			}
 			return result;
 		}
 	}
 
-  public RawAudioFrame makeFrame(int frameLength) {
-    return new RawAudioFrame(frameLength);
-  }
+	public RawAudioFrame makeFrame(int frameLength) {
+		return new RawAudioFrame(frameLength);
+	}
 
-  public RawAudioFrame makeFrame() {
-    return new RawAudioFrame((int ) (frameTime * samplingRate / 1000));
-  }
+	public RawAudioFrame makeFrame() {
+		return new RawAudioFrame((int) (frameTime * samplingRate / 1000));
+	}
 }

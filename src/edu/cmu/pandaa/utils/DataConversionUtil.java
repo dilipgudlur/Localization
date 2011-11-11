@@ -71,4 +71,8 @@ public class DataConversionUtil {
 		}
 		return longBytes;
 	}
+	
+	public static int shortToUnsignedShortVal(short val) {
+	     return ((int)val & 0xFFFF) ;
+	}
 }
