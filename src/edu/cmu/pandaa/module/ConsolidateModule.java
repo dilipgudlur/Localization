@@ -142,8 +142,8 @@ public class ConsolidateModule implements StreamModule {
     }
   }
 
-class impulseFactory implements Factory {
-  public StreamFrame makeFrame() {
+  class impulseFactory implements Factory {
+    public StreamFrame makeFrame() {
       int size = 0;
       for (int i = 0; i < combine; i++) {
         ImpulseFrame frame = (ImpulseFrame) getFrame(i);
@@ -212,7 +212,7 @@ class impulseFactory implements Factory {
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
-    System.out.println("Consolidate " + type + ": " + inName + " to " + outName);
+    System.out.println("Consolidate " + type + ": " + outName + " " + inName);
     int combine = Integer.parseInt(opts[0]);
     int rolling = Integer.parseInt(opts[1]);
     ConsolidateModule consolidate = new ConsolidateModule(combine, rolling);
