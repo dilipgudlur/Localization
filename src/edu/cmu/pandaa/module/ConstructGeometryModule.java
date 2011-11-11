@@ -87,20 +87,22 @@ public class ConstructGeometryModule implements StreamModule {
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
     
-    for(int i = 0; i < numDevices; i++){
+    for(int i = 0; i < numDevices; i++){    	
     	for(int j = 0; j < numDevices; j++){
-    		if(i == j){
-    			distanceMatrix[i][j] = 0.0;
-    		}
+	   		if(i == j)
+    			distanceMatrix[i][j] = 0.0; //distance of device with itself
     		else if(j < i)
-    			distanceMatrix[i][j] = distanceMatrix[j][i];
+    			distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
     		else{
-    			try{
-    				distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
-    			}catch(Exception e){}
-    		}    			
-    	}
-    }            
+    			if(dfIn[count].peakDeltas.length != 0)
+	    			distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
+	    		else{
+	    			distanceMatrix[i][j] = -1; //no peaks 
+	    			count++;
+	    		}
+	    	}
+    	}    	
+    }        
     GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
     return gfOut;    
   }
