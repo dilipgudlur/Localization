@@ -11,7 +11,12 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
   }
 
   public ImpulseHeader(String id, long startTime, int frameTime) {
+    this(id, startTime, frameTime, 1);
+  }
+
+  public ImpulseHeader(String id, long startTime, int frameTime, int rolling) {
     super(id, startTime, frameTime);
+    rollingWindow = rolling;
   }
 
   public class ImpulseFrame extends StreamFrame implements Serializable {

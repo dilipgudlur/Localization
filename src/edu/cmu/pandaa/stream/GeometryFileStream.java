@@ -34,15 +34,15 @@ public class GeometryFileStream extends FileStream {
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    String msg = "";
-    boolean flagX=false, flagY=false;
     nextFile();
-    int len = frame.geometry[0].length;
-    writeString(frame.seqNum + " " + frame.geometry[0].length);
-    for (int i = 0;i < len; i++) {
-    	msg = frame.geometry[0][i] + " " + frame.geometry[1][i] + " ";
-    	writeString(msg.trim()); //writing each row
-    	msg="";
+    int rows = frame.geometry.length;
+    int cols = frame.geometry[0].length;
+    writeString(frame.seqNum + " " + frame.geometry.length + " " + frame.geometry[0].length);
+    for (int i = 0;i < rows; i++) {
+      String msg = "";
+      for (int j = 0; j < cols; j++)
+        msg += frame.geometry[i][j] + " ";
+      writeString(msg.trim()); //writing each row
     }
   }
 
@@ -60,17 +60,14 @@ public class GeometryFileStream extends FileStream {
     String line = readLine();
     String[] parts = line.split(" ");
     int seqNum = Integer.parseInt(parts[0]);
-    int size = Integer.parseInt(parts[1]);
-
-    int k =0;
-    double[][] geometry = new double[size][size]; //initialize rows, cols using 'size'
-    for (int i = 0;i < size;i++) {
+    int w = Integer.parseInt(parts[1]);
+    int h = Integer.parseInt(parts[2]);
+    
+    double[][] geometry = new double[w][h]; //initialize rows, cols using 'size'
+    for (int i = 0;i < w;i++) {
       line = readLine();
       parts = line.split(" ");
-      if (parts.length != size) {
-        throw new IllegalArgumentException("Currently only works with square matrix");
-      }
-      for (int j = 0;j < size;j++) {
+      for (int j = 0; j < h; j++) {
         geometry[i][j] = Double.parseDouble(parts[j]);
       }
     }

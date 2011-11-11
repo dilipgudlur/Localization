@@ -4,6 +4,7 @@ import edu.cmu.pandaa.header.*;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.DummyModule;
 import edu.cmu.pandaa.module.StreamModule;
+import edu.cmu.pandaa.module.TDOACorrelationModule;
 
 /**
  * Created by IntelliJ IDEA.
@@ -18,10 +19,10 @@ public class DualPipeline implements StreamModule {
   final int frameTime = 100;
 
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
-  StreamModule tdoa = new DummyModule(new DistanceHeader("dummyDistance", now, frameTime));
+  StreamModule tdoa = new TDOACorrelationModule();
 
   /* Then we consolidate bunches of impulsdummyIdse frames into larger consolidated frames for processing */
-  StreamModule smooth = new DummyModule(new DistanceHeader("smoother", now, frameTime));
+  StreamModule smooth = new DummyModule(new DistanceHeader("smoother", now, frameTime, new String[] {"1", "2"}));
 
   @Override
   public StreamHeader init(StreamHeader inHeader) {
@@ -29,7 +30,7 @@ public class DualPipeline implements StreamModule {
     if (!(multiHeader.getOne() instanceof ImpulseHeader)) {
        throw new IllegalArgumentException("Dual pipe multiheader should contain ImpulseHeaders");
     }
-    if (multiHeader.getHeaders().size() != 2) {
+    if (multiHeader.getHeaders().length != 2) {
       throw new IllegalArgumentException("Dual pipe multiheader should contain two elements");
     }
 

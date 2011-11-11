@@ -1,9 +1,13 @@
 package edu.cmu.pandaa.module;
 
+import edu.cmu.pandaa.header.DistanceHeader;
+import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.stream.DistanceFileStream;
+import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 
 /**
@@ -19,6 +23,7 @@ public class ConsolidateModule implements StreamModule {
   StreamHeader header;
   Factory factory;
   int frameCnt;
+  FileStream out, in;
 
   public ConsolidateModule(int combine, int rolling) {
     this.combine = combine;
@@ -30,10 +35,16 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public StreamHeader init(StreamHeader inHeader) {
+    String nid = inHeader.id + "." + combine + "-" + rolling;
+    int frameTime = inHeader.frameTime * rolling;
+    long startTime = inHeader.startTime;
     if (inHeader instanceof ImpulseHeader) {
-      header = new ImpulseHeader(inHeader.id + ".c" + combine + "-" + rolling, inHeader.startTime, inHeader.frameTime * rolling);
-      ((ImpulseHeader) header).rollingWindow = rolling; // TODO: Should make part of the constructor
+      header = new ImpulseHeader(nid, startTime, frameTime * rolling, rolling);
       factory = new impulseFactory();
+    } else if (inHeader instanceof DistanceHeader) {
+      DistanceHeader dHeader = (DistanceHeader) inHeader;
+      header = new DistanceHeader(nid, startTime, frameTime * rolling, rolling, dHeader.deviceIds);
+      factory = new distanceFactory();
     } else {
       throw new IllegalArgumentException("Don't know how to consolidate " + inHeader.getClass().getSimpleName());
     }
@@ -42,7 +53,7 @@ public class ConsolidateModule implements StreamModule {
 
   public synchronized StreamFrame process(StreamFrame inFrame) {
     if (inFrame == null)
-        return null;
+      return null;
 
     frames[frameCnt % combine] = inFrame;
     frameCnt++;
@@ -54,11 +65,32 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public void close() {
-
+    out.close();
+    in.close();
   }
 
   interface Factory {
     StreamFrame makeFrame();
+  }
+
+  class distanceFactory implements Factory {
+    public StreamFrame makeFrame() {
+      double distanceSum = 0;
+      double magnitudeSum = 0;
+      for (int i = 0; i < combine; i++) {
+        DistanceFrame frame = (DistanceFrame) getFrame(i);
+        if (frame == null)
+          break;
+        for (int j = 0;j < frame.peakDeltas.length;j++) {
+          distanceSum += frame.peakDeltas[j] * frame.peakMagnitudes[j];
+          magnitudeSum += frame.peakMagnitudes[j];
+        }
+      }
+
+      double deltas[] = { distanceSum / magnitudeSum };
+      double mags[] = { magnitudeSum };
+      return ((DistanceHeader) header).makeFrame(deltas, mags);
+    }
   }
 
   class impulseFactory implements Factory {
@@ -93,27 +125,44 @@ public class ConsolidateModule implements StreamModule {
     }
   }
 
+  public void go() throws Exception {
+    out.setHeader(init(in.getHeader()));
+    StreamFrame frame;
+    while ((frame = in.recvFrame()) != null) {
+      out.sendFrame(process(frame));
+    }
+    close();
+  }
+
+  public void open_streams(String type, String outName, String inName) throws Exception {
+    switch(type.charAt(0)) {
+      case 'd':
+        out = new DistanceFileStream(outName, true);
+        in = new DistanceFileStream(inName);
+        break;
+      case 'i':
+        out = new ImpulseFileStream(outName, true);
+        in = new ImpulseFileStream(inName);
+        break;
+      default:
+        throw new IllegalArgumentException("Consolidate type not recognized: " + type);
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     int arg = 0;
+    String type = args[arg++];
     String[] opts = args[arg++].split("-");
     String outName = args[arg++];
     String inName = args[arg++];
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
-    System.out.println("Consolidate: " + inName + " to " + outName);
-    ImpulseFileStream out = new ImpulseFileStream(outName, true);
-    ImpulseFileStream in = new ImpulseFileStream(inName);
+    System.out.println("Consolidate " + type + ": " + inName + " to " + outName);
     int combine = Integer.parseInt(opts[0]);
     int rolling = Integer.parseInt(opts[1]);
-    StreamModule consolidate = new ConsolidateModule(combine, rolling);
-
-    out.setHeader(consolidate.init(in.getHeader()));
-    StreamFrame frame;
-    while ((frame = in.recvFrame()) != null) {
-      out.sendFrame(consolidate.process(frame));
-    }
-    consolidate.close();
-    out.close();
+    ConsolidateModule consolidate = new ConsolidateModule(combine, rolling);
+    consolidate.open_streams(type, outName, inName);
+    consolidate.go();
   }
 }

@@ -1,21 +1,18 @@
 package edu.cmu.pandaa.module;
 
-import edu.cmu.pandaa.stream.DummyStream;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
-import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.header.GeometryHeader;
-import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class ProcessGeometryModule implements StreamModule{
+class GeometryMatrixModule implements StreamModule{
   //FrameStream inGeometryStream, outGeometryStream;
   GeometryHeader hOut;
 
-  public ProcessGeometryModule()
+  public GeometryMatrixModule()
   {
   }
 
@@ -58,16 +55,25 @@ class ProcessGeometryModule implements StreamModule{
   
   public double[][] adjustAxes(double[][] tempGeometry)
   {
-	  int len = tempGeometry[0].length;	  
+	  int rows = tempGeometry.length;
+	  int cols = tempGeometry[0].length;	
+	  double[][] tempGeometry2 = new double[cols][rows];
+	  
 	  if(tempGeometry[0][0] < 0){ //x coordinate of 1st device is -ve
-		  for (int i = 0;i < len; i++)  //invert x coordinates of all devices
+		  for (int i = 0;i < cols; i++)  //invert x coordinates of all devices
 			  tempGeometry[0][i] = -tempGeometry[0][i];
 	  }
 	  if(tempGeometry[1][0] < 0){ //x coordinate of 1st device is -ve
-		  for (int i = 0;i < len; i++) //invert x coordinates of all devices
+		  for (int i = 0;i < cols; i++) //invert x coordinates of all devices
 			  tempGeometry[1][i] = -tempGeometry[1][i];
 	  }
-	  return tempGeometry;
+	  
+	  for(int i=0;i<rows;i++){
+		  for(int j=0;j<cols;j++){
+			 tempGeometry2[j][i] = tempGeometry[i][j];
+		  }
+	  }
+	  return tempGeometry2;
   }
 
   public static void main(String[] args) throws Exception
@@ -84,7 +90,7 @@ class ProcessGeometryModule implements StreamModule{
     GeometryFileStream gIn = new GeometryFileStream(inArg);
 
     try {
-      ProcessGeometryModule pgm = new ProcessGeometryModule();
+      GeometryMatrixModule pgm = new GeometryMatrixModule();
       pgm.runModule(gIn,gOut);
     } catch (Exception e) {
       e.printStackTrace();
