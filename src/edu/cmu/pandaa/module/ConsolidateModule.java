@@ -27,12 +27,13 @@ public class ConsolidateModule implements StreamModule {
   Factory factory;
   int frameCnt;
   FileStream out, in;
-  char consolidateType;
+  final char consolidateType;
 
-  public ConsolidateModule(int combine, int rolling) {
+  public ConsolidateModule(char type, int combine, int rolling, int weight) {
     this.combine = combine;
     this.rolling = rolling;
-    this.weight = 1;
+    this.weight = weight;
+    this.consolidateType = type;
     if (combine < 1 || rolling < 1) {
       throw new IllegalArgumentException("Arguments both need to be >0");
     }
@@ -60,7 +61,7 @@ public class ConsolidateModule implements StreamModule {
         factory = new geometryFactory((GeometryHeader) header);
         break;
       default:
-        throw new IllegalArgumentException("Don't know how to consolidate " + inHeader.getClass().getSimpleName());
+        throw new IllegalArgumentException("Don't know how to consolidate " + consolidateType);
     }
     return header;
   }
@@ -183,8 +184,7 @@ public class ConsolidateModule implements StreamModule {
     close();
   }
 
-  public void open_streams(String type, String outName, String inName) throws Exception {
-    consolidateType = type.charAt(0);
+  public void open_streams(String outName, String inName) throws Exception {
     switch(consolidateType) {
       case 'd':
         out = new DistanceFileStream(outName, true);
@@ -199,7 +199,7 @@ public class ConsolidateModule implements StreamModule {
         in = new GeometryFileStream(inName);
         break;
       default:
-        throw new IllegalArgumentException("Consolidate type not recognized: " + type);
+        throw new IllegalArgumentException("Consolidate type not recognized: " + consolidateType);
     }
   }
 
@@ -215,8 +215,8 @@ public class ConsolidateModule implements StreamModule {
     System.out.println("Consolidate " + type + ": " + outName + " " + inName);
     int combine = Integer.parseInt(opts[0]);
     int rolling = Integer.parseInt(opts[1]);
-    ConsolidateModule consolidate = new ConsolidateModule(combine, rolling);
-    consolidate.open_streams(type, outName, inName);
+    ConsolidateModule consolidate = new ConsolidateModule(type.charAt(0), combine, rolling, 1);
+    consolidate.open_streams(outName, inName);
     consolidate.go();
   }
 }
