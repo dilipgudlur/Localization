@@ -42,38 +42,38 @@ public class ConstructGeometryModule implements StreamModule {
     /*generate unique device id array*/
     String[] deviceIds = generateDeviceIds(distanceHeaders);
     setNumDevices(deviceIds.length);
-    gHeader = new GeometryHeader(deviceIds, distanceHeaders[0].startTime, distanceHeaders[0].frameTime);
+    gHeader = new GeometryHeader(deviceIds, distanceHeaders[0].startTime,
+            distanceHeaders[0].frameTime, numDevices, numDevices);
     return gHeader;
   }
-  
+
   public void setNumDevices(int num)
   {
-	  this.numDevices = num; 
+    this.numDevices = num;
   }
-  
+
   public int getNumDevices()
   {
-	  return numDevices;
+    return numDevices;
   }
 
   public String[] generateDeviceIds(DistanceHeader[] distanceHeaders)
   {
     int rows = distanceHeaders.length;
     int cols = distanceHeaders[0].deviceIds.length;
-	Set<String> set = new HashSet<String>();
+    Set<String> set = new HashSet<String>();
     for(int i = 0; i < rows; i++){
-    	for(int j = 0; j < cols; j++){
-    		if(set.contains(distanceHeaders[i].deviceIds[j]));
-    		else
-    			set.add(distanceHeaders[i].deviceIds[j]);
-        }
+      for(int j = 0; j < cols; j++){
+        if (!set.contains(distanceHeaders[i].deviceIds[j]))
+          set.add(distanceHeaders[i].deviceIds[j]);
+      }
     }
     return set.toArray(new String[0]);
   }
-  
-  public StreamFrame process(StreamFrame inFrame){
+
+  public StreamFrame process(StreamFrame inFrame) {
     int numDevices = getNumDevices();
-	StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
+    StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     for(int i = 0; i < frames.length; i++){
       if (!(frames[i] instanceof DistanceFrame)) {
         throw new IllegalArgumentException("Input multiframe should contain DistanceFrames");
@@ -86,25 +86,26 @@ public class ConstructGeometryModule implements StreamModule {
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
-    
-    for(int i = 0; i < numDevices; i++){    	
-    	for(int j = 0; j < numDevices; j++){
-	   		if(i == j)
-    			distanceMatrix[i][j] = 0.0; //distance of device with itself
-    		else if(j < i)
-    			distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
-    		else{
-    			if(dfIn[count].peakDeltas.length != 0)
-	    			distanceMatrix[i][j] = dfIn[count++].peakDeltas[0];
-	    		else{
-	    			distanceMatrix[i][j] = -1; //no peaks 
-	    			count++;
-	    		}
-	    	}
-    	}    	
-    }        
+
+    for(int i = 0; i < numDevices; i++){
+      for(int j = 0; j < numDevices; j++){
+        if(i == j)
+          distanceMatrix[i][j] = 0.0; //distance of device with itself
+        else if (j < i)
+          distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
+        else {
+          if(dfIn[count].peakDeltas.length != 0)
+            distanceMatrix[i][j] = Math.abs(dfIn[count].peakDeltas[0]);
+          else
+            distanceMatrix[i][j] = Double.NaN; //no peaks
+
+          // TODO: Try to find a better way to do this because it seems very unstable through code changes
+          count++; // only increment for the "active" half of the matrix we're populating
+        }
+      }
+    }
     GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
-    return gfOut;    
+    return gfOut;
   }
 
   public void close() {
@@ -121,11 +122,11 @@ public class ConstructGeometryModule implements StreamModule {
     if (i != argLen-1)
       throw new IllegalArgumentException("Invalid number of arguments");
 
-    System.out.print("Combine "+(argLen - 1)+" pairwise distances: ");
-    for(i = 0; i < argLen - 1; i++){
-      System.out.print((i > 0 ? ", " : "") + inArg[i]);
+    System.out.print("ConstructGeometry: " + outArg);
+    for(i = 0; i < argLen - 1; i++) {
+      System.out.print(" " + inArg[i]);
     }
-    System.out.println(" to "+outArg);
+    System.out.println();
 
     FileStream[] ifs = new DistanceFileStream[argLen-1];
 
@@ -144,19 +145,19 @@ public class ConstructGeometryModule implements StreamModule {
     ConstructGeometryModule ppd = new ConstructGeometryModule();
     ofs.setHeader(ppd.init(mfs.getHeader()));
 
-    try {    	
-    	while(true){
-    	  for(i=0; i < argLen - 1; i++){
+    try {
+      while(true){
+        for(i=0; i < argLen - 1; i++){
           mfs.sendFrame(ifs[i].recvFrame());
         }
         if (!mfs.isReady())
           break;
-        
+
         StreamFrame frameOut = ppd.process(mfs.recvFrame());
         if(frameOut != null)
-        	ofs.sendFrame(frameOut);
+          ofs.sendFrame(frameOut);
         else
-        	break;
+          break;
       }
     } catch (Exception e) {
       e.printStackTrace();

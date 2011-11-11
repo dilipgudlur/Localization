@@ -22,7 +22,7 @@ public class MergePipeline implements StreamModule {
   String[] dummyIds = { "a", "b", "c" };
 
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
-  StreamModule geometry = new DummyModule(new GeometryHeader(dummyIds, now, frameTime));
+  StreamModule geometry = new DummyModule(new GeometryHeader(dummyIds, now, frameTime, 3, 3));
 
   /* Then we consolidate bunches of impulse frames into larger consolidated frames for processing */
   StreamModule smooth = new DummyModule();

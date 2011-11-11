@@ -33,8 +33,7 @@ public class ImpulseStreamModule implements StreamModule {
 			throw new IllegalArgumentException("Invalid number of arguments");
 		}
 
-		System.out.println("Extract impulses: " + audioFilename + " to "
-				+ impulseFilename);
+		System.out.println("ImpulseStream: " + impulseFilename + " " + audioFilename);
 
 		RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
 		ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);

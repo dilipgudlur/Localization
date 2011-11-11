@@ -38,18 +38,17 @@ class GeometryMatrixModule implements StreamModule{
 
     /*compute new header*/
     GeometryHeader hIn = (GeometryHeader)inHeader ;
-    hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime);
+    hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime, hIn.rows, 2);
     return hOut;
   }
 
   public StreamFrame process(StreamFrame inFrame) {
     if (!(inFrame instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
-    double[][] tempGeometry;
     GeometryFrame gfIn = (GeometryFrame) inFrame ;
-    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, gfIn.geometry);
-    tempGeometry = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
-    gfOut.geometry = adjustAxes(tempGeometry);    
+    double[][] geom = MDSJ.classicalScaling(gfIn.geometry); // apply MDS
+    geom = adjustAxes(geom);
+    GeometryFrame gfOut = hOut.makeFrame(gfIn.seqNum, geom);
     return gfOut ;
   }
   
@@ -85,7 +84,7 @@ class GeometryMatrixModule implements StreamModule{
       throw new IllegalArgumentException("Invalid number of arguments");
     }
 
-    System.out.println("Geometry: " + inArg + " to " + outArg);
+    System.out.println("GeometryMatrix: " + outArg + " " + inArg);
     GeometryFileStream gOut = new GeometryFileStream(outArg, true);
     GeometryFileStream gIn = new GeometryFileStream(inArg);
 

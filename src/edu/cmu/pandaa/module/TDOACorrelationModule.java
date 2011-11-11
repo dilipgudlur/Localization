@@ -79,7 +79,7 @@ public class TDOACorrelationModule implements StreamModule {
     if (arg != args.length)
       throw new IllegalArgumentException("Excess arguments");
 
-    System.out.println("Correlate " + in1 + " & " + in2 + " to " + outf);
+    System.out.println("TDOACorrelation: " + outf + " " + in1 + " " + in2);
     FileStream ifs1 = new ImpulseFileStream(in1);
     FileStream ifs2 = new ImpulseFileStream(in2);
 
@@ -96,6 +96,8 @@ public class TDOACorrelationModule implements StreamModule {
       while (true) {
         mfs.sendFrame(ifs1.recvFrame());
         mfs.sendFrame(ifs2.recvFrame());
+        if (!mfs.isReady())
+          break;
         ofs.sendFrame(tdoa.process(mfs.recvFrame()));
       }
     } catch (Exception e) {

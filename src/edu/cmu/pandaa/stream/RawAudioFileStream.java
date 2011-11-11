@@ -102,22 +102,22 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpLong);
 		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-		headerRef = new RawAudioHeader(getDeviceID(), System.currentTimeMillis(), wavFrameLength,
+		headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength,
 				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return headerRef;
 	}
 
 	private String getDeviceID() {
 		int startIndex = 0, endIndex;
-		startIndex = fileName.lastIndexOf("\\");
-		endIndex = fileName.lastIndexOf(".");
-		if (startIndex == -1) {
-			startIndex = 0;
-		}
+
+		startIndex = fileName.lastIndexOf("\\") + 1;
+
+    endIndex = fileName.lastIndexOf(".");
 		if (endIndex == -1) {
 			endIndex = fileName.length();
 		}
-		return fileName.substring(startIndex + 1, endIndex);
+
+		return fileName.substring(startIndex, endIndex);
 	}
 
 	@Override
@@ -228,7 +228,7 @@ public class RawAudioFileStream implements FrameStream {
 			throw new IllegalArgumentException("Invalid number of arguments");
 		}
 
-		System.out.println("AudioTest: " + inArg + " to " + outArg);
+		System.out.println("RawAudioFileStream: " + outArg + " " + inArg);
 		RawAudioFileStream aIn = new RawAudioFileStream(inArg);
 		RawAudioFileStream aOut = new RawAudioFileStream(outArg, true);
 

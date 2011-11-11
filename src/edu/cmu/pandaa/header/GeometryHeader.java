@@ -4,10 +4,13 @@ import java.io.Serializable;
 
 public class GeometryHeader extends StreamHeader implements Serializable {
   public String[] deviceIds;
+  public int rows, cols;
 
-  public GeometryHeader(String[] deviceIds, long startTime, int frameTime) {
+  public GeometryHeader(String[] deviceIds, long startTime, int frameTime, int rows, int cols) {
     super(makeId(deviceIds), startTime, frameTime);
     this.deviceIds = deviceIds;
+    this.rows = rows;
+    this.cols = cols;
   }
 
   private static String makeId(String[] DeviceIds) {
@@ -24,10 +27,18 @@ public class GeometryHeader extends StreamHeader implements Serializable {
 
     public GeometryFrame(int seq, double[][] geometry) {
       super(seq);
-      this.geometry = geometry;
+      init(geometry);
     }
 
     public GeometryFrame(double[][] geometry) {
+      init(geometry);
+    }
+
+    private void init(double[][] geometry) {
+      if (geometry.length != rows)
+        throw new IllegalArgumentException("Gemoetry rows does not match");
+      if (geometry.length > 0 && geometry[0].length != cols)
+        throw new IllegalArgumentException("Geometry cols does not match");
       this.geometry = geometry;
     }
   }
@@ -39,5 +50,4 @@ public class GeometryHeader extends StreamHeader implements Serializable {
   public GeometryFrame makeFrame(int seq, double[][] geometry) {
     return new GeometryFrame(seq, geometry);
   }
-
 }

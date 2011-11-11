@@ -1,9 +1,5 @@
 package edu.cmu.pandaa.stream;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.ObjectOutputStream;
-
 import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
@@ -21,54 +17,53 @@ public class GeometryFileStream extends FileStream {
   }
 
   public void setHeader(StreamHeader h) throws Exception {
-
     GeometryHeader header = (GeometryHeader) h;
     String tempId="";
     for(int i=0;i<header.deviceIds.length;i++){
-    	tempId += header.deviceIds[i];
-    	tempId+=",";
+      tempId += header.deviceIds[i];
+      tempId+=",";
     }
-    tempId = tempId.substring(0,tempId.length()-1);    	
-    writeString(tempId + " " + header.startTime + " " + header.frameTime);    
+    tempId = tempId.substring(0,tempId.length()-1);
+    writeString(tempId + " " + header.startTime + " " + header.frameTime + " " + header.rows + " " + header.cols);
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
-    nextFile();
     int rows = frame.geometry.length;
     int cols = frame.geometry[0].length;
-    writeString(frame.seqNum + " " + frame.geometry.length + " " + frame.geometry[0].length);
+    String msg = "" + frame.seqNum;
     for (int i = 0;i < rows; i++) {
-      String msg = "";
       for (int j = 0; j < cols; j++)
-        msg += frame.geometry[i][j] + " ";
-      writeString(msg.trim()); //writing each row
+        msg += " " + frame.geometry[i][j];
     }
+    writeString(msg.trim());
   }
 
   public GeometryHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
     String[] deviceIds = parts[0].split(","); //extract the array of deviceIds
-    header = new GeometryHeader(deviceIds,Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
+    header = new GeometryHeader(deviceIds,
+            Long.parseLong(parts[1]),
+            Integer.parseInt(parts[2]),
+            Integer.parseInt(parts[3]),
+            Integer.parseInt(parts[4]));
     return header;
   }
 
   public GeometryFrame recvFrame() throws Exception {
-    if (!nextFile())
-      return null;
     String line = readLine();
+    if (line == null)
+      return null;
     String[] parts = line.split(" ");
     int seqNum = Integer.parseInt(parts[0]);
-    int w = Integer.parseInt(parts[1]);
-    int h = Integer.parseInt(parts[2]);
-    
-    double[][] geometry = new double[w][h]; //initialize rows, cols using 'size'
-    for (int i = 0;i < w;i++) {
-      line = readLine();
-      parts = line.split(" ");
-      for (int j = 0; j < h; j++) {
-        geometry[i][j] = Double.parseDouble(parts[j]);
+    int rows = header.rows;
+    int cols = header.cols;
+    double[][] geometry = new double[rows][cols];
+    int pos = 1; // skip leading sequence num
+    for (int i = 0;i < rows;i++) {
+      for (int j = 0; j < cols; j++) {
+        geometry[i][j] = Double.parseDouble(parts[pos++]);
       }
     }
     return header.makeFrame(seqNum, geometry);

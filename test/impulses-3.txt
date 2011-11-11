@@ -1,4 +1,4 @@
-triangle_clap-03 1321006494269 100 1
+triangle_clap-03 0 100 1
 0
 1
 2
