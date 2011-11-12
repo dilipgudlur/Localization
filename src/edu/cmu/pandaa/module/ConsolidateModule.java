@@ -13,6 +13,10 @@ import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Type;
+
 /**
  * Created by IntelliJ IDEA.
  * User: peringknife
@@ -21,7 +25,7 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
  */
 
 public class ConsolidateModule implements StreamModule {
-  final int combine, rolling, weight;
+  final int combine, rolling, weight, loops;
   final StreamFrame[] frames;
   StreamHeader header;
   Factory factory;
@@ -29,10 +33,11 @@ public class ConsolidateModule implements StreamModule {
   FileStream out, in;
   final char consolidateType;
 
-  public ConsolidateModule(char type, int combine, int rolling, int weight) {
+  public ConsolidateModule(char type, int combine, int rolling, int weight, int loops) {
     this.combine = combine;
     this.rolling = rolling;
     this.weight = weight;
+    this.loops = loops;
     this.consolidateType = type;
     if (combine < 1 || rolling < 1) {
       throw new IllegalArgumentException("Arguments both need to be >0");
@@ -130,13 +135,14 @@ public class ConsolidateModule implements StreamModule {
 
         double[][] input = frame.geometry;
         for (int i = 0;i < rows; i++)
-          for (int j = 0; j < cols; j++)
+          for (int j = 0; j < cols; j++) {
             if (Double.isNaN(geometry[i][j]))
               geometry[i][j] = input[i][j];
             else if (!Double.isNaN(input[i][j]))
               geometry[i][j] = (geometry[i][j]*weight + input[i][j])/( weight + 1);
             else
               geometry[i][j] = geometry[i][j]; // NOP placeholder
+          }
 
       }
       return ((GeometryHeader) header).makeFrame(geometry);
@@ -175,48 +181,65 @@ public class ConsolidateModule implements StreamModule {
     }
   }
 
-  public void go() throws Exception {
-    out.setHeader(init(in.getHeader()));
+  public void go(String outName, String inName) throws Exception {
     StreamFrame frame;
-    while ((frame = in.recvFrame()) != null) {
-      out.sendFrame(process(frame));
+    for (int i = 0;i < loops; i++) {
+      boolean first = i == 0;
+      open_streams(outName, inName, first);
+      StreamHeader inH = in.getHeader();
+      if (first) {
+        out.setHeader(init(inH));
+      }
+      while ((frame = in.recvFrame()) != null) {
+        out.sendFrame(process(frame));
+      }
     }
     close();
   }
 
-  public void open_streams(String outName, String inName) throws Exception {
+  @SuppressWarnings("unchecked")
+  public void open_streams(String outName, String inName, boolean first) throws Exception {
+    Class model;
     switch(consolidateType) {
       case 'd':
-        out = new DistanceFileStream(outName, true);
-        in = new DistanceFileStream(inName);
+        model = DistanceFileStream.class;
         break;
       case 'i':
-        out = new ImpulseFileStream(outName, true);
-        in = new ImpulseFileStream(inName);
+        model = ImpulseFileStream.class;
         break;
       case 'm':
-        out = new GeometryFileStream(outName, true);
-        in = new GeometryFileStream(inName);
+        model = GeometryFileStream.class;
         break;
       default:
         throw new IllegalArgumentException("Consolidate type not recognized: " + consolidateType);
     }
+    if (first) {
+      out = (FileStream) (model.getDeclaredConstructor(String.class, Boolean.TYPE).newInstance(outName, true));
+    } else {
+      in.close();
+    }
+    in = (FileStream) (model.getDeclaredConstructor(String.class).newInstance(inName));
   }
 
   public static void main(String[] args) throws Exception {
     int arg = 0;
-    String type = args[arg++];
     String[] opts = args[arg++].split("-");
     String outName = args[arg++];
     String inName = args[arg++];
     if (args.length > arg) {
       throw new IllegalArgumentException("Too many input arguments");
     }
-    System.out.println("Consolidate " + type + ": " + outName + " " + inName);
-    int combine = Integer.parseInt(opts[0]);
-    int rolling = Integer.parseInt(opts[1]);
-    ConsolidateModule consolidate = new ConsolidateModule(type.charAt(0), combine, rolling, 1);
-    consolidate.open_streams(outName, inName);
-    consolidate.go();
+    System.out.println("Consolidate " + args[0] + ": " + outName + " " + inName);
+    int nopts = opts.length;
+    int opt = 0;
+    char type = opts[opt++].charAt(0);
+    int combine = Integer.parseInt(opts[opt++]);
+    int rolling = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
+    int average = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
+    int loops = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
+    if (nopts > 5)
+      throw new IllegalArgumentException("Too many consolidate opts");
+    ConsolidateModule consolidate = new ConsolidateModule(type, combine, rolling, average, loops);
+    consolidate.go(outName, inName);
   }
 }

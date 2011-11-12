@@ -21,7 +21,7 @@ public class SinglePipeline implements StreamModule {
   StreamModule impulse = new ImpulseStreamModule(); //new DummyModule(new ImpulseHeader("dummyImpulse", now, frameTime));
 
   /* Then we consolidate bunches of impulse frames into larger consolidated frames for processing */
-  StreamModule consolidate = new ConsolidateModule('i', 1, 1, 1);
+  StreamModule consolidate = new ConsolidateModule('i', 1, 1, 1, 1);
 
   @Override
   public StreamHeader init(StreamHeader inHeader) {

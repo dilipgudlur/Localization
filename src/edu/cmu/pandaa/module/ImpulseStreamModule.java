@@ -9,6 +9,8 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
+
+import java.awt.image.LookupOp;
 import java.lang.Math;
 
 public class ImpulseStreamModule implements StreamModule {
@@ -24,27 +26,27 @@ public class ImpulseStreamModule implements StreamModule {
 	public ImpulseStreamModule() {
 	}
 
-	public static void main(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
 
-		int arg = 0;
-		String impulseFilename = args[arg++];
-		String audioFilename = args[arg++];
-		if (args.length > arg || args.length < arg) {
-			throw new IllegalArgumentException("Invalid number of arguments");
-		}
+    int arg = 0, loops = 1;
+    String impulseFilename = args[arg++];
+    String audioFilename = args[arg++];
+    if (args.length > arg || args.length < arg) {
+      throw new IllegalArgumentException("Invalid number of arguments");
+    }
 
-		System.out.println("ImpulseStream: " + impulseFilename + " " + audioFilename);
+    System.out.println("ImpulseStream: " + impulseFilename + " " + audioFilename);
 
-		RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
-		ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);
-		ImpulseStreamModule ism = new ImpulseStreamModule();
-		RawAudioFileStream rfso = new RawAudioFileStream(impulseFilename
-				+ ".wav", true);
+    RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
+    ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);
+    ImpulseStreamModule ism = new ImpulseStreamModule();
+    RawAudioFileStream rfso = new RawAudioFileStream(
+            impulseFilename + ".wav", true);
 
-		RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
-		rfso.setHeader(header);
-		ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
-		foo.setHeader(iHeader);
+    RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
+    rfso.setHeader(header);
+    ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
+    foo.setHeader(iHeader);
 
 		RawAudioFrame audioFrame = null;
 		while ((audioFrame = (RawAudioFrame) rfs.recvFrame()) != null) {
@@ -53,6 +55,7 @@ public class ImpulseStreamModule implements StreamModule {
 			ism.augmentAudio(audioFrame, streamFrame);
 			rfso.sendFrame(audioFrame);
 		}
+    rfso.close();
 		foo.close();
 	}
 
@@ -93,7 +96,6 @@ public class ImpulseStreamModule implements StreamModule {
 				double value = java.lang.Math.abs((double) frame[i]) / 32768.0;
 
 				if (index < peakNum && value > threshold && isPeak(frame, i)) {
-
 					peakMagnitudes[index] = frame[i];
 					peakOffsets[index] = sampleToTimeOffset(i);
 					index++;

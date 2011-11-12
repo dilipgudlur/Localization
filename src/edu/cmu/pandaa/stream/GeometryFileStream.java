@@ -33,8 +33,14 @@ public class GeometryFileStream extends FileStream {
     int cols = frame.geometry[0].length;
     String msg = "" + frame.seqNum;
     for (int i = 0;i < rows; i++) {
-      for (int j = 0; j < cols; j++)
-        msg += " " + frame.geometry[i][j];
+      for (int j = 0; j < cols; j++) {
+        double val = frame.geometry[i][j];
+        // simple way to keep the numbers reasonable (not too much precision)
+        // really ony to make it visually look better...
+        val = Math.floor(val*100.0)/100.0;
+        msg += " " + val;
+      }
+      msg += "   ";
     }
     writeString(msg.trim());
   }
@@ -63,6 +69,8 @@ public class GeometryFileStream extends FileStream {
     int pos = 1; // skip leading sequence num
     for (int i = 0;i < rows;i++) {
       for (int j = 0; j < cols; j++) {
+        while (pos < parts.length && parts[pos].trim().equals(""))
+          pos++;
         geometry[i][j] = Double.parseDouble(parts[pos++]);
       }
     }
