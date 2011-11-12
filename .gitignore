@@ -5,6 +5,8 @@ bin/
 Localization.iml
 Localization.ipr
 Localization.iws
+Localization.jar
 gen/
 out/
+test/
 android-app/default.properties
