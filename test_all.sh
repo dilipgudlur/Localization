@@ -12,27 +12,42 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
+AUDIO=audio_src/triangle_clap
+
+# Easier to do our work in the test sub-directory
+rm -rf test/
 mkdir -p test/
 cd test/
-AUDIO=../audio_src/triangle_clap
+AUDIO=../$AUDIO
 
+FILESET="1 2 3 4 5"
 # Format for all main options is:
 #
 # java ... (options) output_file input_file(s)
 #
 
-java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-1.wav $AUDIO-01.wav
-java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-2.wav $AUDIO-02.wav
-java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-3.wav $AUDIO-03.wav
-java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-1.txt $AUDIO-01.wav
-java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-2.txt $AUDIO-02.wav
-java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-3.txt $AUDIO-03.wav
-java $OPTS $PACKAGE.module.TDOACorrelationModule distance12.txt impulses-1.txt impulses-2.txt 
-java $OPTS $PACKAGE.module.TDOACorrelationModule distance13.txt impulses-1.txt impulses-3.txt 
-java $OPTS $PACKAGE.module.TDOACorrelationModule distance23.txt impulses-2.txt impulses-3.txt 
-java $OPTS $PACKAGE.module.DistanceMatrixModule geometry123.txt distance12.txt distance13.txt distance23.txt
-java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-4-5 geometryAll.txt geometry123.txt
-java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
-#java $OPTS $PACKAGE.module.ConsolidateModule i 1-1 impulses-c.txt impulses-1.txt 
-#java $OPTS $PACKAGE.module.ConsolidateModule d 1-1 distance-c.txt distance-1.txt 
+for file in $FILESET; do 
+  if [ -f $AUDIO-$file.wav ]; then
+    java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-$file.wav $AUDIO-$file.wav
+    java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt $AUDIO-$file.wav
+  fi
+done
+for a in $FILESET; do 
+ for b in $FILESET; do 
+  if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
+   java $OPTS $PACKAGE.module.TDOACorrelationModule distance-$a$b.txt impulses-$a.txt impulses-$b.txt 
+   inputs="$inputs distance-$a$b.txt"
+  fi
+ done
+done
+if [ "$inputs" == "" ]; then
+  echo no inputs genereated!
+  exit
+fi
+java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
+java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-10-10 geometrySmooth.txt geometryAll.txt
+java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometrySmooth.txt
 
+echo Generating graph...
+tail -1 geometryOut.txt | sed -e 's/   /\n/g' -e 's/^[0-9]*//g' > graph.in
+gnuplot < ../grid.plt
