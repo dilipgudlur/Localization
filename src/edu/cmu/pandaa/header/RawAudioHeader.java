@@ -31,12 +31,13 @@ import edu.cmu.pandaa.utils.DataConversionUtil;
  */
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
-
-	long samplingRate;
-	long numChannels;
-	int audioFormat;
-	int bitsPerSample;
-	long dataSize;
+	private long samplingRate;
+	private long numChannels;
+	private int audioFormat;
+	private int bitsPerSample;
+	private long dataSize;
+  private short[] derrive_save;
+  private int[] smooth_save;
 
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
@@ -85,6 +86,7 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 
 	public class RawAudioFrame extends StreamFrame implements Serializable {
 		public short[] audioData;
+    int dindex = 0;
 
 		public RawAudioFrame(int frameLength) {
 			audioData = new short[frameLength];
@@ -101,13 +103,51 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 			}
 			return result;
 		}
-	}
 
-	public RawAudioFrame makeFrame(int frameLength) {
-		return new RawAudioFrame(frameLength);
-	}
+    public void smooth(boolean rms) {
+      if (smooth_save == null || smooth_save.length == 0)
+        return;
+      short[] data = getAudioData();
+      int size = smooth_save.length;
+      for (int i = 0; i < data.length; i++) {
+        int slot = i+seqNum*data.length;
+        smooth_save[slot % size] = data[i] * (rms ? data[i] : 1);   // square if rms
+        double sum = 0;
+        for (int j = 0; j < size; j++) {
+          sum += smooth_save[j];
+        }
+        double avg = rms ? Math.sqrt(sum/size) : sum/size;
+        if (avg > Short.MAX_VALUE)
+          avg = Short.MIN_VALUE;
+        short x = (short) avg;
+        if (x == 0)
+          avg = 0;
+        data[i] = x;  // rms = sqrt(mean_square)
+      }
+    }
 
-	public RawAudioFrame makeFrame() {
-		return new RawAudioFrame((int) (frameTime * samplingRate / 1000));
-	}
+    public void derrive() {
+      short[] data = getAudioData();
+      short prev = derrive_save[dindex];
+      for (int i = 0; i < data.length; i++) {
+        short save = data[i];
+        data[i] = (short) (save - prev);
+        prev = save;
+      }
+      derrive_save[dindex++] = prev;
+    }
+  }
+
+  public void initFilters(int win, int der) {
+    smooth_save = new int[(int) getSamplingRate()*win/22050];
+    derrive_save = new short[der];
+  }
+
+  public RawAudioFrame makeFrame(int frameLength) {
+    return new RawAudioFrame(frameLength);
+  }
+
+  public RawAudioFrame makeFrame() {
+    return new RawAudioFrame((int) (frameTime * samplingRate / 1000));
+  }
 }

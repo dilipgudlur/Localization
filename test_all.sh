@@ -12,15 +12,16 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
-AUDIO=audio_src/triangle_clap
+AUDIO_SET=triangle_clap
 
 # Easier to do our work in the test sub-directory
 rm -rf test/
 mkdir -p test/
 cd test/
-AUDIO=../$AUDIO
+AUDIO=../audio_src/$AUDIO_SET
 
-FILESET="1 2 3 4 5"
+FILESET="1 2 3 4 5 6 7 8 9"
+POWSET="3 4 5"
 # Format for all main options is:
 #
 # java ... (options) output_file input_file(s)
@@ -28,7 +29,10 @@ FILESET="1 2 3 4 5"
 
 for file in $FILESET; do 
   if [ -f $AUDIO-$file.wav ]; then
-    java $OPTS $PACKAGE.stream.RawAudioFileStream segmented_audio-$file.wav $AUDIO-$file.wav
+    for pow in $POWSET; do
+      val=`echo 2^$pow | bc`
+      java $OPTS $PACKAGE.stream.RawAudioFileStream -$val-1 $AUDIO_SET-$pow-$file.wav $AUDIO-$file.wav
+    done
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt $AUDIO-$file.wav
   fi
 done
@@ -51,3 +55,4 @@ java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometrySmooth.t
 echo Generating graph...
 tail -1 geometryOut.txt | sed -e 's/   /\n/g' -e 's/^[0-9]*//g' > graph.in
 gnuplot < ../grid.plt
+gnome-open graph.png

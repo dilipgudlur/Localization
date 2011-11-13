@@ -220,23 +220,48 @@ public class RawAudioFileStream implements FrameStream {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		int arg = 0;
-		String outArg = args[arg++];
-		String inArg = args[arg++];
-		if (args.length != arg) {
-			throw new IllegalArgumentException("Invalid number of arguments");
-		}
+  public static void main(String[] args) throws Exception {
+    int arg = 0;
 
-		System.out.println("RawAudioFileStream: " + outArg + " " + inArg);
-		RawAudioFileStream aIn = new RawAudioFileStream(inArg);
-		RawAudioFileStream aOut = new RawAudioFileStream(outArg, true);
+    String opt = args[arg++];
+    boolean rms = opt.startsWith("-");
+    String[] nopt = opt.substring(rms ? 1 : 0).split("-");
+    int[] opts = new int[] { 0, 0 };
+    for (int i = 0;i < nopt.length;i++)
+      opts[i] = Integer.parseInt(nopt[i]);
 
-		aOut.setHeader(aIn.getHeader());
-		RawAudioFrame frame;
-		while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
-			aOut.sendFrame(frame);
-		}
-		aOut.close();
-	}
+    String outArg = args[arg++];
+    String inArg = args[arg++];
+    if (args.length != arg) {
+      throw new IllegalArgumentException("Invalid number of arguments");
+    }
+
+    System.out.println("RawAudioFileStream: " + opt + " " + outArg + " " + inArg);
+    RawAudioFileStream aIn = new RawAudioFileStream(inArg);
+    RawAudioFileStream aOut = new RawAudioFileStream("d0_" + outArg, true);
+
+    RawAudioFileStream[] dout = new RawAudioFileStream[opts[1]];
+    for (int i = 0;i < dout.length; i++)
+      dout[i] =  new RawAudioFileStream("d" + (i+1) + "_" + outArg, true);
+
+    RawAudioHeader h = (RawAudioHeader) aIn.getHeader();
+    aOut.setHeader(h);
+    for (int i = 0;i < dout.length; i++)
+      dout[i].setHeader(h);
+    RawAudioFrame frame;
+    h.initFilters(opts[0], dout.length);
+
+    while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
+      frame.smooth(rms);
+      aOut.sendFrame(frame);
+      for (int i = 0;i < dout.length; i++) {
+        frame.derrive();
+        dout[i].sendFrame(frame);
+      }
+    }
+
+    aOut.close();
+    for (int i = 0;i < dout.length; i++)
+      dout[i].close();
+  }
 }
