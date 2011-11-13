@@ -3,4 +3,4 @@ set xlabel "X Coordinate"
 set ylabel "Y Coodrinate"
 set term png
 set output "graph.png"
-plot "graph.in"
+#plot "graph.in","../comp.in"

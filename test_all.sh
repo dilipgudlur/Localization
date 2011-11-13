@@ -13,6 +13,9 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 PACKAGE=edu.cmu.pandaa
 
 AUDIO_SET=triangle_clap
+if [ "$1" ]; then
+  AUDIO_SET=$1
+fi
 
 # Easier to do our work in the test sub-directory
 rm -rf test/
@@ -52,7 +55,19 @@ java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-10-10 geometrySmooth.txt geometryAll.txt
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometrySmooth.txt
 
-echo Generating graph...
-tail -1 geometryOut.txt | sed -e 's/   /\n/g' -e 's/^[0-9]*//g' > graph.in
-gnuplot < ../grid.plt
-gnome-open graph.png
+if [ "$*" != "" ]; then
+  echo Generating graph...
+  tail -1 geometryOut.txt | sed -e 's/   /\n/g' -e 's/^[0-9]*//g' > ../$AUDIO_SET.dat
+  cp ../grid.plt .
+  cmd=""
+  for set in $@; do
+    cmd="$cmd,\"$set.dat\""
+    cp ../$set.dat .
+  done
+  pcmd="plot ${cmd#,}"
+  echo $pcmd >> grid.plt
+  echo Generating $pcmd to $AUDIO_SET.png
+  gnuplot < grid.plt
+  cp graph.png ../$AUDIO_SET.png
+  gnome-open ../$AUDIO_SET.png
+fi
