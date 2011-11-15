@@ -46,10 +46,10 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     }
 
     private void init(double[][] geometry) {
-      if (geometry.length != rows)
-        throw new IllegalArgumentException("Gemoetry rows does not match");
-      if (geometry.length > 0 && geometry[0].length != cols)
-        throw new IllegalArgumentException("Geometry cols does not match");
+      if (geometry.length != cols)
+        throw new IllegalArgumentException("Gemoetry cols does not match");
+      if (geometry.length > 0 && geometry[0].length != rows)
+        throw new IllegalArgumentException("Geometry rows does not match");
       this.geometry = geometry;
     }
   }
