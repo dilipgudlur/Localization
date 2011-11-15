@@ -9,7 +9,6 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
 class GeometryMatrixModule implements StreamModule{
-  //FrameStream inGeometryStream, outGeometryStream;
   GeometryHeader hOut;
   double[] prevX;
 
@@ -129,7 +128,7 @@ class GeometryMatrixModule implements StreamModule{
 
     System.out.println("GeometryMatrix: " + outArg + " " + inArg);
     GeometryFileStream gIn = new GeometryFileStream(inArg);
-    GeometryFileStream gOut = new GeometryFileStream(outArg, true);
+    GeometryFileStream gOut = new GeometryFileStream(outArg, true, true);
 
     try {
       GeometryMatrixModule pgm = new GeometryMatrixModule();

@@ -24,6 +24,7 @@ public class FileStream implements FrameStream {
   protected ObjectInputStream ois;
   private int seqNum = 0;
   protected final String fileName;
+  final String padding = "0000";
 
   public FileStream(String fileName) throws IOException {
     this.fileName = fileName;
@@ -75,7 +76,11 @@ public class FileStream implements FrameStream {
     boolean isRead = is != null;
     close();
     int mark = fileName.lastIndexOf('.');
-    String nextFile = fileName.substring(0,mark) + "_" + (seqNum++) + fileName.substring(mark);
+    String nextFile = fileName.substring(0,mark);
+    new File(nextFile).mkdir();
+    String seqNumStr = "" + seqNum;
+    nextFile = nextFile + File.separatorChar + padding.substring(0,padding.length() - seqNumStr.length()) +
+            seqNumStr + fileName.substring(mark);
     is = null;
     os = null;
     if (isRead && !new File(nextFile).exists())
@@ -85,6 +90,7 @@ public class FileStream implements FrameStream {
     } else {
       os = new FileOutputStream(nextFile);
     }
+    seqNum++;
     return true;
   }
 
