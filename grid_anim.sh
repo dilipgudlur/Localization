@@ -24,7 +24,9 @@ for file in $FILES; do
 done    
 echo
 cp $target ../$AUDIO_SET.gif
-gnome-open ../$AUDIO_SET.gif
+
 animation=$AUDIO_SET-animation.gif
 echo Generating $animation
 gifsicle --delay 10 $FDIR/*.gif > ../$animation
+
+gnome-open ../$animation
