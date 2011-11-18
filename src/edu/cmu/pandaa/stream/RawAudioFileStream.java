@@ -16,7 +16,6 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.utils.DataConversionUtil;
 
 public class RawAudioFileStream implements FrameStream {
-
 	int wavFrameLength;
 	private OutputStream os;
 	private InputStream is;
@@ -30,6 +29,13 @@ public class RawAudioFileStream implements FrameStream {
 	private final short MONO = 1;
 	private final short STEREO = 2;
 	private final int PCM_FORMAT = 1;
+
+  private final String riffString = "RIFF";
+  private final String formatString = "WAVE";
+  private final String subChunk1String = "fmt ";
+  private final String subChunk2String = "data";
+  private final String metadataString = "LIST";
+  private final long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
 
 	public RawAudioFileStream(String fileName) throws IOException {
 		this.fileName = fileName;
@@ -56,21 +62,25 @@ public class RawAudioFileStream implements FrameStream {
 		byte[] tmpLong = new byte[4];
 		byte[] tmpInt = new byte[2];
 
-		long wavChunkSize = 0, wavSubChunk1Size = 0, wavDataSize = 0;
+		long wavFileSize = 0, wavSubChunk1Size = 0, wavDataSize = 0;
 		long wavByteRate = 0, wavSamplingRate = 0;
 		int wavFormat = 0, wavChannels = 0, wavBlockAlign = 0, wavBitsPerSample = 0;
 
 		byte[] chunkID = new byte[4];
 		int retval = dis.read(chunkID, 0, 4);
+    if (!checkChunk(retval, chunkID, riffString))
+        throw new RuntimeException("File not in correct format");
 
 		dis.read(tmpLong);
-		wavChunkSize = DataConversionUtil.byteArrayToLong(tmpLong);
+		wavFileSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-		String format = "" + (char) dis.readByte() + (char) dis.readByte() + (char) dis.readByte()
-				+ (char) dis.readByte();
+    retval = dis.read(chunkID, 0, 4);
+    if (!checkChunk(retval, chunkID, formatString))
+      throw new RuntimeException("File not in correct format");
 
-		String subChunk1ID = "" + (char) dis.readByte() + (char) dis.readByte()
-				+ (char) dis.readByte() + (char) dis.readByte();
+    retval = dis.read(chunkID, 0, 4);
+    if (!checkChunk(retval, chunkID, subChunk1String))
+        throw new RuntimeException("File not in correct format");
 
 		dis.read(tmpLong);
 		wavSubChunk1Size = DataConversionUtil.byteArrayToLong(tmpLong);
@@ -96,21 +106,37 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpInt);
 		wavBitsPerSample = DataConversionUtil.byteArrayToInt(tmpInt);
 
-		String dataChunkID = "" + (char) dis.readByte();
-		
-		/* Skipping the metadata */
-		while(!dataChunkID.equals("d")) {
-			dataChunkID = "" + (char) dis.readByte();
-		}
-		dataChunkID += (char) dis.readByte() + (char) dis.readByte() + (char) dis.readByte();
+    retval = dis.read(chunkID, 0, 4);
+    dis.read(tmpLong);
+    wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-		dis.read(tmpLong);
-		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
+    if (checkChunk(retval, chunkID, metadataString) && wavDataSize < 1000) {
+      for (int i = 0;i < wavDataSize;i++)
+        dis.read();
+      retval = dis.read(chunkID, 0, 4);
+      dis.read(tmpLong);
+      wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
+    }
+
+    if (!checkChunk(retval, chunkID, subChunk2String))
+        throw new RuntimeException("File not in correct format, bad data chunk header");
 
 		headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength,
 				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return headerRef;
 	}
+
+  private boolean checkChunk(int size, byte[] data, String target) {
+    if (size != 4 && data.length != 4 && target.length() != 4)
+      throw new IllegalArgumentException("All should be 4!");
+    byte[] tbytes = target.getBytes();
+    for (int i = 0; i < size; i++) {
+      if (tbytes[i] != data[i])
+        return false;
+    }
+
+    return true;
+  }
 
 	private String getDeviceID() {
 		int startIndex = 0, endIndex;
@@ -148,12 +174,6 @@ public class RawAudioFileStream implements FrameStream {
 			return rawAudioFrame;
 		}
 	}
-
-	private final String riffString = "RIFF";
-	private final String formatString = "WAVE";
-	private final String subChunk1String = "fmt ";
-	private final String subChunk2String = "data";
-	private final long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
 
 	@Override
 	public void setHeader(StreamHeader h) throws Exception {
