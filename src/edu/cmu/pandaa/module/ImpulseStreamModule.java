@@ -14,13 +14,14 @@ import java.awt.image.LookupOp;
 public class ImpulseStreamModule implements StreamModule {
 
 	private int sampleRate, nsPerSample;
-	private double thd = 0.8; // threshold for peak
-	private double thdNoise = 0.3; // threshold for noise
+	private double thd; // threshold for peak
+	private double thdPeak = 0.4; // general threshold for peak
 	private ImpulseHeader header;
 	int numSilence = 200; // find the silence period (200 samples long)
 	int numFindPeak = 50; // find the highest peak among 50 samples
-	static boolean previousSilence; // whether the previous frame is ending with
-									// silence
+	static double preRms = Double.MAX_VALUE;
+	double div = 4;
+	static boolean skipFrame = false;
 
 	public ImpulseStreamModule() {
 	}
@@ -66,6 +67,7 @@ public class ImpulseStreamModule implements StreamModule {
 		for (int i = 0; i < impulses.peakOffsets.length; i++) {
 			audio.audioData[timeToSampleOffset(impulses.peakOffsets[i])] = Short.MAX_VALUE;
 		}
+		// audio.audioData[0] = Short.MAX_VALUE;
 	}
 
 	@Override
@@ -89,43 +91,60 @@ public class ImpulseStreamModule implements StreamModule {
 
 		short[] frame = ((RawAudioFrame) inFrame).getAudioData();
 		double[] frameD = short2double(frame);
-		int numMaxPeaks = 20;
+		int numMaxPeaks = 1;
 		int iPeaks = 0;
 		int[] peakLocations = new int[numMaxPeaks];
 		double MaxHeight;
 		int HeightLocation;
 
 		int ii = 0;
-		double sum = 0.0;
-		double mean = 0.0;
-		if (previousSilence) {
-			while (ii < frameD.length) {
-				if (frameD[ii] > thd && isPeak(frame, ii)) {
-					MaxHeight = frameD[ii];
+		double sum, mean, rms;
+		thd = div * preRms;
+
+		// find the first peak
+		while (skipFrame == false && ii < numSilence) {
+			if (frameD[ii] > thd && frameD[ii] > thdPeak && isPeak(frame, ii)) {
+				HeightLocation = ii;
+				peakLocations[iPeaks++] = HeightLocation;
+				preRms = Double.MAX_VALUE;
+				break;
+			}
+			ii++;
+		}
+
+		// find the highest peak among numFindPeak
+		/*
+		MaxHeight = 0;
+		HeightLocation = 0;
+		while (skipFrame == false && ii < numSilence) {
+			for (ii = 0; ii < numSilence; ii++) {
+				if (frameD[ii] > thd && frameD[ii] > thdPeak
+						&& isPeak(frame, ii) && frameD[ii] > MaxHeight) {
 					HeightLocation = ii;
-					peakLocations[iPeaks++] = HeightLocation;
-					break;
+					MaxHeight = frameD[ii];
 				}
-				ii++;
+			}
+			if (MaxHeight != 0) {
+				peakLocations[iPeaks++] = HeightLocation;
+				preRms = Double.MAX_VALUE;
 			}
 		}
+		*/
 		ii = numSilence;
-		while (ii < frameD.length) {
+		while (skipFrame == false && iPeaks < numMaxPeaks && ii < frameD.length) {
 			sum = 0.0;
 			for (int jj = 0; jj < numSilence; jj++) {
-				sum += frameD[ii - jj - 1];
+				sum += frameD[ii - jj - 1] * frameD[ii - jj - 1];
 			}
 			mean = sum / numSilence;
+			rms = java.lang.Math.sqrt(mean);
+			thd = div * rms;
 
 			if (ii == frameD.length - 1) {
-				previousSilence = (mean < thdNoise) ? true : false;
+				preRms = rms;
 			}
 
-			if (mean > thdNoise) {
-				ii++;
-			} else if (frameD[ii] < thd) {
-				ii++;
-			} else {
+			if (frameD[ii] > thd && frameD[ii] > thdPeak) {
 				MaxHeight = frameD[ii];
 				HeightLocation = ii;
 				for (int nextSample = 0; nextSample < numFindPeak; nextSample++) {
@@ -138,13 +157,30 @@ public class ImpulseStreamModule implements StreamModule {
 					}
 				}
 				peakLocations[iPeaks++] = HeightLocation;
-				if (iPeaks >= numMaxPeaks)
+				if (iPeaks == numMaxPeaks)
 					break;
 				ii = HeightLocation + 1;
+			} else {
+				ii++;
 			}
-
 		}
 
+		if (preRms == Double.MAX_VALUE) {
+			ii = frame.length;
+			sum = 0.0;
+			for (int jj = 0; jj < numSilence; jj++) {
+				sum += frameD[ii - jj - 1] * frameD[ii - jj - 1];
+			}
+			mean = sum / numSilence;
+			rms = java.lang.Math.sqrt(mean);
+			preRms = rms;
+		}
+
+		if (iPeaks > 0) {
+			skipFrame = true;
+			preRms = Double.MAX_VALUE;
+		} else
+			skipFrame = false;
 		short[] peakMagnitudes = new short[iPeaks];
 		int[] peakOffsets = new int[iPeaks];
 
@@ -207,9 +243,9 @@ public class ImpulseStreamModule implements StreamModule {
 		return false;
 	}
 
-	public void setThreshold(double thr, double thrN) {
+	public void setThreshold(double thr, double thrP) {
 		thd = thr;
-		thdNoise = thrN;
+		thdPeak = thrP;
 	}
 
 	public void close() {
