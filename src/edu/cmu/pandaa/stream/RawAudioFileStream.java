@@ -96,8 +96,13 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpInt);
 		wavBitsPerSample = DataConversionUtil.byteArrayToInt(tmpInt);
 
-		String dataChunkID = "" + (char) dis.readByte() + (char) dis.readByte()
-				+ (char) dis.readByte() + (char) dis.readByte();
+		String dataChunkID = "" + (char) dis.readByte();
+		
+		/* Skipping the metadata */
+		while(!dataChunkID.equals("d")) {
+			dataChunkID = "" + (char) dis.readByte();
+		}
+		dataChunkID += (char) dis.readByte() + (char) dis.readByte() + (char) dis.readByte();
 
 		dis.read(tmpLong);
 		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
