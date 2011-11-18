@@ -7,13 +7,19 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
 public class GeometryFileStream extends FileStream {
   private GeometryHeader header;
+  boolean useMultipleFiles = false;
 
   public GeometryFileStream(String filename) throws Exception {
     super(filename);
   }
 
   public GeometryFileStream(String filename, boolean overwrite) throws Exception {
+    this(filename, overwrite, false);
+  }
+
+  public GeometryFileStream(String filename, boolean overwrite, boolean multiple) throws Exception {
     super(filename, overwrite);
+    useMultipleFiles = multiple;
   }
 
   public void setHeader(StreamHeader h) throws Exception {
@@ -29,18 +35,20 @@ public class GeometryFileStream extends FileStream {
 
   public void sendFrame(StreamFrame f) throws Exception {
     GeometryFrame frame = (GeometryFrame) f;
+    if (useMultipleFiles)
+      nextFile();
     int rows = frame.geometry.length;
     int cols = frame.geometry[0].length;
-    String msg = "" + frame.seqNum;
-    for (int i = 0;i < rows; i++) {
-      for (int j = 0; j < cols; j++) {
+    String msg = "";
+    for (int j = 0; j < cols; j++) {
+      for (int i = 0;i < rows; i++) {
         double val = frame.geometry[i][j];
         // simple way to keep the numbers reasonable (not too much precision)
         // really ony to make it visually look better...
         val = Math.floor(val*100.0)/100.0;
         msg += " " + val;
       }
-      msg += "   ";
+      msg += useMultipleFiles ? "\n" : "   ";
     }
     writeString(msg.trim());
   }
@@ -62,54 +70,17 @@ public class GeometryFileStream extends FileStream {
     if (line == null)
       return null;
     String[] parts = line.split(" ");
-    int seqNum = Integer.parseInt(parts[0]);
     int rows = header.rows;
     int cols = header.cols;
     double[][] geometry = new double[rows][cols];
-    int pos = 1; // skip leading sequence num
-    for (int i = 0;i < rows;i++) {
-      for (int j = 0; j < cols; j++) {
+    int pos = 0;
+    for (int j = 0; j < cols; j++) {
+      for (int i = 0;i < rows;i++) {
         while (pos < parts.length && parts[pos].trim().equals(""))
           pos++;
         geometry[i][j] = Double.parseDouble(parts[pos++]);
       }
     }
-    return header.makeFrame(seqNum, geometry);
+    return header.makeFrame(geometry);
   }
-
-  /*public static void main(String[] args) throws Exception {
-    String filename = "test.txt";
-    String[] deviceIds = {"1a","2b","3c","4d"};
-
-    double[][] inputDissimilarity = {{0,1,2,3},
-    								{4,5,6,7},
-    								{8,9,10,11},
-    								{12,13,14,15}};
-    
-    GeometryFileStream foo = new GeometryFileStream(filename, true);
-    
-    GeometryHeader header = new GeometryHeader(deviceIds, System.currentTimeMillis(), 100);
-    foo.setHeader(header);
-    GeometryFrame frame1 = header.makeFrame(inputDissimilarity);
-    foo.sendFrame(frame1);
-    foo.sendFrame(header.makeFrame(inputDissimilarity));
-    foo.sendFrame(header.makeFrame(inputDissimilarity));
-    foo.close();
-
-    Thread.sleep(100);  // make sure start times are different
-
-    foo = new GeometryFileStream(filename);
-    GeometryHeader header2 = foo.getHeader();
-    GeometryFrame frame2 = foo.recvFrame();
-    frame2 = foo.recvFrame();
-    frame2 = foo.recvFrame();
-    foo.close();
-
-    if (frame1.getHeader().startTime != frame2.getHeader().startTime) {
-      System.err.println("Start time mismatch!");
-    }
-    if (frame1.seqNum != frame2.seqNum-2) {
-      System.err.println("Sequence number mismatch!");
-    }
-  }*/
 }

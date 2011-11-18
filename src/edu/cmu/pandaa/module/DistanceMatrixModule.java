@@ -140,7 +140,7 @@ public class DistanceMatrixModule implements StreamModule {
       mfs.setHeader(ifs[i].getHeader());
     }
 
-    FileStream ofs = new GeometryFileStream(outArg, true);
+    FileStream ofs = new GeometryFileStream(outArg, true, false);
 
     DistanceMatrixModule ppd = new DistanceMatrixModule();
     ofs.setHeader(ppd.init(mfs.getHeader()));
