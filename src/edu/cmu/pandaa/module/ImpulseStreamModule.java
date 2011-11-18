@@ -185,7 +185,10 @@ public class ImpulseStreamModule implements StreamModule {
 		int[] peakOffsets = new int[iPeaks];
 
 		for (int i = 0; i < iPeaks; i++) {
-			peakMagnitudes[i] = frame[peakLocations[i]];
+      short peak = frame[peakLocations[i]];
+      if (peak == Short.MIN_VALUE) // can't invert Short.MIN_VALUE!
+        peak++;
+			peakMagnitudes[i] = peak < 0 ? (short) -peak : peak;
 			peakOffsets[i] = sampleToTimeOffset(peakLocations[i]);
 		}
 
