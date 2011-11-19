@@ -9,11 +9,10 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
-import java.awt.image.LookupOp;
-
 public class ImpulseStreamModule implements StreamModule {
 
-	private int sampleRate, nsPerSample;
+	private int sampleRate;
+  private double usPerSample;
 	private double thd; // threshold for peak
 	private double thdPeak = 0.4; // general threshold for peak
 	private ImpulseHeader header;
@@ -78,7 +77,7 @@ public class ImpulseStreamModule implements StreamModule {
 		if (sr != 0) {
 			sampleRate = sr;
 		}
-		nsPerSample = 10 ^ 9 / sampleRate; // nanosecond per sample
+		usPerSample = Math.pow(10,6) / (double) sampleRate; // us per sample
 		header = new ImpulseHeader(inHeader.id, inHeader.startTime,
 				inHeader.frameTime);
 		return header;
@@ -206,11 +205,11 @@ public class ImpulseStreamModule implements StreamModule {
 	}
 
 	private int sampleToTimeOffset(int sample) {
-		return sample * nsPerSample;
+		return (int) (sample * usPerSample);
 	}
 
 	private int timeToSampleOffset(int time) {
-		return time / nsPerSample;
+		return (int) ((double) time / usPerSample);
 	}
 
 	/*
