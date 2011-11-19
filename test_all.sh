@@ -34,7 +34,7 @@ for file in $FILESET; do
   if [ -f $AUDIO-$file.wav ]; then
     for pow in $POWSET; do
       val=`echo 2^$pow | bc`
-      #java $OPTS $PACKAGE.stream.RawAudioFileStream -$val-1 $AUDIO_SET-$pow-$file.wav $AUDIO-$file.wav
+      java $OPTS $PACKAGE.stream.RawAudioFileStream -$val-1 ${AUDIO_SET}_$pow-$file.wav $AUDIO-$file.wav
     done
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt $AUDIO-$file.wav
   fi
@@ -52,7 +52,7 @@ if [ "$inputs" == "" ]; then
   exit
 fi
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
-java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-100-30 geometrySmooth.txt geometryAll.txt
+java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-30-30 geometrySmooth.txt geometryAll.txt
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometrySmooth.txt
 
 if [ "$*" != "" ]; then
