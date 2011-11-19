@@ -20,7 +20,7 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
   }
 
   public class ImpulseFrame extends StreamFrame implements Serializable {
-    public int[] peakOffsets;  // nanosecond of the peak in one frame
+    public int[] peakOffsets;  // us of the peak in one frame
     public short[] peakMagnitudes; // magnitude information for each peak
 
     public ImpulseFrame(int seq, int[] peaks, short[] magnitudes) {

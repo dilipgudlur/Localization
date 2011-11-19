@@ -52,7 +52,7 @@ if [ "$inputs" == "" ]; then
   exit
 fi
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
-java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-100-30 geometrySmooth.txt geometryAll.txt
+java $OPTS $PACKAGE.module.ConsolidateModule m-1-1-30-30 geometrySmooth.txt geometryAll.txt
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometrySmooth.txt
 
 if [ "$*" != "" ]; then
