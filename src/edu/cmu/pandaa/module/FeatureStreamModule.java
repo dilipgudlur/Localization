@@ -13,10 +13,12 @@ import java.util.ArrayList;
 
 public class FeatureStreamModule implements StreamModule {
   private double usPerSample;
-  private final int slowWindow = 500;
-  private final int fastWindow = 100;
-  private final double jerk = 2;
+  private final int slowWindow = 1000;
+  private final int fastWindow = 50;
+  private final double jerk = 4;
+  private final double base = 50;
   private ImpulseHeader header;
+  boolean prevPeak = true; // start with peak supression turned on
 
   public FeatureStreamModule() {
   }
@@ -56,11 +58,11 @@ public class FeatureStreamModule implements StreamModule {
   }
 
   private void augmentAudio(RawAudioFrame audio, ImpulseFrame impulses) {
-    for (int i = 0; i < audio.audioData.length; i++) {
-      audio.audioData[i] = (short) (audio.audioData[i] / 2);
-    }
+    //for (int i = 0; i < audio.audioData.length; i++) {
+    //  audio.audioData[i] = (short) (audio.audioData[i] / 2);
+    //}
     for (int i = 0; i < impulses.peakOffsets.length; i++) {
-      audio.audioData[timeToSampleOffset(impulses.peakOffsets[i])] = Short.MAX_VALUE;
+      audio.audioData[timeToSampleOffset(impulses.peakOffsets[i])+2] = Short.MAX_VALUE;
     }
     // audio.audioData[0] = Short.MAX_VALUE;
   }
@@ -92,13 +94,13 @@ public class FeatureStreamModule implements StreamModule {
     double[] fastFrame = raf.smooth(fastWindow);
     short[] data = raf.getAudioData();
 
-    boolean prevPeak = false;
     for (int i = 0; i < data.length;i ++) {
       double slow = slowFrame[i];
       double fast = fastFrame[i];
 
-      if (fast > slow * jerk) {
+      if (fast > (slow*jerk + base)) {
         if (!prevPeak) {
+         // System.out.println("" + fast + " " + slow);
           peakOffsets.add(sampleToTimeOffset(i));
           peakMagnitudes.add((short) fast);
         }

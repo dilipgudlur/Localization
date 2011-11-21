@@ -38,7 +38,8 @@ done
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
-   java $OPTS $PACKAGE.module.TDOACorrelationModule distance-$a$b.txt impulses-$a.txt impulses-$b.txt 
+   java $OPTS $PACKAGE.module.TDOACorrelationModule tdoa-$a$b.txt impulses-$a.txt impulses-$b.txt 
+   java $OPTS $PACKAGE.module.ConsolidateModule d distance-$a$b.txt tdoa-$a$b.txt
    inputs="$inputs distance-$a$b.txt"
   fi
  done

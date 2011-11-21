@@ -38,7 +38,8 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	private long dataSize;
   private short[] derrive_save;
   private int[] smooth_save;
-  private RawAudioFrame prev, stage;
+  private short[] prev, stage;
+  private int prev_seqNum, stage_seqNum = -1;
 
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
@@ -108,7 +109,7 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
     private double getSampleSq(int offset) {
       double dat;
       if (offset < 0) {
-        dat = prev == null ? 0.0 : prev.audioData[prev.audioData.length + offset];
+        dat = prev == null ? 0.0 : prev[prev.length + offset];
       } else {
         dat = audioData[offset];
       }
@@ -117,16 +118,18 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
     }
 
     public double[] smooth(int window) {
-      if (prev == null || prev.seqNum != seqNum-1) {
+      if (prev_seqNum != seqNum-1) {
         prev = stage;
-        stage = this;
+        prev_seqNum = stage_seqNum;
+        stage = this.audioData.clone();
+        stage_seqNum = seqNum;
       }
 
       // first time through this will point back to us, but that's OK
       double[] data = new double[audioData.length];
       double avg = 0;
-      for (int i = 0; i < window; i++) {
-        avg += getSampleSq(-i);
+      for (int i = 0;i < window; i++) {
+        avg += getSampleSq(i-window);
       }
       for (int i = 0; i < data.length; i++) {
         avg -= getSampleSq(i-window);
