@@ -1,7 +1,7 @@
 set title "Device Locations"
 set xlabel "X Coordinate"
-set xrange [-500:500]
-set yrange [-500:500]
+set xrange [-2000:2000]
+set yrange [-2000:2000]
 set ylabel "Y Coodrinate"
 set term gif
 set output "graph.gif"

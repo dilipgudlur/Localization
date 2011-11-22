@@ -15,7 +15,7 @@ public class DistanceHeader extends StreamHeader {
   }
 
   public class DistanceFrame extends StreamFrame {
-    public double[] peakDeltas; // time delta for each peak (nanoseconds)
+    public double[] peakDeltas; // time delta for each peak (micro-seconds)
     public double[] peakMagnitudes; // magnitude information for each peak
 
     DistanceFrame(double[] deltas, double[] magnitudes) {

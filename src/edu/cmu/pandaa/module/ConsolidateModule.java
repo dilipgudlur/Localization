@@ -107,8 +107,12 @@ public class ConsolidateModule implements StreamModule {
         }
       }
 
-      double deltas[] = { distanceSum / magnitudeSum };
-      double mags[] = { magnitudeSum };
+      double deltas[] = { };
+      double mags[] = { };
+      if (magnitudeSum > 0) {
+        mags = new double[] { magnitudeSum };
+        deltas = new double[] { distanceSum / magnitudeSum };
+      }
       return ((DistanceHeader) header).makeFrame(deltas, mags);
     }
   }
@@ -139,7 +143,7 @@ public class ConsolidateModule implements StreamModule {
             if (Double.isNaN(geometry[i][j]))
               geometry[i][j] = input[i][j];
             else if (!Double.isNaN(input[i][j]))
-              geometry[i][j] = (geometry[i][j]*weight + input[i][j])/( weight + 1);
+              geometry[i][j] = (geometry[i][j]*weight + input[i][j])/(weight + 1);
             else
               geometry[i][j] = geometry[i][j]; // NOP placeholder
           }
@@ -161,7 +165,6 @@ public class ConsolidateModule implements StreamModule {
       short[] mags = new short[size];
       int pos = 0, shift = 0;
       for (int i = 0; i < combine; i++) {
-        // because of circular buffer, adding 1 to index gives us the oldest frame
         ImpulseFrame frame = (ImpulseFrame) getFrame(i);
         if (frame == null)
           break;
@@ -233,7 +236,7 @@ public class ConsolidateModule implements StreamModule {
     int nopts = opts.length;
     int opt = 0;
     char type = opts[opt++].charAt(0);
-    int combine = Integer.parseInt(opts[opt++]);
+    int combine = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
     int rolling = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
     int average = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
     int loops = nopts > opt ? Integer.parseInt(opts[opt++]) : 1;
