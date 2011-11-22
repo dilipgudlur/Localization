@@ -53,7 +53,7 @@ public class LiveAudioCapture extends JPanel {
 	public long timeStamp;
 	public boolean isTimeStamped;
 	private int audioFormat, bitsPerSample;
-	private long numChannels, samplingRate, headerSize, dataSize;
+	private long numChannels, samplingRate, dataSize;
 	private int frameLength;
 	private int audioCaptureTime;
 	protected String filePath;
