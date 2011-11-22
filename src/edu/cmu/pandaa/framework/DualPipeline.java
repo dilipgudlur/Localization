@@ -2,7 +2,6 @@ package edu.cmu.pandaa.framework;
 
 import edu.cmu.pandaa.header.*;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
-import edu.cmu.pandaa.module.ConsolidateModule;
 import edu.cmu.pandaa.module.DummyModule;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.module.TDOACorrelationModule;
@@ -23,7 +22,6 @@ public class DualPipeline implements StreamModule {
   StreamModule tdoa = new TDOACorrelationModule();
 
   /* Then we consolidate bunches of impulsdummyIdse frames into larger consolidated frames for processing */
-//  StreamModule smooth = new ConsolidateModule('d', 1, 1, 1, 1);
   StreamModule smooth = new DummyModule(new DistanceHeader("smoother", now, frameTime, new String[] {"1", "2"}));
 
   @Override
@@ -40,7 +38,7 @@ public class DualPipeline implements StreamModule {
     header = smooth.init(header);
 
     if (!(header instanceof DistanceHeader)) {
-      throw new IllegalArgumentException("Output should be DistanceHeader");
+      throw new IllegalArgumentException("Output should be ImpulseHeader");
     }
     return header;
   }

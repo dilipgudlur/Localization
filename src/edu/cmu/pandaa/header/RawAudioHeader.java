@@ -38,6 +38,8 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	private long dataSize;
   private short[] derrive_save;
   private int[] smooth_save;
+  private short[] prev, stage;
+  private int prev_seqNum, stage_seqNum = -1;
 
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
@@ -104,6 +106,39 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 			return result;
 		}
 
+    private double getSampleSq(int offset) {
+      double dat;
+      if (offset < 0) {
+        dat = prev == null ? 0.0 : prev[prev.length + offset];
+      } else {
+        dat = audioData[offset];
+      }
+
+      return dat * dat;
+    }
+
+    public double[] smooth(int window) {
+      if (prev_seqNum != seqNum-1) {
+        prev = stage;
+        prev_seqNum = stage_seqNum;
+        stage = this.audioData.clone();
+        stage_seqNum = seqNum;
+      }
+
+      // first time through this will point back to us, but that's OK
+      double[] data = new double[audioData.length];
+      double avg = 0;
+      for (int i = 0;i < window; i++) {
+        avg += getSampleSq(i-window);
+      }
+      for (int i = 0; i < data.length; i++) {
+        avg -= getSampleSq(i-window);
+        avg += getSampleSq(i);
+        data[i] = Math.sqrt(avg / window);
+      }
+      return data;
+    }
+
     public void smooth(boolean rms) {
       if (smooth_save == null || smooth_save.length == 0)
         return;
@@ -117,12 +152,11 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
           sum += smooth_save[j];
         }
         double avg = rms ? Math.sqrt(sum/size) : sum/size;
-        if (avg > Short.MAX_VALUE)
-          avg = Short.MIN_VALUE;
-        short x = (short) avg;
-        if (x == 0)
-          avg = 0;
-        data[i] = x;  // rms = sqrt(mean_square)
+        avg *= 5; // scale up to take advantage of short range
+        avg -= Short.MIN_VALUE;
+        if (avg >= Short.MAX_VALUE-1)
+          avg = Short.MIN_VALUE-1;
+        data[i] = (short) avg;  // rms = sqrt(mean_square)
       }
     }
 
