@@ -30,12 +30,16 @@ public class RawAudioFileStream implements FrameStream {
 	private final short STEREO = 2;
 	private final int PCM_FORMAT = 1;
 
-  private final String riffString = "RIFF";
-  private final String formatString = "WAVE";
-  private final String subChunk1String = "fmt ";
-  private final String subChunk2String = "data";
-  private final String metadataString = "LIST";
-  private final long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
+	private final String riffString = "RIFF";
+	private final String formatString = "WAVE";
+	private final String subChunk1String = "fmt ";
+	private final String subChunk2String = "data";
+	private final String metadataString = "LIST";
+	private final long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
+
+	public String getFileName() {
+		return fileName;
+	}
 
 	public RawAudioFileStream(String fileName) throws IOException {
 		this.fileName = fileName;
@@ -56,7 +60,10 @@ public class RawAudioFileStream implements FrameStream {
 	@Override
 	public StreamHeader getHeader() throws Exception {
 		if (dis != null) {
-			throw new RuntimeException("getHeader called twice!");
+			if (headerRef != null)
+				return headerRef;
+			else
+				throw new RuntimeException("getHeader called twice!");
 		}
 		dis = new DataInputStream(is);
 		byte[] tmpLong = new byte[4];
@@ -68,19 +75,19 @@ public class RawAudioFileStream implements FrameStream {
 
 		byte[] chunkID = new byte[4];
 		int retval = dis.read(chunkID, 0, 4);
-    if (!checkChunk(retval, chunkID, riffString))
-        throw new RuntimeException("File not in correct format");
+		if (!checkChunk(retval, chunkID, riffString))
+			throw new RuntimeException("File not in correct format");
 
 		dis.read(tmpLong);
 		wavFileSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-    retval = dis.read(chunkID, 0, 4);
-    if (!checkChunk(retval, chunkID, formatString))
-      throw new RuntimeException("File not in correct format");
+		retval = dis.read(chunkID, 0, 4);
+		if (!checkChunk(retval, chunkID, formatString))
+			throw new RuntimeException("File not in correct format");
 
-    retval = dis.read(chunkID, 0, 4);
-    if (!checkChunk(retval, chunkID, subChunk1String))
-        throw new RuntimeException("File not in correct format");
+		retval = dis.read(chunkID, 0, 4);
+		if (!checkChunk(retval, chunkID, subChunk1String))
+			throw new RuntimeException("File not in correct format");
 
 		dis.read(tmpLong);
 		wavSubChunk1Size = DataConversionUtil.byteArrayToLong(tmpLong);
@@ -106,44 +113,44 @@ public class RawAudioFileStream implements FrameStream {
 		dis.read(tmpInt);
 		wavBitsPerSample = DataConversionUtil.byteArrayToInt(tmpInt);
 
-    retval = dis.read(chunkID, 0, 4);
-    dis.read(tmpLong);
-    wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
+		retval = dis.read(chunkID, 0, 4);
+		dis.read(tmpLong);
+		wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
 
-    if (checkChunk(retval, chunkID, metadataString) && wavDataSize < 1000) {
-      for (int i = 0;i < wavDataSize;i++)
-        dis.read();
-      retval = dis.read(chunkID, 0, 4);
-      dis.read(tmpLong);
-      wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
-    }
+		if (checkChunk(retval, chunkID, metadataString) && wavDataSize < 1000) {
+			for (int i = 0; i < wavDataSize; i++)
+				dis.read();
+			retval = dis.read(chunkID, 0, 4);
+			dis.read(tmpLong);
+			wavDataSize = DataConversionUtil.byteArrayToLong(tmpLong);
+		}
 
-    if (!checkChunk(retval, chunkID, subChunk2String))
-        throw new RuntimeException("File not in correct format, bad data chunk header");
+		if (!checkChunk(retval, chunkID, subChunk2String))
+			throw new RuntimeException("File not in correct format, bad data chunk header");
 
-		headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength,
-				wavFormat, wavChannels, wavSamplingRate, wavBitsPerSample, wavDataSize);
+		headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength, wavFormat, wavChannels,
+				wavSamplingRate, wavBitsPerSample, wavDataSize);
 		return headerRef;
 	}
 
-  private boolean checkChunk(int size, byte[] data, String target) {
-    if (size != 4 && data.length != 4 && target.length() != 4)
-      throw new IllegalArgumentException("All should be 4!");
-    byte[] tbytes = target.getBytes();
-    for (int i = 0; i < size; i++) {
-      if (tbytes[i] != data[i])
-        return false;
-    }
+	private boolean checkChunk(int size, byte[] data, String target) {
+		if (size != 4 && data.length != 4 && target.length() != 4)
+			throw new IllegalArgumentException("All should be 4!");
+		byte[] tbytes = target.getBytes();
+		for (int i = 0; i < size; i++) {
+			if (tbytes[i] != data[i])
+				return false;
+		}
 
-    return true;
-  }
+		return true;
+	}
 
 	private String getDeviceID() {
 		int startIndex = 0, endIndex;
 
 		startIndex = fileName.lastIndexOf("\\") + 1;
 
-    endIndex = fileName.lastIndexOf(".");
+		endIndex = fileName.lastIndexOf(".");
 		if (endIndex == -1) {
 			endIndex = fileName.length();
 		}
@@ -245,48 +252,48 @@ public class RawAudioFileStream implements FrameStream {
 		}
 	}
 
-  public static void main(String[] args) throws Exception {
-    int arg = 0;
+	public static void main(String[] args) throws Exception {
+		int arg = 0;
 
-    String opt = args[arg++];
-    boolean rms = opt.startsWith("-");
-    String[] nopt = opt.substring(rms ? 1 : 0).split("-");
-    int[] opts = new int[] { 0, 0 };
-    for (int i = 0;i < nopt.length;i++)
-      opts[i] = Integer.parseInt(nopt[i]);
+		String opt = args[arg++];
+		boolean rms = opt.startsWith("-");
+		String[] nopt = opt.substring(rms ? 1 : 0).split("-");
+		int[] opts = new int[] { 0, 0 };
+		for (int i = 0; i < nopt.length; i++)
+			opts[i] = Integer.parseInt(nopt[i]);
 
-    String outArg = args[arg++];
-    String inArg = args[arg++];
-    if (args.length != arg) {
-      throw new IllegalArgumentException("Invalid number of arguments");
-    }
+		String outArg = args[arg++];
+		String inArg = args[arg++];
+		if (args.length != arg) {
+			throw new IllegalArgumentException("Invalid number of arguments");
+		}
 
-    System.out.println("RawAudioFileStream: " + opt + " " + outArg + " " + inArg);
-    RawAudioFileStream aIn = new RawAudioFileStream(inArg);
-    RawAudioFileStream aOut = new RawAudioFileStream("d0_" + outArg, true);
+		System.out.println("RawAudioFileStream: " + opt + " " + outArg + " " + inArg);
+		RawAudioFileStream aIn = new RawAudioFileStream(inArg);
+		RawAudioFileStream aOut = new RawAudioFileStream("d0_" + outArg, true);
 
-    RawAudioFileStream[] dout = new RawAudioFileStream[opts[1]];
-    for (int i = 0;i < dout.length; i++)
-      dout[i] =  new RawAudioFileStream("d" + (i+1) + "_" + outArg, true);
+		RawAudioFileStream[] dout = new RawAudioFileStream[opts[1]];
+		for (int i = 0; i < dout.length; i++)
+			dout[i] = new RawAudioFileStream("d" + (i + 1) + "_" + outArg, true);
 
-    RawAudioHeader h = (RawAudioHeader) aIn.getHeader();
-    aOut.setHeader(h);
-    for (int i = 0;i < dout.length; i++)
-      dout[i].setHeader(h);
-    RawAudioFrame frame;
-    h.initFilters(opts[0], dout.length);
+		RawAudioHeader h = (RawAudioHeader) aIn.getHeader();
+		aOut.setHeader(h);
+		for (int i = 0; i < dout.length; i++)
+			dout[i].setHeader(h);
+		RawAudioFrame frame;
+		h.initFilters(opts[0], dout.length);
 
-    while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
-      frame.smooth(rms);
-      aOut.sendFrame(frame);
-      for (int i = 0;i < dout.length; i++) {
-        frame.derrive();
-        dout[i].sendFrame(frame);
-      }
-    }
+		while ((frame = (RawAudioFrame) aIn.recvFrame()) != null) {
+			frame.smooth(rms);
+			aOut.sendFrame(frame);
+			for (int i = 0; i < dout.length; i++) {
+				frame.derrive();
+				dout[i].sendFrame(frame);
+			}
+		}
 
-    aOut.close();
-    for (int i = 0;i < dout.length; i++)
-      dout[i].close();
-  }
+		aOut.close();
+		for (int i = 0; i < dout.length; i++)
+			dout[i].close();
+	}
 }

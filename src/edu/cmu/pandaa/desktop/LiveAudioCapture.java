@@ -29,14 +29,16 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
+import edu.cmu.pandaa.utils.DataConversionUtil;
 import edu.cmu.pandaa.utils.WavUtil;
 
-public class AudioConversionUI extends JPanel {
+public class LiveAudioCapture extends JPanel {
 	JButton convertWavToFrameButton, playWavAudioButton;
-	JButton captureAudioButton, stopAudioButton, saveAudioButton;
+	JButton captureAudioButton;
 	JButton openWavButton, saveAsButton;
 	JTextField wavFilePath, frameFilePath;
 	JTextArea log;
@@ -48,10 +50,40 @@ public class AudioConversionUI extends JPanel {
 
 	ByteArrayOutputStream byteArrayOutputStream;
 	FrameStream fs;
-	WavUtil capturedWavUtil;
+	public long timeStamp;
+	public boolean isTimeStamped;
+	private int audioFormat, bitsPerSample;
+	private long numChannels, samplingRate, dataSize, headerSize;
+	private int frameLength;
+	private int audioCaptureTime;
+	protected String filePath;
 
-	public AudioConversionUI() {
+	private final static int DEFAULT_FORMAT = 1; // PCM
+	private final static long DEFAULT_CHANNELS = 1; // MONO
+	private final static long DEFAULT_SAMPLING_RATE = 16000;
+	private final static int DEFAULT_BITS_PER_SAMPLE = 16;
+	private final static long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
+	private final static long DEFAULT_DATA_SIZE = 0;
+	private final static int DEFAULT_FRAMELENGTH = 100;
+	private final static int DEFAULT_AUDIO_CAPTURE_TIME = 10;
+
+	public LiveAudioCapture(int format, long samplingRate, int bitsPerSample, int frameLen,
+			String outFile) {
 		super(new BorderLayout());
+		audioFormat = format;
+		this.samplingRate = samplingRate;
+		this.bitsPerSample = bitsPerSample;
+		frameLength = frameLen;
+		numChannels = DEFAULT_CHANNELS;
+		headerSize = DEFAULT_SUBCHUNK1_SIZE;
+		dataSize = DEFAULT_DATA_SIZE;
+		filePath = outFile;
+		isTimeStamped = false;
+		audioCaptureTime = DEFAULT_AUDIO_CAPTURE_TIME * 1000; //numSeconds * 1000 ms
+	}
+
+	public LiveAudioCapture() {
+		this(DEFAULT_FORMAT, DEFAULT_SAMPLING_RATE, DEFAULT_BITS_PER_SAMPLE, DEFAULT_FRAMELENGTH, null);
 
 		fc = new JFileChooser();
 
@@ -78,55 +110,27 @@ public class AudioConversionUI extends JPanel {
 	}
 
 	private void createAudioCapturePanel() {
-		captureAudioButton = new JButton("Capture Audio");
-		captureAudioButton.addActionListener( new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				capturedWavUtil = new WavUtil();
-				captureAudioButton.setEnabled(false);
-				stopAudioButton.setEnabled(true);
-				saveAudioButton.setEnabled(false);
-				// captureAudio(new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 16000.0F, 16, 1, 2,
-				// 16000.0F, true));
-				captureAudio(new AudioFormat((float) capturedWavUtil.getSamplingRate(),
-						capturedWavUtil.getBitsPerSample(), (int) capturedWavUtil.getNumChannels(),
-						true, false));
-			}
-		});
+		captureAudioButton = new JButton("Capture Audio In a file");
+		captureAudioButton.addActionListener(new ActionListener() {
 
-		stopAudioButton = new JButton("Stop Audio Capture");
-		stopAudioButton.setEnabled(false);
-		stopAudioButton.addActionListener( new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				stopCapture = true;
-				stopAudioButton.setEnabled(false);
-				saveAudioButton.setEnabled(true);
 				captureAudioButton.setEnabled(false);
-			}
-		});
-
-		saveAudioButton = new JButton("Save Audio");
-		saveAudioButton.setEnabled(false);
-		saveAudioButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
 				fc.setFileFilter(new FileNameExtensionFilter("WAVE file (.wav)", "wav"));
-				int returnVal = fc.showSaveDialog(AudioConversionUI.this);
+				int returnVal = fc.showSaveDialog(LiveAudioCapture.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					captureAudioButton.setEnabled(true);
-					stopAudioButton.setEnabled(false);
-					saveAudioButton.setEnabled(false);
-					String filePath = fc.getSelectedFile().getAbsolutePath();
+					filePath = fc.getSelectedFile().getAbsolutePath();
 					int extensionIndex = filePath.lastIndexOf('.');
 					if (extensionIndex != -1)
 						filePath = filePath.substring(0, extensionIndex);
 					filePath = filePath + ".wav";
-					log.append("Saving captured audio in " + filePath + ".\n");
-					capturedWavUtil.saveAudioData(byteArrayOutputStream.toByteArray());
-					capturedWavUtil.saveWavFile(filePath);
-				}
+					// captureAudio(new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+					// 16000.0F, 16, 1, 2,
+					// 16000.0F, true));
+					startAudioCapture();
+					captureAudioButton.setEnabled(true);
+				} else
+					captureAudioButton.setEnabled(true);
 			}
 		});
 
@@ -141,23 +145,17 @@ public class AudioConversionUI extends JPanel {
 		gbc.gridx = 0;
 		gbc.gridy = 1;
 		audioButtonPanel.add(captureAudioButton, gbc);
-		gbc.gridx = 0;
-		gbc.gridy = 2;
-		audioButtonPanel.add(stopAudioButton, gbc);
-		gbc.gridx = 0;
-		gbc.gridy = 3;
-		audioButtonPanel.add(saveAudioButton, gbc);
 		audioCapturePanel.add(audioButtonPanel);
 	}
 
 	private void createTestConversionPanel() {
 		openWavButton = new JButton("Open Wav file");
 		openWavButton.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				fc.setFileFilter(new FileNameExtensionFilter("WAVE file (.wav)", "wav"));
-				int returnVal = fc.showOpenDialog(AudioConversionUI.this);
+				int returnVal = fc.showOpenDialog(LiveAudioCapture.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					wavFilePath.setText(fc.getSelectedFile().getAbsolutePath());
 				} else {
@@ -170,12 +168,12 @@ public class AudioConversionUI extends JPanel {
 		wavFilePath.setFocusable(false);
 
 		saveAsButton = new JButton("Save As");
-		saveAsButton.addActionListener( new ActionListener() {
-			
+		saveAsButton.addActionListener(new ActionListener() {
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				fc.setFileFilter(new FileNameExtensionFilter("Wav file (.wav)", "wav"));
-				int returnVal = fc.showSaveDialog(AudioConversionUI.this);
+				int returnVal = fc.showSaveDialog(LiveAudioCapture.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					String filePath = fc.getSelectedFile().getAbsolutePath();
 					int extensionIndex = filePath.lastIndexOf('.');
@@ -193,7 +191,7 @@ public class AudioConversionUI extends JPanel {
 
 		convertWavToFrameButton = new JButton("Convert a file to Audio frames");
 		convertWavToFrameButton.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (wavFilePath.getText().length() == 0) {
@@ -206,9 +204,9 @@ public class AudioConversionUI extends JPanel {
 					RawAudioFrame rawFrame = null;
 					try {
 						rfsInput = new RawAudioFileStream(wavFilePath.getText());
-						rfsOutput = new RawAudioFileStream(frameFilePath.getText(),true);
+						rfsOutput = new RawAudioFileStream(frameFilePath.getText(), true);
 						rfsOutput.setHeader(rfsInput.getHeader());
-						while((rawFrame = (RawAudioFrame)rfsInput.recvFrame()) != null) {
+						while ((rawFrame = (RawAudioFrame) rfsInput.recvFrame()) != null) {
 							rfsOutput.sendFrame(rawFrame);
 						}
 					} catch (IOException ex) {
@@ -221,7 +219,7 @@ public class AudioConversionUI extends JPanel {
 						if (rfsOutput != null)
 							rfsOutput.close();
 					}
-				}				
+				}
 			}
 		});
 
@@ -267,7 +265,7 @@ public class AudioConversionUI extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				fc.setFileFilter(new FileNameExtensionFilter("WAVE file (.wav)", "wav"));
-				int returnVal = fc.showOpenDialog(AudioConversionUI.this);
+				int returnVal = fc.showOpenDialog(LiveAudioCapture.this);
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					WavUtil wavData = WavUtil.readWavFile(fc.getSelectedFile().getAbsolutePath());
 					if (wavData != null) {
@@ -287,11 +285,79 @@ public class AudioConversionUI extends JPanel {
 		JFrame frame = new JFrame("PandaaAudioConversionUI");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		frame.add(new AudioConversionUI());
+		frame.add(new LiveAudioCapture());
 		frame.pack();
 		frame.setBounds(400, 250, 500, 280);
 		frame.setResizable(false);
 		frame.setVisible(true);
+	}
+
+	public void startAudioCapture() {
+		System.out.println("Starting audio capture.");
+		captureAudio(new AudioFormat((float) samplingRate, bitsPerSample, (int) numChannels, true, false));
+		try {
+			Thread.sleep(audioCaptureTime);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
+		stopCapture = true;
+		log.append("Saving captured audio in " + filePath + ".\n");
+		System.out.println("Saving captured audio in " + filePath + ".");
+		saveCapturedAudio(filePath);
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+	
+	public void setAudioCaptureTime(int sec) {
+		audioCaptureTime = sec * 1000; 
+	}
+
+	protected void saveCapturedAudio(String filePath) {
+		RawAudioFileStream outFile = null;
+		int startIndex = 0, endIndex = 0;
+		try {
+			outFile = new RawAudioFileStream(filePath, true);
+			short[] audio = DataConversionUtil.byteArrayToShortArray(byteArrayOutputStream.toByteArray());
+			dataSize = audio.length;
+			int numAudioSamples = (int) (frameLength * samplingRate / 1000);
+			RawAudioHeader header = new RawAudioHeader(getDeviceID(filePath), timeStamp, frameLength,
+					audioFormat, numChannels, samplingRate, bitsPerSample, dataSize);
+			outFile.setHeader(header);
+			while (true) {
+				startIndex = endIndex;
+				endIndex = (int) ((dataSize < startIndex + numAudioSamples) ? dataSize : startIndex
+						+ numAudioSamples);
+				RawAudioFrame frame = header.makeFrame(numAudioSamples);
+				for (int i = 0; i < endIndex - startIndex; i++) {
+					frame.audioData[i] = audio[startIndex + i];
+				}
+				outFile.sendFrame(frame);
+				if (endIndex >= dataSize)
+					break;
+			}
+			outFile.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private String getDeviceID(String fileName) {
+		int startIndex = 0, endIndex;
+
+		startIndex = fileName.lastIndexOf("\\") + 1;
+
+		endIndex = fileName.lastIndexOf(".");
+		if (endIndex == -1) {
+			endIndex = fileName.length();
+		}
+
+		return fileName.substring(startIndex, endIndex);
 	}
 
 	// This method captures audio input from a microphone and saves it in a
@@ -344,7 +410,10 @@ public class AudioConversionUI extends JPanel {
 			stopCapture = false;
 			try {
 				while (!stopCapture) {
-
+					if (!isTimeStamped) {
+						isTimeStamped = true;
+						timeStamp = System.currentTimeMillis();
+					}
 					int cnt = targetDataLine.read(tempBuffer, 0, tempBuffer.length);
 					if (cnt > 0) {
 						byteArrayOutputStream.write(tempBuffer, 0, cnt);
@@ -365,8 +434,8 @@ public class AudioConversionUI extends JPanel {
 			AudioFormat audioFormat = new AudioFormat(wavUtil.getSamplingRate(),
 					wavUtil.getBitsPerSample(), (int) wavUtil.getNumChannels(), true, false);
 
-			AudioInputStream audioInputStream = new AudioInputStream(byteArrayInputStream,
-					audioFormat, audioData.length / audioFormat.getFrameSize());
+			AudioInputStream audioInputStream = new AudioInputStream(byteArrayInputStream, audioFormat,
+					audioData.length / audioFormat.getFrameSize());
 
 			DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat);
 			SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
@@ -412,7 +481,17 @@ public class AudioConversionUI extends JPanel {
 	}
 
 	public static void main(String[] args) {
-		AudioConversionUI audioConversionUI = new AudioConversionUI();
-		audioConversionUI.createAndShowGUI();
+		// LiveAudioCapture liveAudioCapture = new LiveAudioCapture();
+		// liveAudioCapture.createAndShowGUI();
+		if (args.length == 0) {
+			throw new RuntimeException("Usage java LiveAudioCapture outputFileName audioCaptureTime");
+		}
+		int arg = 0;
+		String fileName = args[arg++];
+		int captureTime = new Integer(args[arg++]);
+		LiveAudioCapture liveAudioCapture = new LiveAudioCapture();
+		liveAudioCapture.setFilePath(fileName);
+		liveAudioCapture.setAudioCaptureTime(captureTime);
+		liveAudioCapture.startAudioCapture();
 	}
 }

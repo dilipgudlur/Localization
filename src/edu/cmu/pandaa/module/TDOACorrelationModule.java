@@ -1,5 +1,10 @@
 package edu.cmu.pandaa.module;
 
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.TreeSet;
+
 import edu.cmu.pandaa.header.DistanceHeader;
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.ImpulseHeader;
@@ -45,25 +50,81 @@ public class TDOACorrelationModule implements StreamModule {
     if (frames.length != 2) {
       throw new IllegalArgumentException("Input multiframe should contain two elements");
     }
-
-    /* Run through all the peaks that presumably occur at both devices.
-     * Right now, we're assuming that impulses reach devices in the same 
-     * order, within the same frame, and within less than 58ms (speed of
-     * sound over 20m, a generous room size). Tweaking needed.
-     */    
-    int sharedPeakCount = (((ImpulseFrame) frames[0]).peakOffsets.length < ((ImpulseFrame) frames[1]).peakOffsets.length) 
-        ? ((ImpulseFrame) frames[0]).peakOffsets.length 
-        : ((ImpulseFrame) frames[1]).peakOffsets.length;
     
-    double[] peakDeltas = new double[sharedPeakCount];
-    double[] peakMagnitudes = new double[sharedPeakCount];
-    for (int i = 0; i < sharedPeakCount; i++) {
-      // subtract peak offsets
-      peakDeltas[i] = ((ImpulseFrame) frames[0]).peakOffsets[i] - ((ImpulseFrame) frames[1]).peakOffsets[i];
-      // average peak magnitudes
-      peakMagnitudes[i] = (((ImpulseFrame) frames[0]).peakMagnitudes[i] + ((ImpulseFrame) frames[1]).peakMagnitudes[i]) / 2;
+    /* Try to match peaks in the two frames.
+     * We're assuming that the same sound impulse reaches devices
+     * within less than 29ms (speed of sound over 10m, a generous 
+     * room size). Tweaking needed.
+     */
+    ImpulseFrame aFrame = (ImpulseFrame) frames[0];
+    ImpulseFrame bFrame = (ImpulseFrame) frames[1];
+    
+    // if any of the frames has no impulses, then there's nothing to be matched
+    if (aFrame.peakOffsets.length == 0 || bFrame.peakOffsets.length == 0) {
+      return header.makeFrame(new double[] {}, new double[] {});
     }
-
+    
+    // all potential peak matches
+    LinkedList<int[]> potentialMatches = new LinkedList<int[]>();
+    // list of [<index of potential match>, <absolute distance>], sorted by <absolute distance>
+    TreeSet<int[]> sortedAbsDistances = new TreeSet<int[]>(new ArrayComparator(1));
+        
+    int maxAbsDistance = 29 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
+    int aIndex = 0, bIndex = 0, higherOffset, absDistance;
+    
+    while (aIndex < aFrame.peakOffsets.length && bIndex < bFrame.peakOffsets.length) {
+      higherOffset = Math.max(aFrame.peakOffsets[aIndex], bFrame.peakOffsets[bIndex]);
+      
+      while (aIndex + 1 < aFrame.peakOffsets.length && aFrame.peakOffsets[aIndex + 1] < higherOffset) {
+        aIndex++;
+      }
+      while (bIndex + 1 < aFrame.peakOffsets.length && aFrame.peakOffsets[bIndex + 1] < higherOffset) {
+        bIndex++;
+      }
+      
+      absDistance = Math.abs(aFrame.peakOffsets[aIndex] - bFrame.peakOffsets[bIndex]);
+      if (absDistance < maxAbsDistance) {
+        potentialMatches.add(new int[] {aIndex, bIndex});
+        sortedAbsDistances.add(new int[] {potentialMatches.size() - 1, absDistance});
+      }
+      
+      if (aFrame.peakOffsets[aIndex] > bFrame.peakOffsets[bIndex]) {
+        bIndex++;
+      } else {
+        aIndex++;
+      }
+    }
+    
+    HashSet<Integer> aIndexesVisited = new HashSet<Integer>();
+    HashSet<Integer> bIndexesVisited = new HashSet<Integer>();
+    TreeSet<int[]> matchAbsDistances = new TreeSet<int[]>(new ArrayComparator(0));
+    int[] potentialMatch;
+    for (int[] dist : sortedAbsDistances) {
+      potentialMatch = potentialMatches.get(dist[0]);
+      if (!aIndexesVisited.contains(potentialMatch[0]) && !bIndexesVisited.contains(potentialMatch[1])) {
+        aIndexesVisited.add(potentialMatch[0]);
+        bIndexesVisited.add(potentialMatch[1]);
+        matchAbsDistances.add(dist);
+      }
+    }
+    
+    LinkedList<Double> matchDeltas = new LinkedList<Double>();
+    LinkedList<Double> matchMagnitudes = new LinkedList<Double>();
+    int[] match;
+    for (int[] dist : matchAbsDistances) {
+      match = potentialMatches.get(dist[0]);
+      matchDeltas.add((double) aFrame.peakOffsets[match[0]] - bFrame.peakOffsets[match[1]]);
+      matchMagnitudes.add((double) (aFrame.peakMagnitudes[match[0]] + bFrame.peakMagnitudes[match[1]]) / 2);
+    }
+    
+    int size = matchDeltas.size();
+    double[] peakDeltas = new double[size];
+    double[] peakMagnitudes = new double[size];
+    for (int i = 0; i < size; i++) {
+      peakDeltas[i] = matchDeltas.get(i);
+      peakMagnitudes[i] = matchMagnitudes.get(i);
+    }
+    
     return header.makeFrame(peakDeltas, peakMagnitudes);
   }
 
@@ -126,5 +187,15 @@ public class TDOACorrelationModule implements StreamModule {
     DistanceFrame outFrame = (DistanceFrame) tdoa.process(inFrame);
 
     System.out.println("DistanceFrame output: frame #" + outFrame.seqNum + ", deltas " + outFrame.peakDeltas[0] + ", magnitudes " + outFrame.peakMagnitudes[0]);
+  }
+  
+  static class ArrayComparator implements Comparator<int[]> {
+    private int index;
+    ArrayComparator(int index) {
+      this.index = index;
+    }
+    public int compare(int[] a, int[] b) {
+      return (a[index] > b[index]) ? 1 : -1;
+    }
   }
 }
