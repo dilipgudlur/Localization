@@ -238,6 +238,10 @@ public class LiveAudioStream implements FrameStream {
           int cnt = targetDataLine.read(tempBuffer, 0, tempBuffer.length);
           if (cnt > 0) {
             synchronized (byteArrayOutputStream) {
+              /* TAP: This should really just make this bit of data available and make it available
+               * to recvFrame ASAP... it looks like you're trying to read the ENTIRE sequence of audio
+               * into a buffer first, which isn't quite what we want.
+               */
               byteArrayOutputStream.write(tempBuffer, 0, cnt);
             }
           }
