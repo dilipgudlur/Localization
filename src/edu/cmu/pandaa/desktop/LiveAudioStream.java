@@ -19,19 +19,15 @@ import edu.cmu.pandaa.stream.RawAudioFileStream;
 import edu.cmu.pandaa.utils.DataConversionUtil;
 
 public class LiveAudioStream implements FrameStream {
-
-	boolean stopCapture = false;
-
 	ByteArrayOutputStream byteArrayOutputStream;
-	ByteArrayInputStream byteArrayInputStream;
 	FrameStream fs;
 	public long timeStamp;
 
 	public enum AudioCaptureStatus {
-		STARTED, NOT_STARTED
+		BEFORE, RUNNING, STOPPED;
 	};
 
-	AudioCaptureStatus audioCaptureStatus;
+	AudioCaptureStatus audioCaptureStatus = AudioCaptureStatus.BEFORE;
 	private int audioFormat, bitsPerSample;
 	private long numChannels, samplingRate, dataSize, headerSize;
 	private int frameLength;
@@ -57,9 +53,7 @@ public class LiveAudioStream implements FrameStream {
 		numChannels = DEFAULT_CHANNELS;
 		headerSize = DEFAULT_SUBCHUNK1_SIZE;
 		dataSize = DEFAULT_DATA_SIZE;
-		audioCaptureStatus = AudioCaptureStatus.NOT_STARTED;
-		audioCaptureTime = DEFAULT_AUDIO_CAPTURE_TIME * 1000; // numSeconds * 1000
-																													// ms
+		audioCaptureTime = DEFAULT_AUDIO_CAPTURE_TIME * 1000; // ms = numSeconds * 1000
 		audioOffset = 0;
 	}
 
@@ -77,81 +71,78 @@ public class LiveAudioStream implements FrameStream {
 		throw new RuntimeException("sendFrame: Writing to Live Audio Stream is not supported");
 	}
 
-	@Override
-	public StreamHeader getHeader() throws Exception {
-		synchronized (audioCaptureStatus) {
-			if (audioCaptureStatus == AudioCaptureStatus.NOT_STARTED) {
-				System.out.println("Waiting for data capture to start");
-				audioCaptureStatus.wait();
-				audioCaptureStatus = AudioCaptureStatus.STARTED;
-				System.out.println("Audio capture started");
-			}
-		}
-		dataSize = audioCaptureTime * numChannels * (samplingRate / 1000) * 2;
-		header = new RawAudioHeader("DeviceId", timeStamp, frameLength, audioFormat, numChannels,
-				samplingRate, bitsPerSample, dataSize);
-		return header;
+  @Override
+  public StreamHeader getHeader() throws Exception {
+    synchronized (this) {
+      while (!isRunning()) {
+        System.out.println("Waiting for data capture to start");
+        wait();
+      }
+    }
+    dataSize = audioCaptureTime * numChannels * (samplingRate / 1000) * 2;
+    header = new RawAudioHeader("DeviceId", timeStamp, frameLength, audioFormat, numChannels,
+            samplingRate, bitsPerSample, dataSize);
+    return header;
 	}
 
-	@Override
-	public StreamFrame recvFrame() throws Exception {
-		if (byteArrayOutputStream == null) {
-			System.out.println("Waiting for audio data");
-			byteArrayOutputStream.wait();
-		}
-		int nextBytesLength = -1;
+  @Override
+  public StreamFrame recvFrame() throws Exception {
+    int nextBytesLength = -1;
 
-		byte[] audioData = byteArrayOutputStream.toByteArray();
-		while (true) {
-			if ((audioData.length == 0
-					|| (audioData.length != 0 && (audioData.length - audioOffset) == 0) || ((audioData.length - audioOffset) < frameLength * 2))
-					&& !stopCapture) {
-				synchronized (byteArrayOutputStream) {
-					byteArrayOutputStream.wait();
-				}
-			} else
-				break;
-			audioData = byteArrayOutputStream.toByteArray();
-		}
-		byteArrayInputStream = new ByteArrayInputStream(audioData, audioOffset, frameLength * 2);
-		nextBytesLength = byteArrayInputStream.available();
-		audioOffset += (frameLength * 2);
-		if (nextBytesLength <= 0)
-			return null;
-		RawAudioFrame audioFrame = header.makeFrame();
-		byte[] audioBytes = new byte[nextBytesLength];
-		byteArrayInputStream.read(audioBytes);
-		audioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioBytes);
+    byte[] audioData = null;
+    synchronized (byteArrayOutputStream) {
+      while ((audioData == null || audioData.length == 0) && isRunning()) {
+        if (!isRunning())
+          return null;
+        if (audioData != null) {
+          byteArrayOutputStream.wait();
+        }
+        audioData = byteArrayOutputStream.toByteArray();
+        byteArrayOutputStream.reset();
+      }
+    }
+    if (audioData == null)
+      return null;
+    /* TODO: Fix this so that the output frames are generated in the right size */
+    RawAudioFrame audioFrame = header.makeFrame();
+		audioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioData);
 		return audioFrame;
 	}
 
-	@Override
-	public void close() throws Exception {
-		if (byteArrayInputStream != null)
-			byteArrayInputStream.close();
-		if (byteArrayOutputStream != null)
-			byteArrayOutputStream.close();
-	}
+  @Override
+  public void close() throws Exception {
+    if (byteArrayOutputStream != null) {
+      synchronized (byteArrayOutputStream) {
+        byteArrayOutputStream.close();
+        byteArrayOutputStream.notifyAll();
+      }
+    }
+  }
 
-	public void startAudioCapture() {
-		System.out.println("Starting audio capture.");
-		captureAudio(new AudioFormat((float) samplingRate, bitsPerSample, (int) numChannels, true,
-				false));
-		try {
-			Thread.sleep(audioCaptureTime);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		stopCapture = true;
-	}
+  public void startAudioCapture() {
+    System.out.println("Starting audio capture.");
+    captureAudio(new AudioFormat((float) samplingRate, bitsPerSample,
+            (int) numChannels, true, false));
+    try {
+      Thread.sleep(audioCaptureTime);
+    } catch (InterruptedException e1) {
+      e1.printStackTrace();
+    }
+    setStatus(AudioCaptureStatus.STOPPED);
+  }
 
-	public void stopAudioCapture() {
-		stopCapture = true;
-	}
-	
-	public void setAudioCaptureTime(int sec) {
-		audioCaptureTime = sec * 1000;
-	}
+  private synchronized void setStatus(AudioCaptureStatus newStatus) {
+    audioCaptureStatus = newStatus;
+    notifyAll();
+  }
+
+  private synchronized boolean isRunning() {
+    return audioCaptureStatus == AudioCaptureStatus.RUNNING;
+  }
+
+  public void setAudioCaptureTime(int sec) {
+    audioCaptureTime = sec * 1000;
+  }
 
 	// This method captures audio input from a microphone and saves it in a
 	// ByteArrayOutputStream object.
@@ -164,7 +155,10 @@ public class LiveAudioStream implements FrameStream {
 					mixer = AudioSystem.getMixer(mixerInfo[cnt]);
 					break;
 				}
-			}
+      }
+
+      if (mixer == null)
+        mixer = AudioSystem.getMixer(mixerInfo[0]);
 
 			DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
 
@@ -191,36 +185,31 @@ public class LiveAudioStream implements FrameStream {
 			this.targetDataLine = targetDataLine;
 		}
 
-		@Override
-		public void run() {
-			byteArrayOutputStream = new ByteArrayOutputStream();
-			stopCapture = false;
-			try {
-				while (!stopCapture) {
-					synchronized (audioCaptureStatus) {
-						if (audioCaptureStatus == AudioCaptureStatus.NOT_STARTED) {
-							timeStamp = System.currentTimeMillis();
-							audioCaptureStatus.notifyAll();
-						}
-					}
-					int cnt = targetDataLine.read(tempBuffer, 0, tempBuffer.length);
-					if (cnt > 0) {
-						synchronized (byteArrayOutputStream) {
-							byteArrayOutputStream.write(tempBuffer, 0, cnt);
-							byteArrayOutputStream.notifyAll();
-						}
-					}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(0);
-			}
-		}
-	}
+    @Override
+    public void run() {
+      byteArrayOutputStream = new ByteArrayOutputStream();
+      setStatus(AudioCaptureStatus.RUNNING);
+      timeStamp = System.currentTimeMillis();
+      try {
+        while (isRunning()) {
+          int cnt = targetDataLine.read(tempBuffer, 0, tempBuffer.length);
+          if (cnt > 0) {
+            synchronized (byteArrayOutputStream) {
+              byteArrayOutputStream.write(tempBuffer, 0, cnt);
+              byteArrayOutputStream.notifyAll();
+            }
+          }
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.exit(0);
+      }
+    }
+  }
 
-	public static void main(String[] args) {
+  public static void main(String[] args) {
 		if (args.length == 0) {
-			throw new RuntimeException("Usage java LiveAudioCapture outputFileName audioCaptureTime");
+			throw new RuntimeException("Usage: java LiveAudioCapture outputFileName audioCaptureTime");
 		}
 		int arg = 0;
 		final String fileName = args[arg++];
