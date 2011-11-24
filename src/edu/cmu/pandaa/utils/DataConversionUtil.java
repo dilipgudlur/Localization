@@ -50,6 +50,19 @@ public class DataConversionUtil {
 
 		return shortArray;
 	}
+	
+	public static final byte[] shortArrayToByteArray(short[] sArray) {
+		byte[] byteArray = null;
+		int byteArrayIndex = 0;
+		if(sArray.length >0)
+			byteArray = new byte[sArray.length * 2];
+		for(int i=0;i<sArray.length;i++,byteArrayIndex+=2) {
+			byte[] audioByte = shortToByteArray(sArray[i]);
+			byteArray[byteArrayIndex] = audioByte[0];
+			byteArray[byteArrayIndex + 1] = audioByte[1];
+		}
+		return byteArray;
+	}
 
 	// convert a short to a byte array
 	public static byte[] shortToByteArray(short data) {
