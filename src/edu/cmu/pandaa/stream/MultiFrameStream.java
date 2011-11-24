@@ -29,12 +29,15 @@ public class MultiFrameStream implements FrameStream {
   // set/write the header
   @Override
   public synchronized void setHeader(StreamHeader h) throws Exception {
-    if (outHeader == null && isOpen) {
-      outHeader = new MultiHeader(id, h);
-      notifyAll();
+    if (outHeader == null) {
+      if (isOpen) {
+        outHeader = new MultiHeader(id, h);
+        notifyAll();
+      }
     } else {
       outHeader.addHeader(h);
     }
+    frames.put(h, null);
   }
 
   // send a frame of data
@@ -42,11 +45,14 @@ public class MultiFrameStream implements FrameStream {
   public synchronized void sendFrame(StreamFrame m) throws Exception {
     if (m == null)
       return;
-    if (frames.put(m.getHeader(), m) == null) {
-      dataCount++;
-      if (dataCount == frames.size()) {
-        notifyAll();
-      }
+    StreamHeader h = m.getHeader();
+    while (frames.get(h) != null && isOpen) {
+      wait();
+    }
+    frames.put(h, m);
+    dataCount++;
+    if (dataCount == frames.size()) {
+      notifyAll();
     }
   }
 
@@ -77,12 +83,16 @@ public class MultiFrameStream implements FrameStream {
     MultiFrame frame = outHeader.makeFrame();
     for (StreamHeader in : frames.keySet()) {
       StreamFrame f = frames.get(in);
+      if (f == null) {
+        throw new IllegalArgumentException("What happened to my frame?");
+      }
       if (f != null) {
         frame.setFrame(f);
         frames.put(in, null); // keep header key in set, but remove frame
+        dataCount--;
       }
     }
-    dataCount = 0;
+    notifyAll();
     return frame;
   }
 

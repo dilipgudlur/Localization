@@ -10,10 +10,7 @@ import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.StreamModule;
-import edu.cmu.pandaa.stream.DummyStream;
-import edu.cmu.pandaa.stream.FrameStream;
-import edu.cmu.pandaa.stream.MultiFrameStream;
-import edu.cmu.pandaa.stream.SocketStream;
+import edu.cmu.pandaa.stream.*;
 
 // server app
 public class App {
@@ -28,7 +25,7 @@ public class App {
     } else {
       int count = 1;
       for (String file : args) {
-        FrameStream in = new DummyStream(new RawAudioHeader("dummy" + count++, System.currentTimeMillis(), frameTime));
+        RawAudioFileStream in = new RawAudioFileStream(file);
         activateNewDevice(in);
       }
     }
@@ -109,6 +106,9 @@ public class App {
     private boolean closed = false;
 
     PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out) throws Exception {
+      if (in == null)
+        throw new IllegalArgumentException("argument can not be null");
+
       this.in = in;
       if (out != null) {
         outSet.add(out);
@@ -117,38 +117,35 @@ public class App {
     }
 
     public void addOutput(FrameStream out) throws Exception {
+      if (closed) {
+        throw new IllegalStateException("Pipeline closed");
+      }
       synchronized(outSet) {
-        if (closed) {
-          throw new IllegalArgumentException("Pipeline closed");
-        }
-        while (outHeader == null && !closed) {
-          outSet.wait();
-        }
         outSet.add(out);
-        out.setHeader(outHeader);
+        if (outHeader != null)
+          out.setHeader(outHeader);
       }
     }
 
     @Override
     public void run() {
       try {
-        int count = 0;
-        String id = in.getHeader().id;
-        outHeader = pipeline.init(in.getHeader());
         synchronized(outSet) {
-          outSet.notifyAll();
+          outHeader = pipeline.init(in.getHeader());
           for (FrameStream out : outSet) {
             out.setHeader(outHeader);
           }
         }
+        int count = 0;
+        String id = in.getHeader().id;
         try {
           System.out.println("Starting pipe " + id);
           StreamFrame frame;
           do {
             frame = pipeline.process(in.recvFrame());
-            synchronized(outSet) {
-              if (frame != null) {
-                count++;
+            if (frame != null) {
+              count++;
+              synchronized(outSet) {
                 for (FrameStream out : outSet) {
                   out.sendFrame(frame);
                 }
@@ -158,9 +155,10 @@ public class App {
         } catch (Exception e) {
           e.printStackTrace();
         }
+
+        System.out.println("Done with pipe " + id + " count=" + count);
+        pipeline.close();
         synchronized(outSet) {
-          System.out.println("Done with pipe " + id + " count=" + count);
-          pipeline.close();
           closed = true;
           for (FrameStream out : outSet) {
             out.close();
