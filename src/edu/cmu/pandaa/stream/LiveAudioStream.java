@@ -18,7 +18,6 @@ import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.utils.DataConversionUtil;
-import edu.cmu.pandaa.utils.WavUtil;
 
 public class LiveAudioStream implements FrameStream {
 
@@ -66,14 +65,22 @@ public class LiveAudioStream implements FrameStream {
 
 	@Override
 	public void setHeader(StreamHeader h) throws Exception {
-		// TODO Auto-generated method stub
-
+		RawAudioHeader audioHeader = (RawAudioHeader)h;
+		audioFormat = audioHeader.getAudioFormat();
+		numChannels = audioHeader.getNumChannels();
+		bitsPerSample = audioHeader.getBitsPerSample();
+		samplingRate = audioHeader.getSamplingRate();
+		dataSize = audioHeader.getSubChunk2Size();
+		byteArrayOutputStream = new ByteArrayOutputStream();
+		audioOffset = 0;
 	}
 
 	@Override
 	public void sendFrame(StreamFrame m) throws Exception {
-		// TODO Auto-generated method stub
-
+		RawAudioFrame frame = (RawAudioFrame)m;
+		byte[] audioBytes = DataConversionUtil.shortArrayToByteArray(frame.audioData);
+		byteArrayOutputStream.write(audioBytes, 0, audioBytes.length);
+		audioOffset += audioBytes.length;
 	}
 
 	@Override
@@ -238,12 +245,12 @@ public class LiveAudioStream implements FrameStream {
 		}
 	}
 
-	public void playWavFile(WavUtil wavUtil) {
+	public void playAudio() {
 		try {
-			byte audioData[] = wavUtil.getAudioData();
+			byte audioData[] = byteArrayOutputStream.toByteArray();
 			InputStream byteArrayInputStream = new ByteArrayInputStream(audioData);
-			AudioFormat audioFormat = new AudioFormat(wavUtil.getSamplingRate(),
-					wavUtil.getBitsPerSample(), (int) wavUtil.getNumChannels(), true, false);
+			AudioFormat audioFormat = new AudioFormat(samplingRate,
+					bitsPerSample, (int) numChannels, true, false);
 
 			AudioInputStream audioInputStream = new AudioInputStream(byteArrayInputStream, audioFormat,
 					audioData.length / audioFormat.getFrameSize());
@@ -302,7 +309,7 @@ public class LiveAudioStream implements FrameStream {
 		liveAudioStream.setAudioCaptureTime(captureTime);
 		liveAudioStream.startAudioCapture();
 		System.out.println("Saving captured audio in " + fileName);
-		RawAudioFileStream rawAudioOutputStream = null;
+		RawAudioFileStream rawAudioOutputStream = null, inStream = null;
 		try {
 			rawAudioOutputStream = new RawAudioFileStream(fileName, true);
 			rawAudioOutputStream.setHeader(liveAudioStream.getHeader());
@@ -310,6 +317,15 @@ public class LiveAudioStream implements FrameStream {
 			while ((frame = liveAudioStream.recvFrame()) != null) {
 				rawAudioOutputStream.sendFrame(frame);
 			}
+			rawAudioOutputStream.close();
+			System.out.println("Audio saved");
+			inStream = new RawAudioFileStream(fileName);
+			liveAudioStream.setHeader(inStream.getHeader());
+			while((frame = inStream.recvFrame()) != null) {
+				liveAudioStream.sendFrame(frame);
+			}
+			System.out.println("Playing captured audio.");
+			liveAudioStream.playAudio();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -326,7 +342,9 @@ public class LiveAudioStream implements FrameStream {
 				}
 			if (rawAudioOutputStream != null)
 				rawAudioOutputStream.close();
+			if(inStream != null)
+				inStream.close();
 		}
-		System.out.println("Audio saved");
+		System.out.println("Finished playing audio");
 	}
 }
