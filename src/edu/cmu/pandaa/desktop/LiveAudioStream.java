@@ -29,10 +29,10 @@ public class LiveAudioStream implements FrameStream {
 
 	AudioCaptureStatus audioCaptureStatus = AudioCaptureStatus.BEFORE;
 	private int audioFormat, bitsPerSample;
-	private long numChannels, samplingRate, dataSize, headerSize;
+	private long numChannels, samplingRate;
+  private int dataSize = -1;
 	private int frameLength;
 	private int audioCaptureTime;
-	private int audioOffset;
 	private RawAudioHeader header;
 
 	private final static int DEFAULT_FORMAT = 1; // PCM
@@ -40,7 +40,6 @@ public class LiveAudioStream implements FrameStream {
 	private final static long DEFAULT_SAMPLING_RATE = 16000;
 	private final static int DEFAULT_BITS_PER_SAMPLE = 16;
 	private final static long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
-	private final static long DEFAULT_DATA_SIZE = 0;
 	private final static int DEFAULT_FRAMELENGTH = 100;
 	private final static int DEFAULT_AUDIO_CAPTURE_TIME = 10;
 
@@ -51,10 +50,7 @@ public class LiveAudioStream implements FrameStream {
 		this.bitsPerSample = bitsPerSample;
 		frameLength = frameLen;
 		numChannels = DEFAULT_CHANNELS;
-		headerSize = DEFAULT_SUBCHUNK1_SIZE;
-		dataSize = DEFAULT_DATA_SIZE;
 		audioCaptureTime = DEFAULT_AUDIO_CAPTURE_TIME * 1000; // ms = numSeconds * 1000
-		audioOffset = 0;
 	}
 
 	public LiveAudioStream() {
@@ -79,7 +75,6 @@ public class LiveAudioStream implements FrameStream {
         wait();
       }
     }
-    dataSize = audioCaptureTime * numChannels * (samplingRate / 1000) * 2;
     header = new RawAudioHeader("DeviceId", timeStamp, frameLength, audioFormat, numChannels,
             samplingRate, bitsPerSample, dataSize);
     return header;
@@ -93,7 +88,7 @@ public class LiveAudioStream implements FrameStream {
     synchronized (byteArrayOutputStream) {
       while ((audioData == null || audioData.length == 0) && isRunning()) {
         if (!isRunning())
-          return null;
+          break;
         if (audioData != null) {
           byteArrayOutputStream.wait();
         }
@@ -101,9 +96,13 @@ public class LiveAudioStream implements FrameStream {
         byteArrayOutputStream.reset();
       }
     }
-    if (audioData == null)
+
+    if (!isRunning())
       return null;
-    /* TODO: Fix this so that the output frames are generated in the right size */
+
+    if (audioData.length != dataSize)
+      throw new IllegalStateException("Data size is not correct!");
+
     RawAudioFrame audioFrame = header.makeFrame();
 		audioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioData);
 		return audioFrame;
@@ -120,6 +119,7 @@ public class LiveAudioStream implements FrameStream {
   }
 
   public void startAudioCapture() {
+    dataSize = (int) (audioCaptureTime * numChannels * (samplingRate / 1000) * 2);
     System.out.println("Starting audio capture.");
     captureAudio(new AudioFormat((float) samplingRate, bitsPerSample,
             (int) numChannels, true, false));
@@ -178,7 +178,7 @@ public class LiveAudioStream implements FrameStream {
 
 	// Inner class to capture data from microphone
 	class CaptureThread extends Thread {
-		byte tempBuffer[] = new byte[10000];
+		byte tempBuffer[] = new byte[dataSize];
 		TargetDataLine targetDataLine;
 
 		public CaptureThread(TargetDataLine targetDataLine) {
