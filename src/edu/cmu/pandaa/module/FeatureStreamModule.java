@@ -10,61 +10,54 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class FeatureStreamModule implements StreamModule {
   private double usPerSample;
-  private final int slowWindow = 1000;
-  private final int fastWindow = 50;
-  private final double jerk = 4;
-  private final double base = 50;
   private ImpulseHeader header;
-  boolean prevPeak = true; // start with peak supression turned on
+  private int prevPeak = 0; // start with peak supression turned on -- peak at index 0
+  private double last_diff = 0;
+  private int peakWindow_use;
+  private double[] valueArray;
+  private double peakValue;
+  private LinkedList<RawAudioFrame> prevFrames = new LinkedList<RawAudioFrame>();
+  private int saveFrames = 2;
+
+  /* parameters we may want/need to tweak */
+  static boolean annotate = true;
+  static int derive = 0;  // non-zero to use 1st derivative
+  static int slowWindow = 1024;
+  static int fastWindow = 256;
+  static int peakWindowMs = 20;  // peakDetection window in Ms
 
   public FeatureStreamModule() {
   }
 
-  public static void main(String[] args) throws Exception {
-
-    int arg = 0, loops = 1;
-    String impulseFilename = args[arg++];
-    String audioFilename = args[arg++];
-    if (args.length > arg || args.length < arg) {
-      throw new IllegalArgumentException("Invalid number of arguments");
-    }
-
-    System.out.println("FeatureStream: " + impulseFilename + " "
-            + audioFilename);
-
-    RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
-    ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);
-    FeatureStreamModule ism = new FeatureStreamModule();
-    RawAudioFileStream rfso = new RawAudioFileStream(impulseFilename
-            + ".wav", true);
-
-    RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
-    rfso.setHeader(header);
-    ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
-    foo.setHeader(iHeader);
-
-    RawAudioFrame audioFrame = null;
-    while ((audioFrame = (RawAudioFrame) rfs.recvFrame()) != null) {
-      ImpulseFrame streamFrame = ism.process(audioFrame);
-      foo.sendFrame(streamFrame);
-      ism.augmentAudio(audioFrame, streamFrame);
-      rfso.sendFrame(audioFrame);
-    }
-    rfso.close();
-    foo.close();
-  }
-
-  private void augmentAudio(RawAudioFrame audio, ImpulseFrame impulses) {
+  private void augmentAudio(RawAudioFrame audio, ImpulseFrame impulses, RawAudioFileStream rfso) throws Exception {
     //for (int i = 0; i < audio.audioData.length; i++) {
     //  audio.audioData[i] = (short) (audio.audioData[i] / 2);
     //}
-    for (int i = 0; i < impulses.peakOffsets.length; i++) {
-      audio.audioData[timeToSampleOffset(impulses.peakOffsets[i])+2] = Short.MAX_VALUE;
+    if (audio == null) {
+      while (prevFrames.size() > 0)
+        rfso.sendFrame(prevFrames.removeLast());
+      return;
     }
-    // audio.audioData[0] = Short.MAX_VALUE;
+
+    int dataSize = audio.audioData.length;
+    prevFrames.addFirst(audio);
+
+    for (int i = 0; i < impulses.peakOffsets.length; i++) {
+      int offset = timeToSampleOffset(impulses.peakOffsets[i]);
+      // TODO: get the right frame here, depending on the index
+      int getFrame = (dataSize-offset)/dataSize;
+      offset += getFrame * dataSize;
+      if (getFrame >= prevFrames.size() && getFrame < saveFrames)
+        continue;
+      prevFrames.get(getFrame).audioData[offset] = Short.MAX_VALUE;
+    }
+
+    if (prevFrames.size() > saveFrames)
+      rfso.sendFrame(prevFrames.removeLast());
   }
 
   @Override
@@ -77,12 +70,46 @@ public class FeatureStreamModule implements StreamModule {
     usPerSample = Math.pow(10,6) / (double) sampleRate; // us per sample
     header = new ImpulseHeader(inHeader.id, inHeader.startTime,
             inHeader.frameTime);
+
+    peakWindow_use = peakWindowMs * sampleRate / 1000;
+    valueArray = new double[peakWindow_use];
+
     return header;
+  }
+
+  private double audioMap(double fast, double slow) {
+    double diff = (fast - slow);
+    if (diff > 0)
+      diff = Math.log(diff)*2000;
+    if (derive > 0) {
+      double tmp = diff;
+      diff = (diff - last_diff)*2.0;
+      last_diff = tmp;
+    }
+    return diff;
+  }
+
+  private int findPeak(int offset, double value) {
+    int mark = offset % peakWindow_use;
+    valueArray[mark] = value;
+    double max = 0;
+    int max_i = -1;
+    for (int i = 0;i < peakWindow_use;i++) {
+      if (valueArray[i] > max) {
+        max_i = i;
+        max = valueArray[i];
+      }
+    }
+
+    if (max_i > mark)
+      max_i -= peakWindow_use;
+    max_i = offset - mark + max_i;
+    peakValue = max;
+    return max_i;
   }
 
   @Override
   public ImpulseFrame process(StreamFrame inFrame) {
-    int peaks = 0;
     ArrayList<Integer> peakOffsets = new ArrayList<Integer>(1);
     ArrayList<Short> peakMagnitudes = new ArrayList<Short>(1);
 
@@ -93,35 +120,28 @@ public class FeatureStreamModule implements StreamModule {
     double[] slowFrame = raf.smooth(slowWindow);
     double[] fastFrame = raf.smooth(fastWindow);
     short[] data = raf.getAudioData();
+    int windowOffset = raf.seqNum * data.length;
 
     for (int i = 0; i < data.length;i ++) {
       double slow = slowFrame[i];
       double fast = fastFrame[i];
 
-      if (fast > (slow*jerk + base)) {
-        if (!prevPeak) {
-         // System.out.println("" + fast + " " + slow);
-          peakOffsets.add(sampleToTimeOffset(i));
-          peakMagnitudes.add((short) fast);
-        }
-        prevPeak = true;
-      } else {
-        prevPeak = false;
+      double value = audioMap(fast, slow);
+
+      int offset = windowOffset + i;
+      int pi = findPeak(offset, value) - windowOffset;
+
+      if (pi != prevPeak && peakValue > 0
+              && (i - pi) == peakWindow_use/2) {
+        peakOffsets.add(sampleToTimeOffset(pi));
+        peakMagnitudes.add((short) peakValue);
+        prevPeak = pi;
       }
 
-      double tmp = (i%2 == 0) ? -fast : slow;
-      data[i] = (short) tmp;
+      data[i] = (short) value;
     }
 
     return header.new ImpulseFrame(peakOffsets, peakMagnitudes);
-  }
-
-  private double[] short2double(short[] frame) {
-    double[] frameD = new double[frame.length];
-    for (int i = 0; i < frame.length; i++) {
-      frameD[i] = java.lang.Math.abs((double) frame[i]) / 32768.0;
-    }
-    return frameD;
   }
 
   private int sampleToTimeOffset(int sample) {
@@ -133,5 +153,63 @@ public class FeatureStreamModule implements StreamModule {
   }
 
   public void close() {
+  }
+
+  public static void main(String[] args) throws Exception {
+    int arg = 0, dint = 0;
+    String impulseFilename = args[arg++];
+
+    for (int inIndex = arg; inIndex < args.length; inIndex++) {
+      String audioFilename = args[inIndex];
+      //for (slowWindow = 256; slowWindow < 2000; slowWindow *= 2)
+      // for (fastWindow = slowWindow/8; fastWindow < slowWindow; fastWindow *= 2)
+      //for (derive = 0; derive < 2; derive++)
+      //for (peakWindowMs = 20; peakWindowMs < 100; peakWindowMs *= 2)
+      {
+        RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
+        ImpulseFileStream foo = null;
+        if (inIndex == arg) {
+          foo = new ImpulseFileStream(impulseFilename, true);
+        }
+        FeatureStreamModule ism = new FeatureStreamModule();
+        int dotIndex = audioFilename.lastIndexOf('.');
+        String outFile = audioFilename.substring(0, dotIndex);
+        if (derive > 0)
+          outFile = outFile + "_d";
+        else
+          outFile = outFile + "_i";
+        //outFile = outFile + "_" + slowWindow + "-" + fastWindow;
+        outFile = outFile + "_" + peakWindowMs;
+        outFile = outFile + ".wav";
+        RawAudioFileStream rfso = new RawAudioFileStream(outFile, true);
+
+        System.out.println("FeatureStream: " + impulseFilename + " " + audioFilename + " " + outFile);
+
+        RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
+        rfso.setHeader(header);
+        ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
+        if (foo != null)
+          foo.setHeader(iHeader);
+
+        RawAudioFrame audioFrame;
+        while ((audioFrame = (RawAudioFrame) rfs.recvFrame()) != null) {
+          ImpulseFrame streamFrame = ism.process(audioFrame);
+          if (foo != null)
+            foo.sendFrame(streamFrame);
+
+          if (annotate)
+            ism.augmentAudio(audioFrame, streamFrame, rfso);
+          else
+            rfso.sendFrame(audioFrame);
+        }
+
+        if (annotate)
+          ism.augmentAudio(null, null, rfso);
+
+        rfso.close();
+        if (foo != null)
+          foo.close();
+      }
+    }
   }
 }
