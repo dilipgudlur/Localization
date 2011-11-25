@@ -78,7 +78,7 @@ public class TDOACorrelationModule implements StreamModule {
       while (aIndex + 1 < aFrame.peakOffsets.length && aFrame.peakOffsets[aIndex + 1] < higherOffset) {
         aIndex++;
       }
-      while (bIndex + 1 < aFrame.peakOffsets.length && aFrame.peakOffsets[bIndex + 1] < higherOffset) {
+      while (bIndex + 1 < bFrame.peakOffsets.length && bFrame.peakOffsets[bIndex + 1] < higherOffset) {
         bIndex++;
       }
       

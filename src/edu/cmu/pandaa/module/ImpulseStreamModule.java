@@ -11,8 +11,6 @@ import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 import java.util.ArrayList;
 
-import sun.security.krb5.internal.SeqNumber;
-
 public class ImpulseStreamModule implements StreamModule {
   private double usPerSample;
   private final int slowWindow = 1000;
