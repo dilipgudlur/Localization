@@ -153,7 +153,7 @@ public class ImpulseStreamModule implements StreamModule {
       //data[i] = (short) fast;
     }
 */
-    return header.new ImpulseFrame(peakOffsets, peakMagnitudes);
+    return header.makeFrame(peakOffsets, peakMagnitudes);
   }
 
 

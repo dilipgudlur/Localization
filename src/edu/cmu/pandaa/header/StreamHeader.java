@@ -6,7 +6,7 @@ public class StreamHeader implements Serializable {
   public final String id; // device ID (hostname, IP address, whatever)
   public final long startTime; // client start time, ala System.currentTimeMillis()
   public final int frameTime;  // duration of each frame, measured in ms
-  private int nextSeq; // next sequence number to use by frame constructor
+  public int nextSeq; // next sequence number to use by frame constructor
 
   public StreamHeader(StreamHeader prototype) {
     this.id = prototype.id;

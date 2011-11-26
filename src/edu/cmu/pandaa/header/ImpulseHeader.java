@@ -2,6 +2,7 @@ package edu.cmu.pandaa.header;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ImpulseHeader extends StreamHeader implements Serializable {
   public int rollingWindow = 1;
@@ -33,16 +34,6 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
       peakOffsets = peaks;
       peakMagnitudes = magnitudes;
     }
-
-    public ImpulseFrame(ArrayList<Integer> peaks, ArrayList<Short> magnitudes) {
-      int size = peaks.size();
-      peakOffsets = new int[size];
-      peakMagnitudes = new short[size];
-      for (int i = 0;i < size; i++) {
-        peakOffsets[i] = peaks.get(i);
-        peakMagnitudes[i] = magnitudes.get(i);
-      }
-    }
   }
 
   public ImpulseFrame makeFrame(int[] peaks, short[] mags) {
@@ -51,5 +42,16 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
 
   public ImpulseFrame makeFrame(int seq, int[] peaks, short[] mags) {
     return new ImpulseFrame(seq, peaks, mags);
+  }
+
+  public ImpulseFrame makeFrame(List<Integer> peaks, List<Short> magnitudes) {
+    int size = peaks.size();
+    int[] peakOffsets = new int[size];
+    short[] peakMagnitudes = new short[size];
+    for (int i = 0;i < size; i++) {
+      peakOffsets[i] = peaks.get(i);
+      peakMagnitudes[i] = magnitudes.get(i);
+    }
+    return new ImpulseFrame(peakOffsets, peakMagnitudes);
   }
 }
