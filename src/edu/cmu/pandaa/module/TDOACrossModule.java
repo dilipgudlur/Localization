@@ -17,7 +17,7 @@ import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
-  final int maxAbsDistance = 29 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)f
+  final int maxAbsDistance = 30 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
 
   public StreamHeader init(StreamHeader inHeader) {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -42,10 +42,13 @@ public class TDOACrossModule implements StreamModule {
 
   private static class Peak implements Comparable<Peak> {
     final int ai, bi;
+    final int ao, bo;
     final double weight;
-    public Peak(int ai, int bi, double weight) {
+    public Peak(int ai, int ao, int bi, int bo, double weight) {
       this.ai = ai;
       this.bi = bi;
+      this.ao = ao;
+      this.bo = bo;
       this.weight = weight;
     }
 
@@ -58,7 +61,7 @@ public class TDOACrossModule implements StreamModule {
     int dist = Math.abs(ao - bo); // difference in us
     if (dist > maxAbsDistance)
       return 0;
-    return am*bm*(maxAbsDistance - dist)/maxAbsDistance;
+    return (double) am*bm*(maxAbsDistance - dist)/maxAbsDistance;
   }
 
   public StreamFrame process(StreamFrame inFrame) {
@@ -80,7 +83,10 @@ public class TDOACrossModule implements StreamModule {
       for (int bi = 0; bi < bSize; bi++) {
         double weight = calcWeight(aFrame.peakOffsets[ai], aFrame.peakMagnitudes[ai],
                 bFrame.peakOffsets[bi], bFrame.peakMagnitudes[bi]);
-        peaks.add(new Peak(ai, bi, weight));
+        peaks.add(new Peak(
+                ai, aFrame.peakOffsets[ai],
+                bi, bFrame.peakOffsets[bi],
+                weight));
       }
     }
 
@@ -105,7 +111,7 @@ public class TDOACrossModule implements StreamModule {
 
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
-      peakDeltas[i] = p.ai - p.bi;
+      peakDeltas[i] = p.ao - p.bo;
       peakMagnitudes[i] = p.weight;
     }
 
