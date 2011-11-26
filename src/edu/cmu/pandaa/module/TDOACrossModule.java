@@ -12,15 +12,12 @@ import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.MultiFrameStream;
-import sun.misc.Sort;
 
-import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.math.BigDecimal;
 import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
+  final int maxAbsDistance = 29 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)f
 
   public StreamHeader init(StreamHeader inHeader) {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -58,7 +55,10 @@ public class TDOACrossModule implements StreamModule {
   }
 
   private double calcWeight(int ao, int am, int bo, int bm) {
-    return am*bm;
+    int dist = Math.abs(ao - bo); // difference in us
+    if (dist > maxAbsDistance)
+      return 0;
+    return am*bm*(maxAbsDistance - dist)/maxAbsDistance;
   }
 
   public StreamFrame process(StreamFrame inFrame) {

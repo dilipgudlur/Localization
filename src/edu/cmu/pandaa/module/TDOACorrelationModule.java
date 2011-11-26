@@ -20,6 +20,7 @@ import edu.cmu.pandaa.stream.MultiFrameStream;
 
 public class TDOACorrelationModule implements StreamModule {
   DistanceHeader header;
+  final int maxAbsDistance = 29 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
 
   public StreamHeader init(StreamHeader inHeader) {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -69,7 +70,6 @@ public class TDOACorrelationModule implements StreamModule {
     // list of [<index of potential match>, <absolute distance>], sorted by <absolute distance>
     TreeSet<int[]> sortedAbsDistances = new TreeSet<int[]>(new ArrayComparator(1));
         
-    int maxAbsDistance = 29 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
     int aIndex = 0, bIndex = 0, higherOffset, absDistance;
     
     while (aIndex < aFrame.peakOffsets.length && bIndex < bFrame.peakOffsets.length) {
@@ -114,7 +114,7 @@ public class TDOACorrelationModule implements StreamModule {
     for (int[] dist : matchAbsDistances) {
       match = potentialMatches.get(dist[0]);
       matchDeltas.add((double) aFrame.peakOffsets[match[0]] - bFrame.peakOffsets[match[1]]);
-      matchMagnitudes.add((double) (aFrame.peakMagnitudes[match[0]] + bFrame.peakMagnitudes[match[1]]) / 2);
+      matchMagnitudes.add((double) (aFrame.peakMagnitudes[match[0]] * bFrame.peakMagnitudes[match[1]]));
     }
     
     int size = matchDeltas.size();

@@ -5,6 +5,7 @@ javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/module/FeatureStreamModule.jav
 javac -Xlint:unchecked -sourcepath src/ -d out/ src/edu/cmu/pandaa/framework/App.java -classpath lib/mdsj.jar 
 javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/module/DistanceMatrixModule.java -classpath lib/mdsj.jar 
 javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/module/GeometryMatrixModule.java -classpath lib/mdsj.jar 
+javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/module/TDOACrossModule.java -classpath lib/mdsj.jar 
 javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/stream/RawAudioFileStream.java
 jar cf Localization.jar -C out/ .
 

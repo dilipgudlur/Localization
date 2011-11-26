@@ -176,7 +176,7 @@ public class ImpulseStreamModule implements StreamModule {
 		{
 			//System.out.println(fastFrame[jj]);
 		}
-		System.out.println("index: "+index + " max: "+max);
+		//System.out.println("index: "+index + " max: "+max);
 	}
 	
 	return index;

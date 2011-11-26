@@ -31,13 +31,14 @@ FILESET="1 2 3 4 5 6 7 8 9"
 
 for file in $FILESET; do 
   if [ -f $AUDIO-$file.wav ]; then
+    java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt $AUDIO-$file.wav
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt $AUDIO-$file.wav
-    #java $OPTS $PACKAGE.module.FeatureStreamModule impulses-$file.txt $AUDIO-$file.wav
   fi
 done
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
+   java $OPTS $PACKAGE.module.TDOACrossModule tdoax-$a$b.txt impulses-$a.txt impulses-$b.txt 
    java $OPTS $PACKAGE.module.TDOACorrelationModule tdoa-$a$b.txt impulses-$a.txt impulses-$b.txt 
    java $OPTS $PACKAGE.module.ConsolidateModule d distance-$a$b.txt tdoa-$a$b.txt
    inputs="$inputs distance-$a$b.txt"
