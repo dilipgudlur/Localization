@@ -117,6 +117,9 @@ class GeometryMatrixModule implements StreamModule{
     }
   }
 
+  public void close() {
+  }
+
   public static void main(String[] args) throws Exception
   {
     int arg = 0;
@@ -136,8 +139,5 @@ class GeometryMatrixModule implements StreamModule{
     } catch (Exception e) {
       e.printStackTrace();
     }
-  }
-
-  public void close() {
   }
 }
