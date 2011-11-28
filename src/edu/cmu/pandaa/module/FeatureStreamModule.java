@@ -76,6 +76,8 @@ public class FeatureStreamModule implements StreamModule {
     audio.audioData[0] = Short.MIN_VALUE;
     for (int i = 0; i < impulses.peakOffsets.length; i++) {
       int offset = timeToSampleOffset(impulses.peakOffsets[i]);
+      if (offset >= audio.audioData.length)
+        offset = audio.audioData.length-1;
       audio.audioData[offset] = Short.MAX_VALUE;
     }
   }

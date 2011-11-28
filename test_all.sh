@@ -1,3 +1,8 @@
+IMPULSE_ALGORITHM=1
+TDOA_ALGORITHM=1
+REPEAT_TIMES=10
+DISTANCE_SMOOTH=100
+
 JAR=Localization.jar
 CLASSPATH=$PWD/`find . -name $JAR`
 
@@ -12,7 +17,7 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
-AUDIO_SET=triangle_clap
+AUDIO_SET=1m_triangle
 if [ "$1" ]; then
   AUDIO_SET=$1
 fi
@@ -33,9 +38,7 @@ for file in $FILESET; do
   if [ -f $AUDIO-$file.wav ]; then
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt $AUDIO-$file.wav
     java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt $AUDIO-$file.wav
-
-    # Change impulseX so that X matches 1 or 2 from above
-    java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-10-10 impulses-$file.txt impulse1-$file.txt
+    java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$REPEAT_TIMES impulses-$file.txt impulse$IMPULSE_ALGORITHM-$file.txt
   fi
 done
 for a in $FILESET; do 
@@ -43,7 +46,7 @@ for a in $FILESET; do
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
    java $OPTS $PACKAGE.module.TDOACorrelationModule tdoa1-$a$b.txt impulses-$a.txt impulses-$b.txt 
    java $OPTS $PACKAGE.module.TDOACrossModule tdoa2-$a$b.txt impulses-$a.txt impulses-$b.txt 
-   java $OPTS $PACKAGE.module.DistanceFilter 100 distance-$a$b.txt tdoa1-$a$b.txt
+   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt
    inputs="$inputs distance-$a$b.txt"
   fi
  done
