@@ -23,7 +23,6 @@ public class DistanceMatrixModule implements StreamModule {
   GeometryHeader gHeader;
   DistanceHeader[] distanceHeaders;
   int numDevices;
-  public static final double speedOfSound = 340.29; // m/s at sea level
 
   public DistanceMatrixModule()
   {
@@ -73,27 +72,6 @@ public class DistanceMatrixModule implements StreamModule {
     return set.toArray(new String[0]);
   }
 
-  private double distanceBetween(int i, int j) {
-    int n = distanceHeaders.length;
-    double a1 = Math.PI*2*i/n;
-    double a2 = Math.PI*2*j/n;
-    double dx = Math.sin(a1) - Math.sin(a2);
-    double dy = Math.cos(a1) - Math.cos(a2);
-    return Math.sqrt(dx*dx + dy*dy);
-  }
-
-  private double distanceAdjustment(int i, int j) {
-    int n = distanceHeaders.length;
-    double exp = 0;
-    double d1 = distanceBetween(i, j);
-    for (int k = 0; k < n; k++) {
-      double d2 = distanceBetween(i, k);
-      double d3 = distanceBetween(k, j);
-      exp += Math.abs(d2 - d3);
-    }
-    return d1*n/exp;
-  }
-
   public StreamFrame process(StreamFrame inFrame) {
     int numDevices = getNumDevices();
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
@@ -115,12 +93,9 @@ public class DistanceMatrixModule implements StreamModule {
           distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
         else {
           if (dfIn[count].peakDeltas.length == 0)
-            distanceMatrix[i][j] = Double.NaN; //no peaks
+            distanceMatrix[i][j] = Double.NaN;
           else if (dfIn[count].peakDeltas.length == 1) {
-            // convert from a dt measurement, to distance -- convert units, theta-scaling, and always positive
-            double scale = speedOfSound / 1000.0; // convert from dt (us) to distance (mm)
-            scale = scale * distanceAdjustment(i, j);
-            distanceMatrix[i][j] = Math.abs(dfIn[count].peakDeltas[0]) * scale;
+            distanceMatrix[i][j] = dfIn[count].peakDeltas[0];
           } else
             throw new RuntimeException("Multiple distance peaks not supported!");
 

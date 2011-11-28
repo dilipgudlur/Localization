@@ -7,13 +7,13 @@ fi
 FILES="$FDIR/*.txt"
 echo -n "Generating graphs: "
 cp ../grid.plt .tmp.plt
-cmd=""
+pcmd="plot \"$AUDIO_SET.dat\""
+shift
 for set in $@; do
-  cmd="$cmd,\"$set.dat\""
+  pcmd="$pcmd,\"$set.dat\""
   cp ../$set.dat .
 done
 
-pcmd="plot ${cmd#,}"
 echo $pcmd >> .tmp.plt
 echo Generating $pcmd to $AUDIO_SET.gif
 for file in $FILES; do
