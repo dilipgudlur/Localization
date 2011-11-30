@@ -323,7 +323,7 @@ public class LiveAudioCapture extends JPanel {
 			dataSize = audio.length;
 			int numAudioSamples = (int) (frameLength * samplingRate / 1000);
 			RawAudioHeader header = new RawAudioHeader(getDeviceID(filePath), timeStamp, frameLength,
-					audioFormat, numChannels, samplingRate, bitsPerSample, dataSize);
+					audioFormat, numChannels, samplingRate, bitsPerSample, audioCaptureTime);
 			outFile.setHeader(header);
 			while (true) {
 				startIndex = endIndex;

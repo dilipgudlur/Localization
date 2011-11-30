@@ -154,9 +154,9 @@ public class RawAudioFileStream implements FrameStream {
 
     dis.read(tmpInt32);
     wavDataSize = DataConversionUtil.byteArrayToLong(tmpInt32);
-
+    int captureTime = (int) (wavDataSize / wavSamplingRate * 8 / wavBitsPerSample);
     headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength, wavFormat, wavChannels,
-            wavSamplingRate, wavBitsPerSample, wavDataSize, wavComment);
+            wavSamplingRate, wavBitsPerSample, captureTime, wavComment);
     return headerRef;
   }
 
@@ -265,9 +265,6 @@ public class RawAudioFileStream implements FrameStream {
     for (int i = 0; i < audioData.length; i++) {
       dos.write((DataConversionUtil.shortToByteArray(audioData[i])), 0, 2);
       numSamplesWritten += 2;
-      if ((numSamplesWritten) >= headerRef.getSubChunk2Size() - 1) {
-        break;
-      }
     }
     dos.flush();
   }

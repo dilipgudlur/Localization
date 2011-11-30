@@ -52,19 +52,19 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	}
 
   public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
-      long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
-    this(id, startTime, frameTime, audioFormat, numChannels, samplingRate, bitsPerSample, subChunk2Size, null);
+      long numChannels, long samplingRate, int bitsPerSample, int captureTime) {
+    this(id, startTime, frameTime, audioFormat, numChannels, samplingRate, bitsPerSample, captureTime, null);
   }
 
   public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
-      long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size,
+      long numChannels, long samplingRate, int bitsPerSample, int captureTime,
       String comment) {
 		super(id, startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
 		this.bitsPerSample = bitsPerSample;
-		this.dataSize = subChunk2Size;
+		this.dataSize =  captureTime * samplingRate * bitsPerSample/8;
     this.comment = comment;
 	}
 
