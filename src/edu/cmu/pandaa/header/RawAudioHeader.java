@@ -40,6 +40,7 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
   private int[] smooth_save;
   private short[] prev, stage;
   private int prev_seqNum, stage_seqNum = -1;
+  public String comment;
 
 	public static final int DEFAULT_FRAMETIME = 100;
 	public static final int WAV_FILE_HEADER_LENGTH = 44;
@@ -50,14 +51,21 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		// is for simple testing
 	}
 
-	public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
-			long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
+  public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
+      long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size) {
+    this(id, startTime, frameTime, audioFormat, numChannels, samplingRate, bitsPerSample, subChunk2Size, null);
+  }
+
+  public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
+      long numChannels, long samplingRate, int bitsPerSample, long subChunk2Size,
+      String comment) {
 		super(id, startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
 		this.bitsPerSample = bitsPerSample;
 		this.dataSize = subChunk2Size;
+    this.comment = comment;
 	}
 
 	public long getSamplingRate() {
