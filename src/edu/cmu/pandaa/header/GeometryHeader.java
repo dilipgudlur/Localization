@@ -36,6 +36,9 @@ public class GeometryHeader extends StreamHeader implements Serializable {
   public class GeometryFrame extends StreamFrame implements Serializable {
     public double[][] geometry;
 
+    public GeometryFrame() {
+    }
+
     public GeometryFrame(int seq, double[][] geometry) {
       super(seq);
       init(geometry);
@@ -52,6 +55,10 @@ public class GeometryHeader extends StreamHeader implements Serializable {
         throw new IllegalArgumentException("Geometry rows does not match");
       this.geometry = geometry;
     }
+  }
+
+  public GeometryFrame makeFrame() {
+    return new GeometryFrame();
   }
 
   public GeometryFrame makeFrame(double[][] geometry) {

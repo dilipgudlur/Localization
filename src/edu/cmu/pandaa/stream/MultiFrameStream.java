@@ -16,7 +16,7 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
  */
 
 public class MultiFrameStream implements FrameStream {
-  private final String id;
+  public  final String id;
   private MultiHeader outHeader;
   private Map<StreamHeader, StreamFrame> frames = new HashMap<StreamHeader, StreamFrame>();
   private boolean isOpen = true;
