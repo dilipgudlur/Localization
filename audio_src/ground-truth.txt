@@ -1,2 +1,0 @@
-1m_triangle x1 y1 x2 y2 x3 y3
-1m_square x1 y1 x2 y2 x3 y3 x4 y4

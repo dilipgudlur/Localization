@@ -1,0 +1,2 @@
+../audio_src/1m_triangle-1,../audio_src/1m_triangle-2,../audio_src/1m_triangle-3 0 100 3 2
+x1 y1 x2 y2 x3 y3
