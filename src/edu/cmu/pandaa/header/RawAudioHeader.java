@@ -87,6 +87,10 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	public long getSubChunk2Size() {
 		return dataSize;
 	}
+	
+	public void setDataSize(long dataSize) {
+		this.dataSize = dataSize;
+	}
 
 	public String toString() {
 		return new String("Device ID: " + id + "\nSampling rate: " + samplingRate + "\nChannels: "
