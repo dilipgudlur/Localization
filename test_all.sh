@@ -57,6 +57,7 @@ if [ "$inputs" == "" ]; then
 fi
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
+java $OPTS $PACKAGE.module.RMSModule RMSOut.txt geometryOut.txt ground-truth.txt
 
 if [ "$*" != "" ]; then
   shift
