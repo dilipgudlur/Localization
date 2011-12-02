@@ -17,16 +17,16 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
-AUDIO_SET=1m_triangle
+INPUT_SET=1m_triangle
 if [ "$1" ]; then
-  AUDIO_SET=$1
+  INPUT_SET=$1
 fi
 
 # Easier to do our work in the test sub-directory
 rm -rf test/
 mkdir -p test/
 cd test/
-AUDIO=../audio_src/$AUDIO_SET
+INPUT=../audio_src/$INPUT_SET
 
 FILESET="1 2 3 4 5 6 7 8 9"
 # Format for all main options is:
@@ -35,9 +35,9 @@ FILESET="1 2 3 4 5 6 7 8 9"
 #
 
 for file in $FILESET; do 
-  if [ -f $AUDIO-$file.wav ]; then
-    java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt $AUDIO-$file.wav
-    java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt $AUDIO-$file.wav
+  if [ -f $INPUT-$file.wav ]; then
+    java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt $INPUT-$file.wav
+    java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt $INPUT-$file.wav
     java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$REPEAT_TIMES impulses-$file.txt impulse$IMPULSE_ALGORITHM-$file.txt
   fi
 done
@@ -57,13 +57,13 @@ if [ "$inputs" == "" ]; then
 fi
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
-java $OPTS $PACKAGE.module.RMSModule RMSOut.txt geometryOut.txt ground-truth.txt
+java $OPTS $PACKAGE.module.RMSModule RMSOut.txt geometryOut.txt $INPUT.txt
 
 if [ "$*" != "" ]; then
   shift
   if [ "$*" != "" ]; then
-    ../grid_multi.sh $AUDIO_SET "$@"
+    ../grid_multi.sh $INPUT_SET "$@"
   else
-    ../grid_anim.sh $AUDIO_SET
+    ../grid_anim.sh $INPUT_SET
   fi
 fi
