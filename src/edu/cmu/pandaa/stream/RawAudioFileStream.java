@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.sun.org.apache.bcel.internal.classfile.Code;
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
@@ -24,6 +23,7 @@ public class RawAudioFileStream implements FrameStream {
   DataOutputStream dos;
   private final String fileName;
   RawAudioHeader headerRef;
+  double timeDilation;
   private long numSamplesWritten = 0;
   private final int BITS_PER_BYTE = 8;
 
@@ -40,10 +40,6 @@ public class RawAudioFileStream implements FrameStream {
   private final String subChunk2String = "data";
   private final long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
 
-  public String getFileName() {
-    return fileName;
-  }
-
   public RawAudioFileStream(String fileName) throws IOException {
     this.fileName = fileName;
     is = new FileInputStream(fileName);
@@ -58,6 +54,14 @@ public class RawAudioFileStream implements FrameStream {
     }
     os = new FileOutputStream(file);
     wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
+  }
+
+  public String getFileName() {
+    return fileName;
+  }
+
+  public void setTimeDialtion(double timeDialation) {
+    this.timeDilation = timeDialation;
   }
 
   private int read32() throws IOException {
@@ -175,7 +179,7 @@ public class RawAudioFileStream implements FrameStream {
   private String getDeviceID() {
     int startIndex = 0, endIndex;
 
-    startIndex = fileName.lastIndexOf("\\") + 1;
+    startIndex = fileName.lastIndexOf(File.separatorChar) + 1;
 
     endIndex = fileName.lastIndexOf(".");
     if (endIndex == -1) {
@@ -188,6 +192,9 @@ public class RawAudioFileStream implements FrameStream {
   @Override
   public StreamFrame recvFrame() throws Exception {
     int frameLength = (int) (headerRef.getSamplingRate() / 1000) * wavFrameLength;
+
+    if (timeDilation > 0)
+      Thread.sleep((long) (headerRef.frameTime * timeDilation));
 
     RawAudioFrame rawAudioFrame = headerRef.makeFrame(frameLength);
     int numBytesInSample = headerRef.getBitsPerSample() / BITS_PER_BYTE;
