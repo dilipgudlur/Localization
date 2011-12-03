@@ -70,19 +70,26 @@ public class GeometryFileStream extends FileStream {
   }
 
   public GeometryFrame recvFrame() throws Exception {
+    if (useMultipleFiles)
+      nextFile();
     String line = readLine();
     if (line == null)
       return null;
-    String[] parts = line.split(" ");
+    String[] parts = line.trim().split(" ");
     int rows = header.rows;
     int cols = header.cols;
-    double[][] geometry = new double[rows][cols];
+    double[][] geometry = new double[cols][rows];
     int pos = 0;
-    for (int j = 0; j < cols; j++) {
-      for (int i = 0;i < rows;i++) {
-        while (pos < parts.length && parts[pos].trim().equals(""))
+    for (int j = 0; j < rows; j++) {
+      for (int i = 0; i < cols; i++) {
+        while (parts[pos].trim().length() == 0)
           pos++;
         geometry[i][j] = Double.parseDouble(parts[pos++]);
+      }
+      if (useMultipleFiles) {
+        line = readLine();
+        parts = line == null ? null : line.trim().split(" ");
+        pos = 0;
       }
     }
     return header.makeFrame(geometry);
