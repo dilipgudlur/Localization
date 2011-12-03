@@ -35,17 +35,15 @@ public class AudioSynchronizationModule implements StreamModule {
 		if (!firstPeakImpulseFound) {
 			int peakIndex = -1;
 			for (int i = 0; i < audioData.length; i++) {
-				if (!firstPeakImpulseFound && (audioData[i] == 32767 || audioData[i] == -32768)) {
+				if (!firstPeakImpulseFound && (audioData[i] == Short.MAX_VALUE || audioData[i] ==  Short.MIN_VALUE)) {
 					firstPeakImpulseFound = true;
 					peakIndex = i;
 					break;
 				}
 			}
 			if (peakIndex == -1) {
-				rawAudioHeader.setDataSize(rawAudioHeader.getSubChunk2Size() - audioFrame.audioData.length);
 				audioFrame.audioData = null;
 			} else {
-				rawAudioHeader.setDataSize(rawAudioHeader.getSubChunk2Size() - peakIndex);
 				audioData = new short[audioFrame.audioData.length - peakIndex];
 				for (int i = 0; i < (audioFrame.audioData.length - peakIndex); i++)
 					audioData[i] = audioFrame.audioData[i + peakIndex];
@@ -66,25 +64,25 @@ public class AudioSynchronizationModule implements StreamModule {
 	 */
 	public static void main(String args[]) {
 		int arg = 0;
-		File fileLoc = new File(args[arg++]);
+    String outputFilePrefix = args[arg++];
 		String inputFilePrefix = args[arg++];
-		String outputFilePrefix = args[arg++];
 		if (args.length != arg)
 			throw new RuntimeException(
-					"Invalid number of arguments\n Usage java AudioSynchronizationModule <DirectoryLocation> <InputFilePrefix> <OutputFilePrefix>");
-		File[] audioFiles = fileLoc.listFiles();
+					"Invalid number of arguments: <outfile> <infile");
+		File[] audioFiles = new File(".").listFiles();
 		ArrayList<File> audioFilesList = new ArrayList<File>();
 		for (int i = 0; i < audioFiles.length; i++) {
 			if (!audioFiles[i].isDirectory() && audioFiles[i].getName().startsWith(inputFilePrefix)
 					&& audioFiles[i].getName().endsWith(".wav"))
 				audioFilesList.add(audioFiles[i]);
 		}
-		RawAudioFileStream inFile = null, outFile = null;
-		AudioSynchronizationModule syncModule = null;
+		RawAudioFileStream inFile, outFile;
+		AudioSynchronizationModule syncModule;
 		for (File inFileName : audioFilesList) {
 			try {
-				String outFileName = fileLoc.getAbsolutePath() + "\\" + outputFilePrefix
-						+ inFileName.getName();
+				String outFileName = outputFilePrefix + inFileName.getName().substring(inputFilePrefix.length());
+        if (!outFileName.endsWith(".wav"))
+          outFileName = outFileName + ".wav";
 				inFile = new RawAudioFileStream(inFileName.getAbsolutePath());
 				outFile = new RawAudioFileStream(outFileName, true);
 				syncModule = new AudioSynchronizationModule();
@@ -93,6 +91,8 @@ public class AudioSynchronizationModule implements StreamModule {
 				while ((frame = (RawAudioFrame) syncModule.process(inFile.recvFrame())) != null) {
 					outFile.sendFrame(frame);
 				}
+        inFile.close();
+        outFile.close();
 				System.out.println("Saved file: " + outFileName);
 			} catch (IOException e) {
 				e.printStackTrace();
