@@ -159,7 +159,7 @@ public class RawAudioFileStream implements FrameStream {
   }
 
   private boolean checkChunk(int size, byte[] data, String target) {
-    if (size != 4 && data.length != 4 && target.length() != 4)
+    if (size != 4 || data.length != 4 || target.length() != 4)
       throw new IllegalArgumentException("All should be 4!");
     byte[] tbytes = target.getBytes();
     for (int i = 0; i < size; i++) {
@@ -260,11 +260,11 @@ public class RawAudioFileStream implements FrameStream {
 
   @Override
   public void sendFrame(StreamFrame m) throws Exception {
-  	if (m == null)
-			return;
-		short[] audioData = ((RawAudioFrame) m).getAudioData();
-		if (audioData == null || audioData.length == 0)
-			return;
+    if (m == null)
+      return;
+    short[] audioData = ((RawAudioFrame) m).getAudioData();
+    if (audioData == null || audioData.length == 0)
+      return;
     for (int i = 0; i < audioData.length; i++) {
       dos.write((DataConversionUtil.shortToByteArray(audioData[i])), 0, 2);
       numBytesWritten += 2;
@@ -283,6 +283,7 @@ public class RawAudioFileStream implements FrameStream {
 
   @Override
   public void close() {
+    boolean update = false;
     try {
       if (dis != null) {
         dis.close();
@@ -291,7 +292,7 @@ public class RawAudioFileStream implements FrameStream {
       if (dos != null) {
         dos.close();
         dos = null;
-        updateWavLength();
+        update = true;
       }
       if (os != null) {
         os.close();
@@ -301,6 +302,8 @@ public class RawAudioFileStream implements FrameStream {
         is.close();
         is = null;
       }
+      if (update)
+        updateWavLength();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
