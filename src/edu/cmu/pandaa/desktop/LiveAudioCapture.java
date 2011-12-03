@@ -45,6 +45,7 @@ public class LiveAudioCapture extends JPanel {
 	JPanel audioCapturePanel, testPanel, playAudioPanel;
 	JTabbedPane tabbedPanel;
 	JFileChooser fc;
+  int audioCaptureTime;
 
 	boolean stopCapture = false;
 
@@ -53,21 +54,20 @@ public class LiveAudioCapture extends JPanel {
 	public long timeStamp;
 	public boolean isTimeStamped;
 	private int audioFormat, bitsPerSample;
-	private long numChannels, samplingRate, dataSize, headerSize;
+	private int numChannels, samplingRate, dataSize;
 	private int frameLength;
-	private int audioCaptureTime;
 	protected String filePath;
 
 	private final static int DEFAULT_FORMAT = 1; // PCM
-	private final static long DEFAULT_CHANNELS = 1; // MONO
-	private final static long DEFAULT_SAMPLING_RATE = 16000;
+	private final static int DEFAULT_CHANNELS = 1; // MONO
+	private final static int DEFAULT_SAMPLING_RATE = 16000;
 	private final static int DEFAULT_BITS_PER_SAMPLE = 16;
-	private final static long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
-	private final static long DEFAULT_DATA_SIZE = 0;
+	private final static int DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
+	private final static int DEFAULT_DATA_SIZE = 0;
 	private final static int DEFAULT_FRAMELENGTH = 100;
 	private final static int DEFAULT_AUDIO_CAPTURE_TIME = 10;
 
-	public LiveAudioCapture(int format, long samplingRate, int bitsPerSample, int frameLen,
+	public LiveAudioCapture(int format, int samplingRate, int bitsPerSample, int frameLen,
 			String outFile) {
 		super(new BorderLayout());
 		audioFormat = format;
@@ -75,11 +75,9 @@ public class LiveAudioCapture extends JPanel {
 		this.bitsPerSample = bitsPerSample;
 		frameLength = frameLen;
 		numChannels = DEFAULT_CHANNELS;
-		headerSize = DEFAULT_SUBCHUNK1_SIZE;
 		dataSize = DEFAULT_DATA_SIZE;
 		filePath = outFile;
 		isTimeStamped = false;
-		audioCaptureTime = DEFAULT_AUDIO_CAPTURE_TIME * 1000; //numSeconds * 1000 ms
 	}
 
 	public LiveAudioCapture() {
@@ -323,7 +321,7 @@ public class LiveAudioCapture extends JPanel {
 			dataSize = audio.length;
 			int numAudioSamples = (int) (frameLength * samplingRate / 1000);
 			RawAudioHeader header = new RawAudioHeader(getDeviceID(filePath), timeStamp, frameLength,
-					audioFormat, numChannels, samplingRate, bitsPerSample, audioCaptureTime);
+					audioFormat, numChannels, samplingRate, bitsPerSample);
 			outFile.setHeader(header);
 			while (true) {
 				startIndex = endIndex;

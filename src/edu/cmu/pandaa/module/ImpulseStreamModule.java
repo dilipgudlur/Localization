@@ -91,7 +91,7 @@ public class ImpulseStreamModule implements StreamModule {
 		RawAudioFrame raf = (RawAudioFrame) inFrame;
 		double[] slowFrame = raf.smooth(slowWindow);
 		double[] fastFrame = raf.smooth(fastWindow);
-		int index_fast = maxDiv(fastFrame, slowFrame);
+		int index_fast = maxDiv(fastFrame, slowFrame, inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
 		if (!prevPeak && index_fast != -1) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
@@ -108,11 +108,11 @@ public class ImpulseStreamModule implements StreamModule {
 		return header.makeFrame(peakOffsets, peakMagnitudes);
 	}
 
-	private int maxDiv(double[] fastFrame, double[] slowFrame) {
+	private int maxDiv(double[] fastFrame, double[] slowFrame, boolean first) {
 		double[] div = new double[fastFrame.length - 1];
 		double max = 0;
 		int index = -1;
-		for (int j = 2; j < fastFrame.length; j++) {
+		for (int j = first ? 500 : 2; j < fastFrame.length; j++) {
 			div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
 			if (div[j - 2] > max && fastFrame[j] > (slowFrame[j] * jerk + base)) {
 				max = div[j - 2];

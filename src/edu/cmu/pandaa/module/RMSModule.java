@@ -11,23 +11,24 @@ import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 
-
 public class RMSModule implements StreamModule{
 	DistanceHeader dOut;
+	double[] prevX;
 	
-	public void runModule(FrameStream inGeometryStream, FrameStream outDistanceStream) throws Exception {
+	public void runModule(FrameStream inGS1,FrameStream inGS2, FrameStream outDS) throws Exception {
 	    try{
-	      StreamHeader header = init(inGeometryStream.getHeader());
-	      outDistanceStream.setHeader(header);
-	      StreamFrame frameIn,frameOut;
-	      while ((frameIn = inGeometryStream.recvFrame()) != null) {
-	        frameOut = process(frameIn);
-	        outDistanceStream.sendFrame(frameOut);
+	      StreamHeader header = init(inGS1.getHeader());
+	      StreamHeader h = init(inGS2.getHeader());
+	      outDS.setHeader(header);
+	      StreamFrame f1,f2,frameOut;	      
+	      while ((f1 = inGS1.recvFrame()) != null && (f2 = inGS2.recvFrame()) != null) {
+	        frameOut = process(f1);
+	        outDS.sendFrame(frameOut);
 	      }
 	    }catch(Exception e){
 	      e.printStackTrace();
 	    }
-	    outDistanceStream.close();
+	    outDS.close();
 	  }
 	
 	public StreamHeader init(StreamHeader inHeader) {
@@ -44,17 +45,38 @@ public class RMSModule implements StreamModule{
 	    return dOut;
 	  }
 	
-	public StreamFrame process(StreamFrame inFrame) {
-	    if (!(inFrame instanceof GeometryFrame))
+	public StreamFrame process(StreamFrame f1, StreamFrame f2) {
+	    if (!(f1 instanceof GeometryFrame) || !(f2 instanceof GeometryFrame))
 	      throw new RuntimeException("Wrong frame type");
-	    GeometryFrame gfIn = (GeometryFrame) inFrame ;
-	    double[] x=null,y=null;
+	    GeometryFrame gf1 = (GeometryFrame) f1 ;
+	    GeometryFrame gf2 = (GeometryFrame) f2 ;
+	    double[][] geoActual = gf1.geometry;
+	    double[][] geoEstimated = gf2.geometry;
+	    GeometryMatrixModule g = new GeometryMatrixModule();
+	    g.adjustAxes(geoEstimated); //for config file
+	    
+	    double[] x = null,y = null;
+	    
+	    /*double[] distanceActual;
+	    for(int i = 0; i < geoActual.length; i++){
+	    	for(int j = 0; j < geoActual[i].length; j++){
+	    		distanceActual[i] =  Math.pow((geoActual[i][j] - geoActual[i+1][j]),2);
+	    	}
+	    }*/
+	        
+	    /*double[] x; //constructing a double[] from double[][]
+	    int size = geometry[0].length;
+	    for(int i = 0; i < geometry.length; i++){
+	    	for(int j = 0; j < geometry[i].length; j++){
+	    		x[size*i + j] += geometry[i][j];
+	    	}
+	    }*/
+	    
 	    
 	    DistanceFrame dfOut = dOut.makeFrame(x,y);
 	    return dfOut ;
 	  }
-
-	
+		
 	public static void main(String[] args) throws Exception
 	{
 		int arg = 0;
@@ -67,16 +89,28 @@ public class RMSModule implements StreamModule{
 		
 	    System.out.println("RMS: " + outArg + " " + inArg1 + " " + inArg2);
 	    
-	    GeometryFileStream rIn1 = new GeometryFileStream(inArg1);
-	    GeometryFileStream rIn2 = new GeometryFileStream(inArg2);
-	    DistanceFileStream rOut = new DistanceFileStream(outArg, true);
-
+	    GeometryFileStream rIn1 = new GeometryFileStream(inArg1); //geometryOut
+	    GeometryFileStream rIn2 = new GeometryFileStream(inArg2); //config file
+	    DistanceFileStream rOut = new DistanceFileStream(outArg, true); //rmsOut
+	    
+	    try {
+	        RMSModule rms = new RMSModule();
+	        rms.runModule(rIn1,rIn2,rOut);
+	      } catch (Exception e) {
+	        e.printStackTrace();
+	      }
 	    
 	}
 	@Override
 	public void close() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public StreamFrame process(StreamFrame inFrame) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

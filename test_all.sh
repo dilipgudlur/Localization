@@ -36,8 +36,9 @@ FILESET="1 2 3 4 5 6 7 8 9"
 
 for file in $FILESET; do 
   if [ -f $INPUT-$file.wav ]; then
-    java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt $INPUT-$file.wav
-    java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt $INPUT-$file.wav
+    java $OPTS $PACKAGE.module.AudioSynchronizationModule sync-$file.wav $INPUT-$file.wav
+    java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt sync-$file.wav
+    java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt sync-$file.wav
     java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$REPEAT_TIMES impulses-$file.txt impulse$IMPULSE_ALGORITHM-$file.txt
   fi
 done

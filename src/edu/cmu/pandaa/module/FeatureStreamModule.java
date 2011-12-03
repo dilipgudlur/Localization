@@ -16,7 +16,7 @@ import java.util.LinkedList;
 public class FeatureStreamModule implements StreamModule {
   private double usPerSample;
   private ImpulseHeader header;
-  private int prevPeak = 0; // start with peak supression turned on -- peak at index 0
+  private int prevPeak;
   private double last_diff = 0;
   private int peakWindowSamples;
   private double[] valueArray;
@@ -95,6 +95,7 @@ public class FeatureStreamModule implements StreamModule {
 
     peakWindowSamples = peakWindowMs * sampleRate / 1000;
     valueArray = new double[peakWindowSamples];
+    prevPeak = peakWindowSamples; // supress initial synchronization peak
 
     saveFrames = (peakWindowMs + inHeader.frameTime - 1)/ inHeader.frameTime;
 
@@ -212,7 +213,7 @@ public class FeatureStreamModule implements StreamModule {
         //outFile += derive > 0 ? "_d" : "_i";
         //outFile = outFile + "_" + slowWindow + "-" + fastWindow;
         //outFile = outFile + "_" + peakWindowMs;
-        outFile = outFile + ".wav";
+        outFile = outFile + "-impulse.wav";
         ism.augmentedAudio(outFile);
 
         System.out.println("FeatureStream: " + impulseFilename + " " + audioFilename + " " + outFile);

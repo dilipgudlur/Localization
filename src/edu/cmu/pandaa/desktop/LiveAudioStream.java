@@ -28,21 +28,21 @@ public class LiveAudioStream implements FrameStream {
 
 	AudioCaptureState audioCaptureState = AudioCaptureState.BEFORE;
 	private final int audioFormat, bitsPerSample;
-	private final long numChannels, samplingRate;
+	private final int numChannels, samplingRate;
 	private int dataSize = -1;
 	private final int frameLength;
 	private final int captureTime;
 	private RawAudioHeader header;
 
 	private final static int DEFAULT_FORMAT = 1; // PCM
-	private final static long DEFAULT_CHANNELS = 1; // MONO
-	private final static long DEFAULT_SAMPLING_RATE = 22050;
+	private final static int DEFAULT_CHANNELS = 1; // MONO
+	private final static int DEFAULT_SAMPLING_RATE = 22050;
 	private final static int DEFAULT_BITS_PER_SAMPLE = 16;
-	private final static long DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
+	private final static int DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
 	private final static int DEFAULT_FRAMELENGTH = 100;
 	private final static int DEFAULT_CAPTURE_TIME = 10;
 
-	public LiveAudioStream(int format, long samplingRate, int bitsPerSample, int frameLen,
+	public LiveAudioStream(int format, int samplingRate, int bitsPerSample, int frameLen,
 			int captureTime) {
 		audioFormat = format;
 		this.samplingRate = samplingRate;
@@ -86,8 +86,7 @@ public class LiveAudioStream implements FrameStream {
 				+ "," + (usecTime[3] - usecTime[2]);
 		startTime = 0;
 		header = new RawAudioHeader("DeviceId", startTime, frameLength, audioFormat, numChannels,
-				samplingRate, bitsPerSample, captureTime, comment);
-		header.setDataSize(captureTime * (samplingRate/1000) * numChannels * (bitsPerSample/8));
+				samplingRate, bitsPerSample, comment);
 		return header;
 	}
 
