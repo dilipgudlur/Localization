@@ -1,2 +1,2 @@
-../audio_src/1m_triangle-1,../audio_src/1m_triangle-2,../audio_src/1m_triangle-3-4.1-1 0 100 3 2
-0 0 0 2545 2939 1469
+sync-2.1-1,sync-1.1-1,sync-3.1-1 0 100 3 2
+0 0 0 1000 866 500
