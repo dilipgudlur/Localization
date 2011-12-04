@@ -58,31 +58,15 @@ public class RMSModule implements StreamModule{
     double[][] geoActual = actual.geometry;
     GeometryMatrixModule g = new GeometryMatrixModule();
     double[] x = {0.0},y = {0.0};
-    double[] distanceAcutal = new double[geoActual[0].length];
-    double[] distanceEstimated = new double[geoEstimated[0].length];
-
+    double[] distanceVertices = new double[geoEstimated[0].length];
     for(int j = 0; j < geoEstimated[0].length; j++){
-      if(j == geoEstimated[0].length - 1)
-        distanceEstimated[j] =  Math.sqrt(Math.pow((geoEstimated[0][j] - geoEstimated[0][0]),2) +
-                Math.pow((geoEstimated[1][j] - geoEstimated[1][0]),2));
-      else
-        distanceEstimated[j] =  Math.sqrt(Math.pow((geoEstimated[0][j+1] - geoEstimated[0][j]),2) +
-                Math.pow((geoEstimated[1][j+1] - geoEstimated[1][j]),2));
+         
+        distanceVertices[j] =  Math.sqrt(Math.pow((geoEstimated[0][j] - geoActual[0][j]),2) + Math.pow((geoEstimated[1][j] - geoActual[1][j]),2));
     }
-
-    for(int j = 0; j < geoActual[0].length; j++){
-      if(j == geoActual[0].length - 1)
-        distanceAcutal[j] =  Math.sqrt(Math.pow((geoActual[0][j] - geoActual[0][0]),2) +
-                Math.pow((geoActual[1][j] - geoActual[1][0]),2));
-      else
-        distanceAcutal[j] =  Math.sqrt(Math.pow((geoActual[0][j+1] - geoActual[0][j]),2) +
-                Math.pow((geoActual[1][j+1] - geoActual[1][j]),2));
-    }
-
     double rms = 0;
-    for(int i = 0; i < distanceAcutal.length; i++)
-      rms += Math.pow((distanceAcutal[i] - distanceEstimated[i]),2);
-    rms = Math.sqrt(rms / distanceAcutal.length);
+    for(int i = 0; i < geoEstimated[0].length; i++)
+      rms += Math.pow(distanceVertices[i],2);
+    rms = Math.sqrt(rms / geoEstimated[0].length);
     x[0] = rms;
     DistanceFrame dfOut = dOut.makeFrame(x,y);
     return dfOut ;
