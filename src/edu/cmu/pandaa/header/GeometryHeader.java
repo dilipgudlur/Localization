@@ -62,7 +62,6 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     {
       if (geometry.length != 2)
         throw new IllegalArgumentException("should be 2 dimensions!");
-      int cols = geometry[0].length;
 
       // check for valid data
       for (int i = 0;i < 2; i++)
