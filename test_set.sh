@@ -2,6 +2,7 @@ IMPULSE_ALGORITHM=1
 TDOA_ALGORITHM=1
 REPEAT_TIMES=10
 DISTANCE_SMOOTH=100
+GRAPH=yes
 
 JAR=Localization.jar
 CLASSPATH=$PWD/`find . -name $JAR`
@@ -16,6 +17,11 @@ CLASSPATH=$CLASSPATH:$PWD/lib/mdsj.jar
 OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
+
+if [ "$1" == "nograph" ]; then
+  GRAPH=no
+  shift
+fi
 
 INPUT_SET=1m_triangle
 if [ "$1" ]; then
@@ -60,7 +66,7 @@ java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
 java $OPTS $PACKAGE.module.RMSModule RMSOut.txt geometryOut.txt $INPUT.txt
 
-if [ "$*" != "" ]; then
+if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
   shift
   if [ "$*" != "" ]; then
     ../grid_multi.sh $INPUT_SET "$@"

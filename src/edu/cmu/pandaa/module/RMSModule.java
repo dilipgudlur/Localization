@@ -54,14 +54,21 @@ public class RMSModule implements StreamModule{
     if (!(f1 instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
     GeometryFrame estimated = (GeometryFrame) f1 ; // estimate
-    int numDevices = dOut.deviceIds.length;    
-    double[] rms = {0.0},dummy = {0.0};
+    int numDevices = dOut.deviceIds.length;
+
+    double[] rms = {0.0, 0.0 };
+    double[] magnitudes = {0.0, 0.0};
+
     for(int j = 0; j < numDevices; j++){
-         
-        rms[0] +=  Math.pow((estimated.geometry[0][j] - actual.geometry[0][j]),2) + Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
+      rms[0] +=  Math.pow((estimated.geometry[0][j] - actual.geometry[0][j]),2) +
+              Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
+      rms[1] +=  Math.pow((estimated.geometry[0][j] + actual.geometry[0][j]),2) +
+              Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
     }
+
     rms[0] = Math.sqrt(rms[0] / numDevices);
-    DistanceFrame dfOut = dOut.makeFrame(rms,dummy);
+    rms[1] = Math.sqrt(rms[1] / numDevices);
+    DistanceFrame dfOut = dOut.makeFrame(rms,magnitudes);
     return dfOut ;
   }
 
