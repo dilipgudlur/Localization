@@ -9,7 +9,7 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 public class AudioSynchronizationModule implements StreamModule {
-  private final static int tolerance = 3;
+  private final static int tolerance = Short.MAX_VALUE/100;
   private boolean firstPeakImpulseFound;
   RawAudioHeader rawAudioHeader;
 
