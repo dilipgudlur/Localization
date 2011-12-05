@@ -7,6 +7,9 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.DummyModule;
 import edu.cmu.pandaa.module.StreamModule;
+import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
+
 
 /**
  * Created by IntelliJ IDEA.
@@ -25,10 +28,12 @@ public class MergePipeline implements StreamModule {
   StreamModule geometry = new DummyModule(new GeometryHeader(dummyIds, now, frameTime, 3, 3));
 
   /* Then we consolidate bunches of impulse frames into larger consolidated frames for processing */
-  StreamModule smooth = new DummyModule();
+  StreamModule smooth = new DummyModule(new GeometryHeader(dummyIds, now, frameTime, 3, 3));
+
+  FileStream trace;
 
   @Override
-  public StreamHeader init(StreamHeader inHeader) {
+  public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
     if (!(multiHeader.getOne() instanceof DistanceHeader)) {
        throw new IllegalArgumentException("Merge pipe multiheader should contain ImpulseHeaders");
@@ -38,19 +43,26 @@ public class MergePipeline implements StreamModule {
     if (!(header instanceof GeometryHeader)) {
       throw new IllegalArgumentException("Output should be GeometryHeader");
     }
+
+    trace = new GeometryFileStream(inHeader.id + ".txt", true, true);
+    trace.setHeader(header);
+
     return header;
   }
 
   @Override
-  public StreamFrame process(StreamFrame inFrame) {
+  public StreamFrame process(StreamFrame inFrame) throws Exception {
     if (inFrame == null) {
       return null;
     }
     StreamFrame frame = geometry.process(inFrame);
     frame = smooth.process(frame);
+    trace.sendFrame(frame);
+
     return frame;
   }
 
   @Override
   public void close() {
+    trace.close();
   }}

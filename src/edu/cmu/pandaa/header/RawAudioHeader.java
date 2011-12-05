@@ -31,11 +31,10 @@ import edu.cmu.pandaa.utils.DataConversionUtil;
  */
 
 public class RawAudioHeader extends StreamHeader implements Serializable {
-	private long samplingRate;
-	private long numChannels;
+	private int samplingRate;
+	private int numChannels;
 	private int audioFormat;
 	private int bitsPerSample;
-	private long dataSize;
   private short[] derrive_save;
   private int[] smooth_save;
   private short[] prev, stage;
@@ -52,19 +51,17 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 	}
 
   public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
-      long numChannels, long samplingRate, int bitsPerSample, int captureTime) {
-    this(id, startTime, frameTime, audioFormat, numChannels, samplingRate, bitsPerSample, captureTime, null);
+      int numChannels, int samplingRate, int bitsPerSample) {
+    this(id, startTime, frameTime, audioFormat, numChannels, samplingRate, bitsPerSample, null);
   }
 
   public RawAudioHeader(String id, long startTime, int frameTime, int audioFormat,
-      long numChannels, long samplingRate, int bitsPerSample, int captureTime,
-      String comment) {
+      int numChannels, int samplingRate, int bitsPerSample, String comment) {
 		super(id, startTime, frameTime);
 		this.samplingRate = samplingRate;
 		this.numChannels = numChannels;
 		this.audioFormat = audioFormat;
 		this.bitsPerSample = bitsPerSample;
-		this.dataSize =  captureTime * samplingRate * bitsPerSample/8;
     this.comment = comment;
 	}
 
@@ -84,14 +81,9 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		return bitsPerSample;
 	}
 
-	public long getSubChunk2Size() {
-		return dataSize;
-	}
-
 	public String toString() {
 		return new String("Device ID: " + id + "\nSampling rate: " + samplingRate + "\nChannels: "
-				+ numChannels + "\nAudio Format: " + audioFormat + "\nBits per sample: " + bitsPerSample
-				+ "\nData size: " + dataSize);
+				+ numChannels + "\nAudio Format: " + audioFormat + "\nBits per sample: " + bitsPerSample);
 	}
 
 	public class RawAudioFrame extends StreamFrame implements Serializable {

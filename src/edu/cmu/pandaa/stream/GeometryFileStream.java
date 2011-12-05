@@ -5,12 +5,16 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
+import java.io.File;
+
 public class GeometryFileStream extends FileStream {
   private GeometryHeader header;
   boolean useMultipleFiles = false;
 
   public GeometryFileStream(String filename) throws Exception {
     super(filename);
+    int dot = filename.lastIndexOf('.');
+    useMultipleFiles = new File(filename.substring(0, dot)).isDirectory();
   }
 
   public GeometryFileStream(String filename, boolean overwrite) throws Exception {
@@ -37,8 +41,8 @@ public class GeometryFileStream extends FileStream {
     GeometryFrame frame = (GeometryFrame) f;
     if (useMultipleFiles)
       nextFile();
-    int rows = frame.geometry.length;
-    int cols = frame.geometry[0].length;
+    int rows = frame.geometry == null ? 0 : frame.geometry.length;
+    int cols = rows == 0 ? rows : frame.geometry[0].length;
     String msg = "";
     for (int j = 0; j < cols; j++) {
       for (int i = 0;i < rows; i++) {
@@ -66,21 +70,51 @@ public class GeometryFileStream extends FileStream {
   }
 
   public GeometryFrame recvFrame() throws Exception {
+    if (useMultipleFiles)
+      nextFile();
     String line = readLine();
     if (line == null)
       return null;
-    String[] parts = line.split(" ");
+    String[] parts = line.trim().split(" ");
     int rows = header.rows;
     int cols = header.cols;
-    double[][] geometry = new double[rows][cols];
+    double[][] geometry = new double[cols][rows];
     int pos = 0;
-    for (int j = 0; j < cols; j++) {
-      for (int i = 0;i < rows;i++) {
-        while (pos < parts.length && parts[pos].trim().equals(""))
+    for (int j = 0; j < rows; j++) {
+      for (int i = 0; i < cols; i++) {
+        while (parts[pos].trim().length() == 0)
           pos++;
         geometry[i][j] = Double.parseDouble(parts[pos++]);
       }
+      if (useMultipleFiles) {
+        line = readLine();
+        parts = line == null ? null : line.trim().split(" ");
+        pos = 0;
+      }
     }
     return header.makeFrame(geometry);
+  }
+
+  public static void main(String args[]) throws Exception {
+    String[] dids = { "test" };
+    double[][] geometry = { { 1.0 } };
+    GeometryHeader gh = new GeometryHeader(dids, 0, 100, 1, 1);
+    GeometryFileStream gstream = new GeometryFileStream("gtest1.txt", true, false);
+    gstream.setHeader(gh);
+    gstream.sendFrame(gh.makeFrame(geometry));
+    gstream.close();
+    gstream = new GeometryFileStream("gtest2.txt", true, true);
+    gstream.setHeader(gh);
+    gstream.sendFrame(gh.makeFrame(geometry));
+    gstream.close();
+
+    gstream = new GeometryFileStream("gtest1.txt");
+    if (gstream.useMultipleFiles)
+      System.out.println("Should not be using multiple files!");
+    gstream.close();
+    gstream = new GeometryFileStream("gtest2.txt");
+    if (!gstream.useMultipleFiles)
+      System.out.println("Should be using multiple files!");
+    gstream.close();
   }
 }
