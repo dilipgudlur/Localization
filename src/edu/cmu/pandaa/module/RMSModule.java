@@ -53,22 +53,15 @@ public class RMSModule implements StreamModule{
   public StreamFrame process(StreamFrame f1) {
     if (!(f1 instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
-    GeometryFrame gf1 = (GeometryFrame) f1 ; // estimate
-    double[][] geoEstimated = gf1.geometry;
-    double[][] geoActual = actual.geometry;
-    GeometryMatrixModule g = new GeometryMatrixModule();
-    double[] x = {0.0},y = {0.0};
-    double[] distanceVertices = new double[geoEstimated[0].length];
-    for(int j = 0; j < geoEstimated[0].length; j++){
+    GeometryFrame estimated = (GeometryFrame) f1 ; // estimate
+    int numDevices = dOut.deviceIds.length;    
+    double[] rms = {0.0},dummy = {0.0};
+    for(int j = 0; j < numDevices; j++){
          
-        distanceVertices[j] =  Math.sqrt(Math.pow((geoEstimated[0][j] - geoActual[0][j]),2) + Math.pow((geoEstimated[1][j] - geoActual[1][j]),2));
+        rms[0] +=  Math.pow((estimated.geometry[0][j] - actual.geometry[0][j]),2) + Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
     }
-    double rms = 0;
-    for(int i = 0; i < geoEstimated[0].length; i++)
-      rms += Math.pow(distanceVertices[i],2);
-    rms = Math.sqrt(rms / geoEstimated[0].length);
-    x[0] = rms;
-    DistanceFrame dfOut = dOut.makeFrame(x,y);
+    rms[0] = Math.sqrt(rms[0] / numDevices);
+    DistanceFrame dfOut = dOut.makeFrame(rms,dummy);
     return dfOut ;
   }
 
