@@ -74,3 +74,6 @@ if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
     ../grid_anim.sh $INPUT_SET
   fi
 fi
+
+tail RMSOut.txt
+

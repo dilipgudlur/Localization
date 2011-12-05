@@ -13,6 +13,8 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     this.deviceIds = deviceIds;
     this.rows = rows;
     this.cols = cols;
+    if (deviceIds.length != rows)
+      throw new IllegalArgumentException("Mismatched array dimensions");
   }
 
   public GeometryHeader(String id, long startTime, int frameTime, int rows, int cols) {
@@ -20,6 +22,8 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     this.deviceIds = getIds(id);
     this.rows = rows;
     this.cols = cols;
+    if (deviceIds.length != rows)
+      throw new IllegalArgumentException("Mismatched array dimensions");
   }
 
   private static String makeId(String[] DeviceIds) {
