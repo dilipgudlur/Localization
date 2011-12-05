@@ -11,20 +11,25 @@ import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 import java.util.ArrayList;
 
-public class ImpulseStreamModule implements StreamModule {
+public class dbImpulseStreamModule implements StreamModule {
 	private double usPerSample;
 	private final int slowWindow = 1000;
 	private final int fastWindow = 50;
 	private final double jerk = 4;
-	private final double base = 50;
+	private final double base = 25;
 	private ImpulseHeader header;
+	private static int num = 0;
+	private double rmsMax = Math.pow(2, 16) / 2;
+	private double multiplier = 0.15;
 	boolean prevPeak = false; // start with peak supression turned on
+	private static double preRms = 0.0;
+	private static double pre2Rms = 0.0;
+	private static double microphoneRms = Double.MAX_VALUE;
 
-	public ImpulseStreamModule() {
+	public dbImpulseStreamModule() {
 	}
 
 	public static void main(String[] args) throws Exception {
-
 		int arg = 0, loops = 1;
 		String impulseFilename = args[arg++];
 		String audioFilename = args[arg++];
@@ -37,7 +42,7 @@ public class ImpulseStreamModule implements StreamModule {
 
 		RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
 		ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);
-		ImpulseStreamModule ism = new ImpulseStreamModule();
+		dbImpulseStreamModule ism = new dbImpulseStreamModule();
 		RawAudioFileStream rfso = new RawAudioFileStream(impulseFilename
 				+ ".wav", true);
 
@@ -91,14 +96,19 @@ public class ImpulseStreamModule implements StreamModule {
 		RawAudioFrame raf = (RawAudioFrame) inFrame;
 		double[] slowFrame = raf.smooth(slowWindow);
 		double[] fastFrame = raf.smooth(fastWindow);
-		int index_fast = maxDiv(fastFrame, slowFrame, inFrame.seqNum == 0);
+		double minSlowFrame = findMin(slowFrame);
+		if (microphoneRms > minSlowFrame) {
+			microphoneRms = minSlowFrame;
+			// if(minSlowFrame<10)
+			// microphoneRms=10;
+		}
+		int index_fast = -1;
+		index_fast = maxDif(fastFrame, slowFrame, inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
 		if (!prevPeak && index_fast != -1) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
 			peakMagnitudes.add((short) fastFrame[index_fast]);
-			prevPeak = true;
-		} else
-			prevPeak = false;
+		}
 		for (int i = 0; i < data.length; i++) {
 			double slow = slowFrame[i];
 			double fast = fastFrame[i];
@@ -108,18 +118,109 @@ public class ImpulseStreamModule implements StreamModule {
 		return header.makeFrame(peakOffsets, peakMagnitudes);
 	}
 
-	private int maxDiv(double[] fastFrame, double[] slowFrame, boolean first) {
-		double[] div = new double[fastFrame.length - 1];
-		double max = 0;
-		int index = -1;
-		for (int j = first ? 500 : 2; j < fastFrame.length; j++) {
-			div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
-			if (div[j - 2] > max && fastFrame[j] > (slowFrame[j] * jerk + base)) {
-				max = div[j - 2];
-				index = j;
-			}
+	private double rmsToDb(double p1, double p0) {
+		double db = 10 * Math.log(p1 / p0);
+		return db;
+	}
+
+	private double findMin(double[] slowFrame) {
+		double min = Double.MAX_VALUE;
+		for (int s_index = 0; s_index < slowFrame.length; s_index++) {
+			if (slowFrame[s_index] < min)
+				min = slowFrame[s_index];
 		}
-		return index;
+		return min;
+	}
+
+	private double findMax(double[] frame) {
+		double max = 0.0;
+		for (int s_index = 0; s_index < frame.length; s_index++) {
+			if (frame[s_index] > max)
+				max = frame[s_index];
+		}
+		return max;
+	}
+
+	private int maxDif(double[] fastFrame, double[] slowFrame, boolean first) {
+		double[] fsDif = new double[slowFrame.length];
+		for (int i = 0; i < slowFrame.length; i++)
+			fsDif[i] = fastFrame[i] - slowFrame[i];
+		double[] dif = new double[fastFrame.length];
+		double max = 0.0;
+		num = 0;
+		int position = -1;
+		int index1 = -1;
+		ArrayList<Integer> index = new ArrayList<Integer>();
+		ArrayList<Integer> flag = new ArrayList<Integer>();
+		for (int j = first ? 500 : 0; j < fastFrame.length; j++) {
+			// div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
+
+			if (rmsToDb(slowFrame[j], base) < 0) // Too quiet
+			{
+				if (rmsToDb(fsDif[j], jerk * base) > 0) {
+					index.add(j);
+					// System.out.println("S1: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
+					flag.add(1);
+				}
+
+			} else if (rmsToDb(slowFrame[j], multiplier * rmsMax) > 0) // Too
+																		// noisy
+			{
+				if (rmsToDb(fsDif[j], slowFrame[j] / 2) > 0) {
+					index.add(j);
+					// System.out.println("S2: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
+					flag.add(2);
+				}
+			}
+
+			else {
+				if (rmsToDb(fsDif[j], slowFrame[j] * (jerk - 1)) > 0) {
+					index.add(j);
+					// System.out.println("S3: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
+					flag.add(3);
+				}
+
+			}
+
+		}
+
+		for (int i = 0; i < index.size(); i++) {
+			if (index.get(i) == 0) {
+				dif[index.get(i)] = preRms - pre2Rms;
+				if (dif[index.get(i)] > max) {
+					max = dif[index.get(i)];
+					index1 = index.get(i);
+					position = i;
+				}
+			} else if (index.get(i) == 1) {
+				dif[index.get(i)] = fastFrame[index.get(i) - 1] - preRms;
+				if (dif[index.get(i)] > max) {
+					max = dif[index.get(i)];
+					index1 = index.get(i);
+					position = i;
+				}
+			} else {
+				dif[index.get(i) - 2] = fastFrame[index.get(i) - 1]
+						- fastFrame[index.get(i) - 2];
+				if (dif[index.get(i) - 2] > max) {
+					max = dif[index.get(i) - 2];
+					index1 = index.get(i);
+					position = i;
+				}
+			}
+			num++;
+
+		}
+		/*
+		if (num > 0) {
+			System.out.println(flag.get(position) + ": FastFrame: "
+					+ fastFrame[index.get(position) - 1] + " slowFrame: "
+					+ slowFrame[index.get(position) - 1]);
+		}
+		*/
+		preRms = fastFrame[fastFrame.length - 1];
+		pre2Rms = fastFrame[fastFrame.length - 2];
+		return index1;
 	}
 
 	private int sampleToTimeOffset(int sample) {
