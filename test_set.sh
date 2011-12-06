@@ -5,7 +5,7 @@ fi
 if [ "$TDOA_ALGORITHM" == "" ]; then
   TDOA_ALGORITHM=1
 fi
-REPEAT_TIMES=10
+TARGET_SAMPLES=100
 DISTANCE_SMOOTH=100
 GRAPH=yes
 
@@ -51,7 +51,10 @@ for file in $FILESET; do
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt sync-$file.wav
     java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt sync-$file.wav
     java $OPTS $PACKAGE.module.DbImpulseStreamModule impulse3-$file.txt sync-$file.wav
-    java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$REPEAT_TIMES impulses-$file.txt impulse$IMPULSE_ALGORITHM-$file.txt
+    ifile=impulse$IMPULSE_ALGORITHM-$file.txt
+    size=`cat $ifile | wc -l`
+    repeat=$(($TARGET_SAMPLES/$size+1))
+    java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$repeat impulses-$file.txt $ifile
   fi
 done
 for a in $FILESET; do 
