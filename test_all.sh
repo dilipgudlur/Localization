@@ -14,7 +14,7 @@ for set in $sets; do
    export TDOA_ALGORITHM=$tdoa
    ./test_set.sh nograph $setname
    result=`tail -1 test/RMSOut.txt`
-   echo $set-$impulse-$tdoa $result >> $RESULTS
+   echo $setname-$impulse-$tdoa $result >> $RESULTS
   done
  done
 done
