@@ -1,5 +1,10 @@
-IMPULSE_ALGORITHM=1
-TDOA_ALGORITHM=1
+if [ "$IMPULSE_ALGORITHM" == "" ]; then
+  IMPULSE_ALGORITHM=1
+fi
+
+if [ "$TDOA_ALGORITHM" == "" ]; then
+  TDOA_ALGORITHM=1
+fi
 REPEAT_TIMES=10
 DISTANCE_SMOOTH=100
 GRAPH=yes
@@ -45,6 +50,7 @@ for file in $FILESET; do
     java $OPTS $PACKAGE.module.AudioSynchronizationModule sync-$file.wav $INPUT-$file.wav
     java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt sync-$file.wav
     java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt sync-$file.wav
+    java $OPTS $PACKAGE.module.DbImpulseStreamModule impulse3-$file.txt sync-$file.wav
     java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$REPEAT_TIMES impulses-$file.txt impulse$IMPULSE_ALGORITHM-$file.txt
   fi
 done

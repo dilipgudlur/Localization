@@ -1,9 +1,6 @@
 package edu.cmu.pandaa.utils;
 
 import edu.cmu.pandaa.header.ImpulseHeader;
-import edu.cmu.pandaa.module.CopyOfdbImpulseStreamModule;
-
-;
 
 public class ImpulseUtil {
 

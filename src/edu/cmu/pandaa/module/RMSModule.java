@@ -56,19 +56,23 @@ public class RMSModule implements StreamModule{
     GeometryFrame estimated = (GeometryFrame) f1 ; // estimate
     int numDevices = dOut.deviceIds.length;
 
-    double[] rms = {0.0, 0.0 };
-    double[] magnitudes = {0.0, 0.0};
-
+    double rmsA = 0, rmsB = 0;
     for(int j = 0; j < numDevices; j++){
-      rms[0] +=  Math.pow((estimated.geometry[0][j] - actual.geometry[0][j]),2) +
+      rmsA +=  Math.pow((estimated.geometry[0][j] - actual.geometry[0][j]),2) +
               Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
-      rms[1] +=  Math.pow((estimated.geometry[0][j] + actual.geometry[0][j]),2) +
+      rmsB +=  Math.pow((estimated.geometry[0][j] + actual.geometry[0][j]),2) +
               Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
     }
 
-    rms[0] = Math.sqrt(rms[0] / numDevices);
-    rms[1] = Math.sqrt(rms[1] / numDevices);
+    if (rmsB < rmsA)
+        rmsA = rmsB;
+
+    rmsA = Math.sqrt(rmsA / numDevices);
+
+    double[] rms = { rmsA };
+    double[] magnitudes = { 0.0 };
     DistanceFrame dfOut = dOut.makeFrame(rms,magnitudes);
+
     return dfOut ;
   }
 
