@@ -8,25 +8,19 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
+import edu.cmu.pandaa.utils.ImpulseUtil;
 
 import java.util.ArrayList;
 
-public class dbImpulseStreamModule implements StreamModule {
-	private double usPerSample;
-	private final int slowWindow = 1000;
-	private final int fastWindow = 50;
-	private final double jerk = 4;
-	private final double base = 25;
+public class DbImpulseStreamModule implements StreamModule {
+
 	private ImpulseHeader header;
 	private static int num = 0;
-	private double rmsMax = Math.pow(2, 16) / 2;
-	private double multiplier = 0.15;
-	boolean prevPeak = false; // start with peak supression turned on
 	private static double preRms = 0.0;
 	private static double pre2Rms = 0.0;
-	private static double microphoneRms = Double.MAX_VALUE;
+	ImpulseUtil impulseUtil=new ImpulseUtil();
 
-	public dbImpulseStreamModule() {
+	public DbImpulseStreamModule() {
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -42,7 +36,7 @@ public class dbImpulseStreamModule implements StreamModule {
 
 		RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
 		ImpulseFileStream foo = new ImpulseFileStream(impulseFilename, true);
-		dbImpulseStreamModule ism = new dbImpulseStreamModule();
+		DbImpulseStreamModule ism = new DbImpulseStreamModule();
 		RawAudioFileStream rfso = new RawAudioFileStream(impulseFilename
 				+ ".wav", true);
 
@@ -78,7 +72,7 @@ public class dbImpulseStreamModule implements StreamModule {
 		RawAudioHeader rah = (RawAudioHeader) inHeader;
 		rah.initFilters(30, 0);
 		int sampleRate = (int) rah.getSamplingRate();
-		usPerSample = Math.pow(10, 6) / (double) sampleRate; // us per sample
+		impulseUtil.setUsPerSample((double)sampleRate);
 		header = new ImpulseHeader(inHeader.id, inHeader.startTime,
 				inHeader.frameTime);
 		return header;
@@ -94,18 +88,14 @@ public class dbImpulseStreamModule implements StreamModule {
 			throw new RuntimeException("Wrong frame type");
 
 		RawAudioFrame raf = (RawAudioFrame) inFrame;
-		double[] slowFrame = raf.smooth(slowWindow);
-		double[] fastFrame = raf.smooth(fastWindow);
+		double[] slowFrame = raf.smooth(impulseUtil.getSlowWindow());
+		double[] fastFrame = raf.smooth(impulseUtil.getFastWindow());
 		double minSlowFrame = findMin(slowFrame);
-		if (microphoneRms > minSlowFrame) {
-			microphoneRms = minSlowFrame;
-			// if(minSlowFrame<10)
-			// microphoneRms=10;
-		}
+		ImpulseUtil.setMicrophoneRms(minSlowFrame);
 		int index_fast = -1;
 		index_fast = maxDif(fastFrame, slowFrame, inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
-		if (!prevPeak && index_fast != -1) {
+		if (index_fast != -1) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
 			peakMagnitudes.add((short) fastFrame[index_fast]);
 		}
@@ -155,15 +145,15 @@ public class dbImpulseStreamModule implements StreamModule {
 		for (int j = first ? 500 : 0; j < fastFrame.length; j++) {
 			// div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
 
-			if (rmsToDb(slowFrame[j], base) < 0) // Too quiet
+			if (rmsToDb(slowFrame[j], impulseUtil.getBase()) < 0) // Too quiet
 			{
-				if (rmsToDb(fsDif[j], jerk * base) > 0) {
+				if (rmsToDb(fsDif[j], impulseUtil.getQuietImpulseFloor()) > 0) {
 					index.add(j);
 					// System.out.println("S1: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
 					flag.add(1);
 				}
 
-			} else if (rmsToDb(slowFrame[j], multiplier * rmsMax) > 0) // Too
+			} else if (rmsToDb(slowFrame[j], impulseUtil.getNoisyFloor()) > 0) // Too
 																		// noisy
 			{
 				if (rmsToDb(fsDif[j], slowFrame[j] / 2) > 0) {
@@ -174,7 +164,7 @@ public class dbImpulseStreamModule implements StreamModule {
 			}
 
 			else {
-				if (rmsToDb(fsDif[j], slowFrame[j] * (jerk - 1)) > 0) {
+				if (rmsToDb(fsDif[j], slowFrame[j] * impulseUtil.getJerk()) > 0) {
 					index.add(j);
 					// System.out.println("S3: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
 					flag.add(3);
@@ -211,24 +201,24 @@ public class dbImpulseStreamModule implements StreamModule {
 			num++;
 
 		}
-		/*
+		
 		if (num > 0) {
 			System.out.println(flag.get(position) + ": FastFrame: "
 					+ fastFrame[index.get(position) - 1] + " slowFrame: "
 					+ slowFrame[index.get(position) - 1]);
 		}
-		*/
+		
 		preRms = fastFrame[fastFrame.length - 1];
 		pre2Rms = fastFrame[fastFrame.length - 2];
 		return index1;
 	}
 
 	private int sampleToTimeOffset(int sample) {
-		return (int) (sample * usPerSample);
+		return (int) (sample * impulseUtil.getUsPerSample());
 	}
 
 	private int timeToSampleOffset(int time) {
-		return (int) ((double) time / usPerSample);
+		return (int) ((double) time / impulseUtil.getUsPerSample());
 	}
 
 	public void close() {
