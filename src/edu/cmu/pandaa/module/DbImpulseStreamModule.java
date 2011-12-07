@@ -80,7 +80,6 @@ public class DbImpulseStreamModule implements StreamModule {
 
 	@Override
 	public ImpulseFrame process(StreamFrame inFrame) {
-		int peaks = 0;
 		ArrayList<Integer> peakOffsets = new ArrayList<Integer>(1);
 		ArrayList<Short> peakMagnitudes = new ArrayList<Short>(1);
 

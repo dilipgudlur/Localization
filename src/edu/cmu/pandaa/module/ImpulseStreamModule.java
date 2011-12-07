@@ -8,18 +8,15 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
+import edu.cmu.pandaa.utils.ImpulseUtil;
 
 import java.util.ArrayList;
 
 public class ImpulseStreamModule implements StreamModule {
-	private double usPerSample;
-	private final int slowWindow = 1000;
-	private final int fastWindow = 50;
-	private final double jerk = 4;
-	private final double base = 50;
-	private ImpulseHeader header;
-	boolean prevPeak = false; // start with peak supression turned on
 
+	private ImpulseHeader header;
+	ImpulseUtil impulseUtil=new ImpulseUtil();
+	
 	public ImpulseStreamModule() {
 	}
 
@@ -73,7 +70,7 @@ public class ImpulseStreamModule implements StreamModule {
 		RawAudioHeader rah = (RawAudioHeader) inHeader;
 		rah.initFilters(30, 0);
 		int sampleRate = (int) rah.getSamplingRate();
-		usPerSample = Math.pow(10, 6) / (double) sampleRate; // us per sample
+		impulseUtil.setUsPerSample((double)sampleRate);
 		header = new ImpulseHeader(inHeader.id, inHeader.startTime,
 				inHeader.frameTime);
 		return header;
@@ -81,7 +78,6 @@ public class ImpulseStreamModule implements StreamModule {
 
 	@Override
 	public ImpulseFrame process(StreamFrame inFrame) {
-		int peaks = 0;
 		ArrayList<Integer> peakOffsets = new ArrayList<Integer>(1);
 		ArrayList<Short> peakMagnitudes = new ArrayList<Short>(1);
 
@@ -89,16 +85,14 @@ public class ImpulseStreamModule implements StreamModule {
 			throw new RuntimeException("Wrong frame type");
 
 		RawAudioFrame raf = (RawAudioFrame) inFrame;
-		double[] slowFrame = raf.smooth(slowWindow);
-		double[] fastFrame = raf.smooth(fastWindow);
+		double[] slowFrame = raf.smooth(impulseUtil.getSlowWindow());
+		double[] fastFrame = raf.smooth(impulseUtil.getFastWindow());
 		int index_fast = maxDiv(fastFrame, slowFrame, inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
-		if (!prevPeak && index_fast != -1) {
+		if (index_fast != -1) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
 			peakMagnitudes.add((short) fastFrame[index_fast]);
-			prevPeak = true;
-		} else
-			prevPeak = false;
+		}
 		for (int i = 0; i < data.length; i++) {
 			double slow = slowFrame[i];
 			double fast = fastFrame[i];
@@ -114,7 +108,7 @@ public class ImpulseStreamModule implements StreamModule {
 		int index = -1;
 		for (int j = first ? 500 : 2; j < fastFrame.length; j++) {
 			div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
-			if (div[j - 2] > max && fastFrame[j] > (slowFrame[j] * jerk + base)) {
+			if (div[j - 2] > max && fastFrame[j] > (slowFrame[j] * (impulseUtil.getJerk()+1) + impulseUtil.getBase())) {
 				max = div[j - 2];
 				index = j;
 			}
@@ -123,11 +117,11 @@ public class ImpulseStreamModule implements StreamModule {
 	}
 
 	private int sampleToTimeOffset(int sample) {
-		return (int) (sample * usPerSample);
+		return (int) (sample * impulseUtil.getUsPerSample());
 	}
 
 	private int timeToSampleOffset(int time) {
-		return (int) ((double) time / usPerSample);
+		return (int) ((double) time / impulseUtil.getUsPerSample());
 	}
 
 	public void close() {
