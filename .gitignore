@@ -12,3 +12,4 @@ gen/
 out/
 test/
 android-app/default.properties
+results.txt

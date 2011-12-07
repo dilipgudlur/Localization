@@ -18,7 +18,7 @@ public class DbImpulseStreamModule implements StreamModule {
 	private static int num = 0;
 	private static double preRms = 0.0;
 	private static double pre2Rms = 0.0;
-	ImpulseUtil impulseUtil=new ImpulseUtil();
+	ImpulseUtil impulseUtil = new ImpulseUtil();
 
 	public DbImpulseStreamModule() {
 	}
@@ -72,7 +72,7 @@ public class DbImpulseStreamModule implements StreamModule {
 		RawAudioHeader rah = (RawAudioHeader) inHeader;
 		rah.initFilters(30, 0);
 		int sampleRate = (int) rah.getSamplingRate();
-		impulseUtil.setUsPerSample((double)sampleRate);
+		impulseUtil.setUsPerSample((double) sampleRate);
 		header = new ImpulseHeader(inHeader.id, inHeader.startTime,
 				inHeader.frameTime);
 		return header;
@@ -92,7 +92,7 @@ public class DbImpulseStreamModule implements StreamModule {
 		double minSlowFrame = findMin(slowFrame);
 		ImpulseUtil.setMicrophoneRms(minSlowFrame);
 		int index_fast = -1;
-		index_fast = maxDif(fastFrame, slowFrame, inFrame.seqNum == 0);
+		index_fast = findPeakIndex(fastFrame, slowFrame, inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
 		if (index_fast != -1) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
@@ -130,7 +130,14 @@ public class DbImpulseStreamModule implements StreamModule {
 		return max;
 	}
 
-	private int maxDif(double[] fastFrame, double[] slowFrame, boolean first) {
+	/**
+	 * Find the index of the peak
+	 * @param fastFrame
+	 * @param slowFrame
+	 * @param first
+	 * @return index1
+	 */
+	private int findPeakIndex(double[] fastFrame, double[] slowFrame, boolean first) {
 		double[] fsDif = new double[slowFrame.length];
 		for (int i = 0; i < slowFrame.length; i++)
 			fsDif[i] = fastFrame[i] - slowFrame[i];
@@ -140,39 +147,40 @@ public class DbImpulseStreamModule implements StreamModule {
 		int position = -1;
 		int index1 = -1;
 		ArrayList<Integer> index = new ArrayList<Integer>();
-		ArrayList<Integer> flag = new ArrayList<Integer>();
+		ArrayList<String> flag = new ArrayList<String>();
+		// Find the peak candidates based on the relative/absolute value of
+		// fastFrame and slowFrame(RMS)
 		for (int j = first ? 500 : 0; j < fastFrame.length; j++) {
-			// div[j - 2] = fastFrame[j - 1] - fastFrame[j - 2];
 
-			if (rmsToDb(slowFrame[j], impulseUtil.getBase()) < 0) // Too quiet
+			if (rmsToDb(slowFrame[j], impulseUtil.getBase()) < 0)
+			// When the ambient is too quiet
 			{
 				if (rmsToDb(fsDif[j], impulseUtil.getQuietImpulseFloor()) > 0) {
 					index.add(j);
-					// System.out.println("S1: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
-					flag.add(1);
+					flag.add("Quiet");
 				}
 
-			} else if (rmsToDb(slowFrame[j], impulseUtil.getNoisyFloor()) > 0) // Too
-																		// noisy
+			} else if (rmsToDb(slowFrame[j], impulseUtil.getNoisyFloor()) > 0)
+			// When the ambient is too noisy
 			{
 				if (rmsToDb(fsDif[j], slowFrame[j] / 2) > 0) {
 					index.add(j);
-					// System.out.println("S2: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
-					flag.add(2);
+					flag.add("Noise");
 				}
 			}
 
 			else {
 				if (rmsToDb(fsDif[j], slowFrame[j] * impulseUtil.getJerk()) > 0) {
 					index.add(j);
-					// System.out.println("S3: FastFrame: "+fastFrame[j]+" slowFrame: "+slowFrame[j]);
-					flag.add(3);
+					flag.add("Normal");
 				}
 
 			}
 
 		}
 
+		// Find the biggest difference between successive fastRMS among the
+		// candidate peaks
 		for (int i = 0; i < index.size(); i++) {
 			if (index.get(i) == 0) {
 				dif[index.get(i)] = preRms - pre2Rms;
@@ -189,10 +197,10 @@ public class DbImpulseStreamModule implements StreamModule {
 					position = i;
 				}
 			} else {
-				dif[index.get(i) - 2] = fastFrame[index.get(i) - 1]
+				dif[index.get(i)] = fastFrame[index.get(i) - 1]
 						- fastFrame[index.get(i) - 2];
-				if (dif[index.get(i) - 2] > max) {
-					max = dif[index.get(i) - 2];
+				if (dif[index.get(i)] > max) {
+					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
 				}
@@ -200,13 +208,12 @@ public class DbImpulseStreamModule implements StreamModule {
 			num++;
 
 		}
-		
-		if (num > 0) {
-			System.out.println(flag.get(position) + ": FastFrame: "
-					+ fastFrame[index.get(position) - 1] + " slowFrame: "
-					+ slowFrame[index.get(position) - 1]);
-		}
-		
+
+		/*
+		  if (num > 0) { System.out.println(flag.get(position) +
+		  ": FastFrame: " + fastFrame[index.get(position) - 1] + " slowFrame: "
+		  + slowFrame[index.get(position) - 1]); }
+		 */
 		preRms = fastFrame[fastFrame.length - 1];
 		pre2Rms = fastFrame[fastFrame.length - 2];
 		return index1;
