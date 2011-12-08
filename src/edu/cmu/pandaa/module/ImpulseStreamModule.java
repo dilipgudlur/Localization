@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 public class ImpulseStreamModule implements StreamModule {
 	private ImpulseHeader header;
-	private static int num = 0;
+	//private static int num = 0;
 	private static double preRms;
 	private static double pre2Rms;
 	ImpulseUtil impulseUtil = new ImpulseUtil();
@@ -87,7 +87,8 @@ public class ImpulseStreamModule implements StreamModule {
 		RawAudioFrame raf = (RawAudioFrame) inFrame;
 		double[] slowFrame = raf.smooth(impulseUtil.getSlowWindow());
 		double[] fastFrame = raf.smooth(impulseUtil.getFastWindow());
-		int index_fast = findPeakIndex(fastFrame, slowFrame, inFrame.seqNum == 0);
+		int index_fast = findPeakIndex(fastFrame, slowFrame,
+				inFrame.seqNum == 0);
 		short[] data = raf.getAudioData();
 		if (index_fast > 0) {
 			peakOffsets.add(sampleToTimeOffset(index_fast));
@@ -101,25 +102,27 @@ public class ImpulseStreamModule implements StreamModule {
 		}
 		return header.makeFrame(peakOffsets, peakMagnitudes);
 	}
-	
+
 	/**
 	 * Find the index of the peak
+	 * 
 	 * @param fastFrame
 	 * @param slowFrame
 	 * @param first
 	 * @return index1
 	 */
-	private int findPeakIndex(double[] fastFrame, double[] slowFrame, boolean first) {
+	private int findPeakIndex(double[] fastFrame, double[] slowFrame,
+			boolean first) {
 		double[] dif = new double[fastFrame.length];
 		double max = 0;
 		int index1 = -1;
 		int position = -1;
-		num = 0;
+		//num = 0;
 		ArrayList<Integer> index = new ArrayList<Integer>();
 		ArrayList<String> flag = new ArrayList<String>();
 		// Find the peak candidates based on the relative/absolute value of
 		// fastFrame and slowFrame(RMS)
-		for (int j = 0; j < fastFrame.length; j++) {
+		for (int j = first ? 500 : 0; j < fastFrame.length; j++) {
 			/*
 			 * When the ambient is too quiet
 			 * if(slowFrame[j]<impulseUtil.getQuietImpulseFloor()) {
@@ -152,6 +155,7 @@ public class ImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			} else if (index.get(i) == 1) {
 				dif[index.get(i)] = fastFrame[index.get(i) - 1] - preRms;
@@ -159,6 +163,7 @@ public class ImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			} else {
 				dif[index.get(i)] = fastFrame[index.get(i) - 1]
@@ -167,15 +172,20 @@ public class ImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			}
-			num++;
+			
 		}
+
 		/*
-		 * if (num > 0) { System.out.println(flag.get(position) +
-		 * ": FastFrame: " + fastFrame[index.get(position) - 1] + " slowFrame: "
-		 * + slowFrame[index.get(position) - 1]); }
-		 */
+		if (num > 0) {
+			System.out.println(flag.get(position) + ": FastFrame: "
+					+ fastFrame[index.get(position) - 1] + " slowFrame: "
+					+ slowFrame[index.get(position) - 1]);
+		}
+		*/
+		
 		preRms = fastFrame[fastFrame.length - 1];
 		pre2Rms = fastFrame[fastFrame.length - 2];
 		return index1;

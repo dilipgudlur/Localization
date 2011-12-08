@@ -13,8 +13,8 @@ public class ImpulseUtil {
 	private static double microphoneRms;
 	private double usPerSample;
 
-	private final int SLOWWINDOW = 1000;
-	private final int FASTWINDOW = 50;
+	private final int SLOWWINDOW = 2000;
+	private final int FASTWINDOW = 10;
 	private final double JERK = 3;
 	private final double BASE = 50;
 	private double RMSMAX = Math.pow(2, 16) / 2;

@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class DbImpulseStreamModule implements StreamModule {
 
 	private ImpulseHeader header;
-	private static int num = 0;
+	//private static int num = 0;
 	private static double preRms = 0.0;
 	private static double pre2Rms = 0.0;
 	ImpulseUtil impulseUtil = new ImpulseUtil();
@@ -143,7 +143,7 @@ public class DbImpulseStreamModule implements StreamModule {
 			fsDif[i] = fastFrame[i] - slowFrame[i];
 		double[] dif = new double[fastFrame.length];
 		double max = 0.0;
-		num = 0;
+		//num = 0;
 		int position = -1;
 		int index1 = -1;
 		ArrayList<Integer> index = new ArrayList<Integer>();
@@ -188,6 +188,7 @@ public class DbImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			} else if (index.get(i) == 1) {
 				dif[index.get(i)] = fastFrame[index.get(i) - 1] - preRms;
@@ -195,6 +196,7 @@ public class DbImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			} else {
 				dif[index.get(i)] = fastFrame[index.get(i) - 1]
@@ -203,9 +205,10 @@ public class DbImpulseStreamModule implements StreamModule {
 					max = dif[index.get(i)];
 					index1 = index.get(i);
 					position = i;
+					//num++;
 				}
 			}
-			num++;
+			
 
 		}
 
