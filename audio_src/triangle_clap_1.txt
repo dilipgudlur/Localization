@@ -1,0 +1,2 @@
+triangle_clap_1-1,triangle_clap_1-2,triangle_clap_1-3 0 100 3 2
+0 0 0 2800 2543 1121

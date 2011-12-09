@@ -1,0 +1,2 @@
+square_clap_4-1,square_clap_4-2,square_clap_4-3,square_clap_4-4 0 100 4 2
+0 0 2730 0 2730 2730 0 2730
