@@ -2,9 +2,12 @@ package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.header.DistanceHeader;
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
+import edu.cmu.pandaa.header.GeometryHeader;
+import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.DistanceFileStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
 
 import java.util.LinkedList;
 
@@ -17,20 +20,30 @@ import java.util.LinkedList;
 
 public class DistanceFilter implements StreamModule {
   double average = 0, magnitude = 1, weight;
-  DistanceHeader h;
+  DistanceHeader h, inHeader;
   public static final double speedOfSound = 340.29; // m/s at sea level
-  final int numDevices = 3;
-  double scale;
+  GeometryFileStream posStream;
+  GeometryFrame posFrame;
+  int numDevices;
+  int d1index = -1, d2index = -1;
 
   public DistanceFilter(double weight) {
     this.weight = weight;
   }
 
   private double distanceBetween(int i, int j) {
-    double a1 = Math.PI*2*i/numDevices;
-    double a2 = Math.PI*2*j/numDevices;
-    double dx = Math.sin(a1) - Math.sin(a2);
-    double dy = Math.cos(a1) - Math.cos(a2);
+    double dx, dy;
+
+    if (posFrame == null) {
+      double a1 = Math.PI*2*i/numDevices;
+      double a2 = Math.PI*2*j/numDevices;
+      dx = Math.sin(a1) - Math.sin(a2);
+      dy = Math.cos(a1) - Math.cos(a2);
+    } else {
+      dx = posFrame.geometry[0][i] - posFrame.geometry[0][j];
+      dy = posFrame.geometry[1][i] - posFrame.geometry[1][j];
+    }
+
     return Math.sqrt(dx*dx + dy*dy);
   }
 
@@ -45,23 +58,66 @@ public class DistanceFilter implements StreamModule {
     return d1*numDevices/exp;
   }
 
-  public DistanceHeader init(StreamHeader inHeader) {
-    h = new DistanceHeader((DistanceHeader) inHeader);
+  private double getScale() throws Exception {
+    double scale;
+    if (posStream == null)
+      scale = getScaleGuess(4);
+    else {
+      posFrame = posStream.recvFrame();
+      scale = distanceAdjustment(d1index, d2index);
+    }
 
-    scale = 0;
+    if ((scale < 1)||(scale > 5)|| Double.isNaN(scale) || Double.isInfinite(scale))
+      scale = 1.5;
+
+    scale *= speedOfSound / 1000.0; // convert from dt (us) to distance (mm)
+    return scale;
+  }
+
+  private double getScaleGuess(int numDevices) {
+    double scale = 0;
+
     for (int i = 0; i < numDevices; i++)
       for (int j = 0; j < numDevices; j++)
         if (i != j)
           scale += distanceAdjustment(i, j);  // TODO: use accurate geometry
     scale /= numDevices*(numDevices - 1);
-    scale *= speedOfSound / 1000.0; // convert from dt (us) to distance (mm)
+
+    return scale;
+  }
+
+  public DistanceHeader init(StreamHeader inHeader) throws Exception {
+    h = new DistanceHeader((DistanceHeader) inHeader);
+    this.inHeader = h;
 
     return h;
   }
 
-  public DistanceFrame process(StreamFrame inFrame) {
-    DistanceFrame din = (DistanceFrame) inFrame;
+  public void setPositionStream(GeometryFileStream posStream) throws Exception {
+    this.posStream = posStream;
 
+    GeometryHeader gh = posStream.getHeader();
+    numDevices = gh.rows;
+
+    String d1id = inHeader.deviceIds[0];
+    String d2id = inHeader.deviceIds[1];
+    for (int i = 0;i < numDevices;i++) {
+      if (d1id.equals(gh.deviceIds[i]))
+        d1index = i;
+      if (d2id.equals(gh.deviceIds[i]))
+        d2index = i;
+    }
+
+    if ((d1index < 0)||(d2index < 0)||(d1index == d2index))
+      throw new IllegalArgumentException("Could not find matching deviceIds");
+
+    if (gh.frameTime != inHeader.frameTime)
+      throw new IllegalArgumentException("Frame time mismatch");
+  }
+
+  public DistanceFrame process(StreamFrame inFrame) throws Exception {
+    DistanceFrame din = (DistanceFrame) inFrame;
+    double scale = getScale();
     for (int i = 0;i < din.peakDeltas.length; i++) {
       double peak_magnitude = din.peakMagnitudes[i];
       double peak_tdoa = din.peakDeltas[i];
@@ -85,9 +141,12 @@ public class DistanceFilter implements StreamModule {
   public static void main(String[] args) throws Exception
   {
     int arg = 0;
+    String distArg = null;
     String wString = args[arg++];
     String outArg = args[arg++];
     String inArg = args[arg++];
+    if (args.length != arg)
+      distArg = args[arg++];
     if (args.length != arg) {
       throw new IllegalArgumentException("Invalid number of arguments");
     }
@@ -95,10 +154,13 @@ public class DistanceFilter implements StreamModule {
     System.out.println("GeometryMatrix: " + outArg + " " + inArg);
     DistanceFileStream in = new DistanceFileStream(inArg);
     DistanceFileStream out = new DistanceFileStream(outArg, true);
+    GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
 
     try {
       DistanceFilter df = new DistanceFilter(Double.parseDouble(wString));
       out.setHeader(df.init(in.getHeader()));
+      if (pos != null)
+        df.setPositionStream(pos);
       StreamFrame frameIn;
       while ((frameIn = in.recvFrame()) != null) {
         out.sendFrame(df.process(frameIn));
