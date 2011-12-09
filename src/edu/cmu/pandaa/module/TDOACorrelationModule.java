@@ -55,7 +55,7 @@ public class TDOACorrelationModule implements StreamModule {
     /* Try to match peaks in the two frames.
      * We're assuming that the same sound impulse reaches devices
      * within less than 29ms (speed of sound over 10m, a generous 
-     * room size). Tweaking needed.
+     * room size). Tweaking may be needed.
      */
     ImpulseFrame aFrame = (ImpulseFrame) frames[0];
     ImpulseFrame bFrame = (ImpulseFrame) frames[1];
@@ -73,8 +73,10 @@ public class TDOACorrelationModule implements StreamModule {
     int aIndex = 0, bIndex = 0, higherOffset, absDistance;
     
     while (aIndex < aFrame.peakOffsets.length && bIndex < bFrame.peakOffsets.length) {
+      // get the higher value of the two peaks' offsets
       higherOffset = Math.max(aFrame.peakOffsets[aIndex], bFrame.peakOffsets[bIndex]);
       
+      // for the peak with the higher offset, see if there is a correspondent that is closer to it
       while (aIndex + 1 < aFrame.peakOffsets.length && aFrame.peakOffsets[aIndex + 1] < higherOffset) {
         aIndex++;
       }
@@ -82,12 +84,14 @@ public class TDOACorrelationModule implements StreamModule {
         bIndex++;
       }
       
+      // if the peak pair is of a plausible distance, add it to the list of potential matches
       absDistance = Math.abs(aFrame.peakOffsets[aIndex] - bFrame.peakOffsets[bIndex]);
       if (absDistance < maxAbsDistance) {
         potentialMatches.add(new int[] {aIndex, bIndex});
         sortedAbsDistances.add(new int[] {potentialMatches.size() - 1, absDistance});
       }
       
+      // advance the peak pointer with the lower offset (will jump past the one with the higher offset)
       if (aFrame.peakOffsets[aIndex] > bFrame.peakOffsets[bIndex]) {
         bIndex++;
       } else {
@@ -95,6 +99,7 @@ public class TDOACorrelationModule implements StreamModule {
       }
     }
     
+    // accept peak matches in decreasing order of distance (every peak can only be matched once)
     HashSet<Integer> aIndexesVisited = new HashSet<Integer>();
     HashSet<Integer> bIndexesVisited = new HashSet<Integer>();
     TreeSet<int[]> matchAbsDistances = new TreeSet<int[]>(new ArrayComparator(0));
@@ -108,6 +113,7 @@ public class TDOACorrelationModule implements StreamModule {
       }
     }
     
+    // compute distances and magnitudes of matched peaks
     LinkedList<Double> matchDeltas = new LinkedList<Double>();
     LinkedList<Double> matchMagnitudes = new LinkedList<Double>();
     int[] match;
@@ -117,6 +123,7 @@ public class TDOACorrelationModule implements StreamModule {
       matchMagnitudes.add((double) (aFrame.peakMagnitudes[match[0]] * bFrame.peakMagnitudes[match[1]]));
     }
     
+    // convert data to double[] to be stored in the frame
     int size = matchDeltas.size();
     double[] peakDeltas = new double[size];
     double[] peakMagnitudes = new double[size];

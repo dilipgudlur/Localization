@@ -77,8 +77,9 @@ public class FileStream implements FrameStream {
     close();
     int mark = fileName.lastIndexOf('.');
     String nextFile = fileName.substring(0,mark);
-    new File(nextFile).mkdir();
     String seqNumStr = "" + seqNum;
+    if (!isRead)
+      new File(nextFile).mkdir();
     nextFile = nextFile + File.separatorChar + padding.substring(0,padding.length() - seqNumStr.length()) +
             seqNumStr + fileName.substring(mark);
     is = null;
@@ -95,9 +96,13 @@ public class FileStream implements FrameStream {
   }
 
   protected String readLine() throws IOException {
+    if (is == null)
+      return null;
+
     if (br == null) {
       br = new BufferedReader(new InputStreamReader(is));
     }
+
     return br.readLine();
   }
 
