@@ -73,7 +73,7 @@ public class FileStream implements FrameStream {
   }
 
   protected boolean nextFile() throws IOException {
-    boolean isRead = is != null;
+    boolean isRead = os == null;
     close();
     int mark = fileName.lastIndexOf('.');
     String nextFile = fileName.substring(0,mark);

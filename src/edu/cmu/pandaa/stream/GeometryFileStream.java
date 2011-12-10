@@ -73,7 +73,7 @@ public class GeometryFileStream extends FileStream {
     if (useMultipleFiles)
       nextFile();
     String line = readLine();
-    if (line == null)
+    if (line == null || line.startsWith("hello"))
       return null;
     String[] parts = line.trim().split(" ");
     int rows = header.rows;

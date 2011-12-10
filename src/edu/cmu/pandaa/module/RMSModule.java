@@ -14,27 +14,32 @@ public class RMSModule implements StreamModule{
   DistanceHeader dOut;
   GeometryFrame actual;
 
-  public void extractActual(GeometryFileStream inStream) throws Exception
+  public void extractActual(FrameStream inStream, FrameStream outGS) throws Exception
   {
-    inStream.getHeader(); // ignore return result -- we don't need it!
-    actual = inStream.recvFrame();
+    outGS.setHeader(inStream.getHeader());
+    actual = (GeometryFrame) inStream.recvFrame();
     actual.adjustAxes();
+    outGS.sendFrame(actual);
+    outGS.close();
   }
 
-  public void runModule(GeometryFileStream inGS1, GeometryFileStream inGS2, FrameStream outDS) throws Exception {
+  public void runModule(FrameStream inGS1, FrameStream inGS2,
+                        FrameStream outDS, FrameStream outGS) throws Exception {
     try{
       StreamHeader header = init(inGS1.getHeader());
       outDS.setHeader(header);
-      extractActual(inGS2);
-      StreamFrame f1,frameOut;
+      extractActual(inGS2, outGS);
+      StreamFrame f1;
       while ((f1 = inGS1.recvFrame()) != null) {
-        frameOut = process(f1);
+        StreamFrame frameOut = process(f1);
         outDS.sendFrame(frameOut);
       }
     }catch(Exception e){
       e.printStackTrace();
     }
     outDS.close();
+    inGS1.close();
+    inGS2.close();
   }
 
   public StreamHeader init(StreamHeader i1) {
@@ -65,7 +70,7 @@ public class RMSModule implements StreamModule{
     }
 
     if (rmsB < rmsA)
-        rmsA = rmsB;
+      rmsA = rmsB;
 
     rmsA = Math.sqrt(rmsA / numDevices);
 
@@ -89,10 +94,13 @@ public class RMSModule implements StreamModule{
     GeometryFileStream rIn1 = new GeometryFileStream(inArg1); //geometryOut
     GeometryFileStream rIn2 = new GeometryFileStream(inArg2); //config file
     DistanceFileStream rOut = new DistanceFileStream(outArg, true); //rmsOut
+    int eIndex = outArg.lastIndexOf('.');
+    outArg = outArg.substring(0, eIndex) + "-actual" + outArg.substring(eIndex);
+    GeometryFileStream rOut2 = new GeometryFileStream(outArg, true, true); //rmsOut
 
     try {
       RMSModule rms = new RMSModule();
-      rms.runModule(rIn1,rIn2,rOut);
+      rms.runModule(rIn1, rIn2, rOut, rOut2);
     } catch (Exception e) {
       e.printStackTrace();
     }

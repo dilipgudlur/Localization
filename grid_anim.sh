@@ -1,4 +1,5 @@
 AUDIO_SET=$1
+TRUTH=$2
 FDIR=geometryOut
 if [ -d test ]; then
   cd test # in case we're running at the top level
@@ -9,10 +10,9 @@ echo -n "Generating graphs: "
 cp ../grid.plt .tmp.plt
 pcmd="plot \"$AUDIO_SET.dat\""
 shift
-for set in $@; do
-  pcmd="$pcmd,\"$set.dat\""
-  cp ../$set.dat .
-done
+if [ "$TRUTH" ]; then
+  pcmd="$pcmd,\"$TRUTH\""
+fi
 
 echo $pcmd >> .tmp.plt
 echo Generating $pcmd to $AUDIO_SET.gif

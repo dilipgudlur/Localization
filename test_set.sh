@@ -61,6 +61,7 @@ for file in $FILESET; do
     java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$repeat impulses-$file.txt $ifile
   fi
 done
+
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
@@ -74,22 +75,39 @@ for a in $FILESET; do
   fi
  done
 done
+
 if [ "$inputs" == "" ]; then
   echo no inputs genereated!
   exit
 fi
+
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
-java $OPTS $PACKAGE.module.RMSModule RMSOut.txt geometryOut.txt $INPUT.txt
+java $OPTS $PACKAGE.module.RMSModule rmsOut.txt geometryOut.txt $INPUT.txt
+
+inputs=""
+for a in $FILESET; do 
+ for b in $FILESET; do 
+  if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
+   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH adjusted-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt geometryOut.txt
+   inputs="$inputs adjusted-$a$b.txt"
+  fi
+ done
+done
+
+java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll2.txt $inputs
+java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut2.txt geometryAll2.txt
+java $OPTS $PACKAGE.module.RMSModule rmsOut2.txt geometryOut2.txt $INPUT.txt
 
 if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
   shift
   if [ "$*" != "" ]; then
     ../grid_multi.sh $INPUT_SET "$@"
   else
-    ../grid_anim.sh $INPUT_SET
+    cp rmsOut-actual/0000.txt actual.dat
+    ../grid_anim.sh $INPUT_SET actual.dat
   fi
 fi
 
-tail -1 RMSOut.txt
+tail -1 rmsOut.txt
 
