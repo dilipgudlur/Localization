@@ -5,7 +5,7 @@ fi
 if [ "$TDOA_ALGORITHM" == "" ]; then
   TDOA_ALGORITHM=1
 fi
-TARGET_SAMPLES=100
+TARGET_SAMPLES=200
 DISTANCE_SMOOTH=100
 GRAPH=yes
 
@@ -109,5 +109,7 @@ if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
   fi
 fi
 
-tail -1 rmsOut.txt
+rms1=`tail -1 rmsOut.txt`
+rms2=`tail -1 rmsOut2.txt`
+echo "$rms1 $rms2"
 

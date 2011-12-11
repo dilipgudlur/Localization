@@ -24,7 +24,7 @@ public class DistanceFilter implements StreamModule {
   public static final double speedOfSound = 340.29; // m/s at sea level
   GeometryFileStream posStream;
   GeometryFrame posFrame;
-  int numDevices;
+  int numDevices = 4;  // default unless we know otherwise
   int d1index = -1, d2index = -1;
 
   public DistanceFilter(double weight) {
@@ -61,20 +61,21 @@ public class DistanceFilter implements StreamModule {
   private double getScale() throws Exception {
     double scale;
     if (posStream == null)
-      scale = getScaleGuess(4);
+      scale = getScaleGuess();
     else {
       posFrame = posStream.recvFrame();
       scale = distanceAdjustment(d1index, d2index);
+      if ((scale < 1)||(scale > 5)|| Double.isNaN(scale) || Double.isInfinite(scale)) {
+        posFrame = null;
+        scale = getScaleGuess();
+      }
     }
-
-    if ((scale < 1)||(scale > 5)|| Double.isNaN(scale) || Double.isInfinite(scale))
-      scale = 1.5;
 
     scale *= speedOfSound / 1000.0; // convert from dt (us) to distance (mm)
     return scale;
   }
 
-  private double getScaleGuess(int numDevices) {
+  private double getScaleGuess() {
     double scale = 0;
 
     for (int i = 0; i < numDevices; i++)
