@@ -8,10 +8,10 @@ fi
 FILES="$FDIR/*.txt"
 echo -n "Generating graphs: "
 cp ../grid.plt .tmp.plt
-pcmd="plot \"$AUDIO_SET.dat\""
+pcmd="plot \"$AUDIO_SET.dat\" with linespoints"
 shift
 if [ "$TRUTH" ]; then
-  pcmd="$pcmd,\"$TRUTH\""
+  pcmd="$pcmd,\"$TRUTH\" with linespoints"
 fi
 
 echo $pcmd >> .tmp.plt

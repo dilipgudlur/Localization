@@ -62,6 +62,11 @@ public class GeometryHeader extends StreamHeader implements Serializable {
       this.geometry = geometry;
     }
 
+    public void flip() {
+      for (int j = 0;j < rows; j++)
+        geometry[0][j] = -geometry[0][j];
+    }
+
     public void adjustAxes()
     {
       if (cols != 2)

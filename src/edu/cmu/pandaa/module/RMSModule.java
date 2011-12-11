@@ -13,12 +13,19 @@ import edu.cmu.pandaa.stream.GeometryFileStream;
 public class RMSModule implements StreamModule{
   DistanceHeader dOut;
   GeometryFrame actual;
+  int flipped = 0;
 
   public void extractActual(FrameStream inStream, FrameStream outGS) throws Exception
   {
     outGS.setHeader(inStream.getHeader());
     actual = (GeometryFrame) inStream.recvFrame();
     actual.adjustAxes();
+  }
+
+  public void finalizeActual(FrameStream outGS) throws Exception {
+    if (flipped < 0) {
+       actual.flip();
+    }
     outGS.sendFrame(actual);
     outGS.close();
   }
@@ -37,6 +44,7 @@ public class RMSModule implements StreamModule{
     }catch(Exception e){
       e.printStackTrace();
     }
+    finalizeActual(outGS);
     outDS.close();
     inGS1.close();
     inGS2.close();
@@ -69,12 +77,9 @@ public class RMSModule implements StreamModule{
               Math.pow((estimated.geometry[1][j] - actual.geometry[1][j]),2);
     }
 
-    if (rmsB < rmsA)
-      rmsA = rmsB;
+    flipped += rmsA < rmsB ? 1 : (rmsB < rmsA ? -1 : 0);
 
-    rmsA = Math.sqrt(rmsA / numDevices);
-
-    double[] rms = { rmsA };
+    double[] rms = {  Math.sqrt((flipped > 0 ? rmsA : rmsB) )/ numDevices };
     double[] magnitudes = { 0.0 };
     DistanceFrame dfOut = dOut.makeFrame(rms,magnitudes);
 
