@@ -1,23 +1,39 @@
 package edu.cmu.pandaa.header;
 
 public class DistanceHeader extends StreamHeader {
-  public int rollingWindow = 1;
-  public String[] deviceIds; // the devices providing feature/impulse data for distance calculation
+  private final int rollingWindow;
+  private final String[] deviceIds; // the devices providing feature/impulse data for distance calculation
 
   public DistanceHeader(DistanceHeader in) {
     super(in);
-    this.deviceIds = in.deviceIds;
-    this.rollingWindow = in.rollingWindow;
+    rollingWindow = in.getRollingWindow();
+    deviceIds = in.getDeviceIds();
+  }
+
+  public DistanceHeader(String id, long startTime, int frameTime) {
+    this(id, startTime, frameTime, 1);
   }
 
   public DistanceHeader(String id, long startTime, int frameTime, String[] ids) {
-    this(id, startTime, frameTime, 1, ids);
+    this(makeId(id, ids), startTime, frameTime);
   }
 
-  public DistanceHeader(String id, long startTime, int frameTime, int rolling, String[] ids) {
+  public DistanceHeader(String id, long startTime, int frameTime, String[] ids, int rolling) {
+    this(makeId(id, ids), startTime, frameTime, rolling);
+  }
+
+  public DistanceHeader(String id, long startTime, int frameTime, int rolling) {
     super(id, startTime, frameTime);
     rollingWindow = rolling;
-    deviceIds = ids;
+    deviceIds = super.getIds();
+  }
+
+  public int getRollingWindow() {
+    return rollingWindow;
+  }
+
+  public String[] getDeviceIds() {
+    return deviceIds;
   }
 
   public class DistanceFrame extends StreamFrame {
@@ -28,6 +44,14 @@ public class DistanceHeader extends StreamHeader {
       peakDeltas = deltas;
       peakMagnitudes = magnitudes;
     }
+
+    public String getHeaderId(int index) {
+      return getId(index);
+    }
+  }
+
+  public String getId(int index) {
+    return deviceIds[index];
   }
 
   public DistanceFrame makeFrame(double[] deltas, double[] magnitudes) {

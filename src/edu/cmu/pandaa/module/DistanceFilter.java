@@ -7,9 +7,8 @@ import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.DistanceFileStream;
+import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
-
-import java.util.LinkedList;
 
 /**
  * Created by IntelliJ IDEA.
@@ -22,7 +21,7 @@ public class DistanceFilter implements StreamModule {
   double average = 0, magnitude = 1, weight;
   DistanceHeader h, inHeader;
   public static final double speedOfSound = 340.29; // m/s at sea level
-  GeometryFileStream posStream;
+  FrameStream posStream;
   GeometryFrame posFrame;
   int numDevices = 4;  // default unless we know otherwise
   int d1index = -1, d2index = -1;
@@ -63,7 +62,7 @@ public class DistanceFilter implements StreamModule {
     if (posStream == null)
       scale = getScaleGuess();
     else {
-      posFrame = posStream.recvFrame();
+      posFrame = (GeometryFrame) posStream.recvFrame();
       scale = distanceAdjustment(d1index, d2index);
       if ((scale < 1)||(scale > 5)|| Double.isNaN(scale) || Double.isInfinite(scale)) {
         posFrame = null;
@@ -81,7 +80,7 @@ public class DistanceFilter implements StreamModule {
     for (int i = 0; i < numDevices; i++)
       for (int j = 0; j < numDevices; j++)
         if (i != j)
-          scale += distanceAdjustment(i, j);  // TODO: use accurate geometry
+          scale += distanceAdjustment(i, j);  // TODO: use accurate gHeader
     scale /= numDevices*(numDevices - 1);
 
     return scale;
@@ -94,18 +93,19 @@ public class DistanceFilter implements StreamModule {
     return h;
   }
 
-  public void setPositionStream(GeometryFileStream posStream) throws Exception {
+  public void setPositionStream(FrameStream posStream) throws Exception {
     this.posStream = posStream;
 
-    GeometryHeader gh = posStream.getHeader();
+    GeometryHeader gh = (GeometryHeader) posStream.getHeader();
     numDevices = gh.rows;
 
-    String d1id = inHeader.deviceIds[0];
-    String d2id = inHeader.deviceIds[1];
+    String d1id = inHeader.getDeviceIds()[0];
+    String d2id = inHeader.getDeviceIds()[1];
+    String[] did = gh.getDeviceIds();
     for (int i = 0;i < numDevices;i++) {
-      if (d1id.equals(gh.deviceIds[i]))
+      if (d1id.equals(did[i]))
         d1index = i;
-      if (d2id.equals(gh.deviceIds[i]))
+      if (d2id.equals(did[i]))
         d2index = i;
     }
 

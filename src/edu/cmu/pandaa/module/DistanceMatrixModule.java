@@ -2,7 +2,6 @@ package edu.cmu.pandaa.module;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
 
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
@@ -61,12 +60,12 @@ public class DistanceMatrixModule implements StreamModule {
   public String[] generateDeviceIds(DistanceHeader[] distanceHeaders)
   {
     int rows = distanceHeaders.length;
-    int cols = distanceHeaders[0].deviceIds.length;
+    int cols = distanceHeaders[0].getDeviceIds().length;
     Set<String> set = new HashSet<String>();
     for(int i = 0; i < rows; i++){
       for(int j = 0; j < cols; j++){
-        if (!set.contains(distanceHeaders[i].deviceIds[j]))
-          set.add(distanceHeaders[i].deviceIds[j]);
+        if (!set.contains(distanceHeaders[i].getDeviceIds()[j]))
+          set.add(distanceHeaders[i].getDeviceIds()[j]);
       }
     }
     return set.toArray(new String[0]);

@@ -1,8 +1,6 @@
 package edu.cmu.pandaa.header;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -25,6 +23,18 @@ public class MultiHeader extends StreamHeader {
       throw new IllegalArgumentException("StreamHeaders should match for multi-header");
     }
     hmap.put(header, hmap.size());
+  }
+
+  protected String getMetaId() {
+    StreamHeader[] headers = getHeaders();
+    Set<String> set = new HashSet<String>();
+    for (int i = 0;i < headers.length;i++) {
+      String[] ids = headers[i].getIds();
+      for (int j = 0;j < ids.length;j++) {
+        set.add(ids[j]);
+      }
+    }
+    return makeId(id, set.toArray(new String[0]));
   }
 
   public boolean contains(StreamHeader h) {

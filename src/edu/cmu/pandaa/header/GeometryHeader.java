@@ -1,16 +1,16 @@
 package edu.cmu.pandaa.header;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GeometryHeader extends StreamHeader implements Serializable {
-  public String[] deviceIds;
   public int rows, cols;
   private double[] prevX;
-
+  Map<String,Integer> indexMap;
 
   public GeometryHeader(String[] deviceIds, long startTime, int frameTime, int rows, int cols) {
-    super(makeId(deviceIds), startTime, frameTime);
-    this.deviceIds = deviceIds;
+    super(makeId("geom",deviceIds), startTime, frameTime);
     this.rows = rows;
     this.cols = cols;
     if (deviceIds.length != rows)
@@ -19,24 +19,33 @@ public class GeometryHeader extends StreamHeader implements Serializable {
 
   public GeometryHeader(String id, long startTime, int frameTime, int rows, int cols) {
     super(id, startTime, frameTime);
-    this.deviceIds = getIds(id);
     this.rows = rows;
     this.cols = cols;
-    if (deviceIds.length != rows)
-      throw new IllegalArgumentException("Mismatched array dimensions");
   }
 
-  private static String makeId(String[] DeviceIds) {
-    StringBuilder ids = new StringBuilder();
-    for (int i=0; i<DeviceIds.length;i++) {
-      ids.append(',');
-      ids.append(DeviceIds[i]);
+  public GeometryHeader(MultiHeader header) {
+    super(header);
+    this.rows = header.getHeaders().length;
+    this.cols = header.getHeaders().length;
+  }
+
+  public int indexOf(String id) {
+    if (indexMap == null) {
+      String[] ids = getDeviceIds();
+      indexMap = new HashMap<String, Integer>(ids.length);
+      for (int i = 0;i < ids.length;i++) {
+        indexMap.put(ids[i], i);
+      }
     }
-    return ids.substring(1); // return a single string(pseudo-master ID)
+    return indexMap.get(id);
   }
 
   private static String[] getIds(String id) {
     return id.split(",");
+  }
+
+  public String[] getDeviceIds() {
+    return getIds();
   }
 
   public class GeometryFrame extends StreamFrame implements Serializable {

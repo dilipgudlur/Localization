@@ -55,11 +55,12 @@ public class RMSModule implements StreamModule{
       throw new RuntimeException("Wrong header type");
     GeometryHeader hIn = (GeometryHeader)i1 ;
     String id = "";
-    for(int i = 0; i < hIn.deviceIds.length; i++)
+    String[] did = hIn.getDeviceIds();
+    for(int i = 0; i < did.length; i++)
     {
-      id += hIn.deviceIds[i];
+      id += did[i];
     }
-    dOut = new DistanceHeader(id, hIn.startTime, hIn.frameTime, hIn.deviceIds);
+    dOut = new DistanceHeader(id, hIn.startTime, hIn.frameTime, hIn.getDeviceIds());
     return dOut;
   }
 
@@ -67,7 +68,7 @@ public class RMSModule implements StreamModule{
     if (!(f1 instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
     GeometryFrame estimated = (GeometryFrame) f1 ; // estimate
-    int numDevices = dOut.deviceIds.length;
+    int numDevices = dOut.getDeviceIds().length;
 
     double rmsA = 0, rmsB = 0;
     for(int j = 0; j < numDevices; j++){

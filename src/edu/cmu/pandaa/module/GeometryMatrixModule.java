@@ -37,7 +37,7 @@ class GeometryMatrixModule implements StreamModule{
 
     /*compute new header*/
     GeometryHeader hIn = (GeometryHeader)inHeader ;
-    hOut = new GeometryHeader(hIn.deviceIds, hIn.startTime, hIn.frameTime, hIn.rows, 2);
+    hOut = new GeometryHeader(hIn.getDeviceIds(), hIn.startTime, hIn.frameTime, hIn.rows, 2);
     return hOut;
   }
 

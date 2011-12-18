@@ -9,9 +9,13 @@ public class StreamHeader implements Serializable {
   public int nextSeq; // next sequence number to use by frame constructor
 
   public StreamHeader(StreamHeader prototype) {
-    this.id = prototype.id;
+    this.id = prototype.getMetaId();
     this.startTime = prototype.startTime;
     this.frameTime = prototype.frameTime;
+  }
+
+  protected String getMetaId() {
+    return id;
   }
 
   public StreamHeader(String id, long startTime, int frameTime) {
@@ -45,6 +49,21 @@ public class StreamHeader implements Serializable {
 
   public StreamFrame makeFrame() {
     return new StreamFrame();
+  }
+
+  public static String makeId(String base,String[] ids) {
+    String nid = "";
+    for (int i = 0;i < ids.length;i++) {
+      if (ids[i].contains(","))
+        throw new IllegalArgumentException("CombinedIDs can not contain comma");
+      nid = nid + "," + ids[i];
+    }
+    return nid.substring(1);
+  }
+
+  public String[] getIds() {
+    String[] parts = id.split(",");
+    return parts;
   }
 }
 

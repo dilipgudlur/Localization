@@ -13,10 +13,6 @@ import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Type;
-
 /**
  * Created by IntelliJ IDEA.
  * User: peringknife
@@ -57,7 +53,7 @@ public class ConsolidateModule implements StreamModule {
         break;
       case 'd':
         DistanceHeader dHeader = (DistanceHeader) inHeader;
-        header = new DistanceHeader(nid, startTime, frameTime * rolling, rolling, dHeader.deviceIds);
+        header = new DistanceHeader(nid, startTime, frameTime * rolling, dHeader.getDeviceIds(), rolling);
         factory = new distanceFactory();
         break;
       case 'm':

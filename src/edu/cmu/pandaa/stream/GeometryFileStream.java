@@ -28,13 +28,7 @@ public class GeometryFileStream extends FileStream {
 
   public void setHeader(StreamHeader h) throws Exception {
     GeometryHeader header = (GeometryHeader) h;
-    String tempId="";
-    for(int i=0;i<header.deviceIds.length;i++){
-      tempId += header.deviceIds[i];
-      tempId+=",";
-    }
-    tempId = tempId.substring(0,tempId.length()-1);
-    writeString(tempId + " " + header.startTime + " " + header.frameTime + " " + header.rows + " " + header.cols);
+    writeString(header.id  + " " + header.startTime + " " + header.frameTime + " " + header.rows + " " + header.cols);
   }
 
   public void sendFrame(StreamFrame f) throws Exception {

@@ -26,10 +26,7 @@ public class DistanceFileStream extends FileStream {
   @Override
   public void setHeader(StreamHeader h) throws Exception {
     DistanceHeader header = (DistanceHeader) h;
-    String ids = "";
-    for (int i = 0; i < header.deviceIds.length;i ++)
-      ids += ","+header.deviceIds[i];
-    writeString(header.id + " " + header.startTime + " " + header.frameTime + " " + header.rollingWindow + " " + ids.substring(1));
+    writeString(header.id + " " + header.startTime + " " + header.frameTime + " " + header.getRollingWindow());
   }
 
   @Override
@@ -52,9 +49,7 @@ public class DistanceFileStream extends FileStream {
   public DistanceHeader getHeader() throws Exception {
     String line = readLine();
     String[] parts = line.split(" ");
-    String[] ids = parts[4].split(",");
-    header = new DistanceHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]),ids);
-    header.rollingWindow = Integer.parseInt(parts[3]);
+    header = new DistanceHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
     return header;
   }
 
