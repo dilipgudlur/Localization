@@ -185,7 +185,7 @@ public class RawAudioFileStream implements FrameStream {
 
   @Override
   public StreamFrame recvFrame() throws Exception {
-    int frameLength = (int) (headerRef.getSamplingRate() / 1000) * wavFrameLength;
+    int frameLength = (int) (headerRef.getSamplingRate() * wavFrameLength)/1000;
 
     if (timeDilation > 0)
       Thread.sleep((long) (headerRef.frameTime * timeDilation));

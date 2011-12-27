@@ -9,6 +9,7 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.*;
 
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,9 +41,8 @@ public class TDOAMatrixModule implements StreamModule {
     GeometryFrame pos = (GeometryFrame) posStream.recvFrame();
 
     double[][] tdoas = makeTdoas(frames);
-    List<Point> points = findPoints(tdoas, pos.geometry);
-    Point p = estimateLocation(points);
-    savedDistances = findDistances(tdoas, p, savedDistances);
+    Point source = findSource(tdoas, pos.geometry);
+    savedDistances = findDistances(tdoas, source, savedDistances);
     out.geometry = savedDistances;
     return out;
   }
@@ -57,7 +57,7 @@ public class TDOAMatrixModule implements StreamModule {
         int x = gHeader.indexOf(df.getHeaderId(0));
         int y = gHeader.indexOf(df.getHeaderId(1));
         geometry[x][y] = df.peakDeltas[0];
-        geometry[y][x] = df.peakDeltas[0];
+        geometry[y][x] = -df.peakDeltas[0];
       }
     }
     return geometry;
@@ -79,58 +79,34 @@ public class TDOAMatrixModule implements StreamModule {
     return new Point(x, y);
   }
 
-  /*
-  private Point intersect(Ray r1, Ray r2, Point def) {
-    if (r1 == null || r2 == null)
-      return def;
-    double x1 = r1.x1, x2 = r1.x2, x3 = r2.x1, x4 = r2.x2;
-    double y1 = r1.y1, y2 = r1.y2, y3 = r2.x1, y4 = r2.y2;
-    double x = ( (x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4-y3*x4) ) /
-       ( (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3- x4) );
-    double y = ( (x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4) ) /
-       ( (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4) );
-
-    if (Double.isNaN(x) || Double.isNaN(y))
-      return def;
-
-    // we are really done with x & y, so we can switch them when we check
-    // the "direction" of our intersection
-    if (x2 > x1 && x < x1)
-      return def;
-    if (x2 < x1 && x > x1)
-      return def;
-    if (x4 > x3 && x < x3)
-      return def;
-    if (x4 < x3 && x > x3)
-      return def;
-    if (y2 > y1 && y < y1)
-      return def;
-    if (y2 < y1 && y > y1)
-      return def;
-    if (y4 > y3 && y < y3)
-      return def;
-    if (y4 < y3 && y > y3)
-      return def;
-
-    if (def != null)
-      throw new RuntimeException("Huh?  Multiple intersections detected");
-
-    return new Point(x, y);
-  }
-*/
-
   private Point findIntersection(Point a, Point b, Point c, double dist1, double dist2) {
     if (a == null || b == null || c == null)
       return null;
     if (Double.isNaN(dist1) || Double.isNaN(dist2))
       return null;
-    return new Point(1,1);
+
+    double size = a.dist(c) + b.dist(c);
+    Point guess = null;
+    double guessScore = 0;
+    for (int i = 0;i < 100; i++) {
+      double ang = Math.random() * Math.PI * 2.0;
+      double dist = Math.random() * size;
+      Point next = new Point(c.x + Math.sin(ang)*dist, c.y + Math.cos(ang)*dist);
+      double ddif1 = next.dist(c) - next.dist(a) - dist1;  // TODO: polarity could be inverted!
+      double ddif2 = next.dist(c) - next.dist(b) - dist2;  // TODO: polarity could be inverted!
+      double score = ddif1*ddif1 + ddif2*ddif2;
+      if (guess == null || score < guessScore) {
+        guess = next;
+        guessScore = score;
+      }
+    }
+    return guess;
   }
 
-  private List<Point> findPoints(double[][] tdoas, double[][] base) {
+  private Point findSource(double[][] tdoas, double[][] base) {
     List<Point> points = new LinkedList<Point>();
-    for (int i = 2;i < numDevices;i++) {
-      for (int j = 1;j < i;j++) {
+    for (int i = 0;i < numDevices;i++) {
+      for (int j = i+1;j < numDevices;j++) {
         for (int k = 0;k < numDevices;k++)
           if (k != i && k != j) {
             double dik = tdoas[i][k] * distanceScale;
@@ -141,7 +117,18 @@ public class TDOAMatrixModule implements StreamModule {
           }
       }
     }
-    return points;
+
+    if (points.size() == 0)
+      return null;
+
+    double x = 0;
+    double y = 0;
+    int num = points.size();
+    for (Point p : points) {
+      x += p.x;
+      y += p.y;
+    }
+    return new Point(x/num, y/num);
   }
 
   private Point estimateLocation(List<Point> points) {
@@ -157,8 +144,8 @@ public class TDOAMatrixModule implements StreamModule {
   }
 
   private double[][] findDistances(double[][] tdoas, Point p, double[][] prevGeometry) {
-    if (p != null)
-      throw new RuntimeException("Not implemented yet");
+    //if (p != null)
+    //  throw new RuntimeException("Not implemented yet");
     return prevGeometry;
   }
 
@@ -226,6 +213,12 @@ public class TDOAMatrixModule implements StreamModule {
     public Point(double x, double y) {
       this.x = x;
       this.y = y;
+    }
+
+    public double dist(Point b) {
+      double dx = x - b.x;
+      double dy = y - b.y;
+      return Math.sqrt(dx*dx + dy*dy);
     }
   }
 }

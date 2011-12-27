@@ -37,10 +37,7 @@ public class ImpulseFileStream extends FileStream {
     ImpulseFrame frame = (ImpulseFrame) f;
     String msg = "" + frame.seqNum;
     for (int i = 0;i < frame.peakOffsets.length; i++) {
-      msg += " " + frame.peakOffsets[i];
-    }
-    for (int i = 0;i < frame.peakMagnitudes.length; i++) {
-      msg += " " + frame.peakMagnitudes[i];
+      msg += " " + frame.peakMagnitudes[i] + " " + frame.peakOffsets[i];
     }
     writeString(msg);
   }
@@ -66,11 +63,10 @@ public class ImpulseFileStream extends FileStream {
       int seqNum = 0;
       seqNum = Integer.parseInt(parts[0]);
       short[] mags = new short[size];
+      int j = 1;
       for (int i = 0;i < size;i++) {
-        peaks[i] = Integer.parseInt(parts[i + 1]);
-      }
-      for (int i = 0;i < size;i++) {
-        mags[i] = Short.parseShort(parts[i + size + 1]);
+        mags[i] = Short.parseShort(parts[j++]);
+        peaks[i] = Integer.parseInt(parts[j++]);
       }
       return header.makeFrame(seqNum, peaks, mags);
     } catch (NumberFormatException e) {

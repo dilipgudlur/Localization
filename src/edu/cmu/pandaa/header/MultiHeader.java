@@ -41,12 +41,15 @@ public class MultiHeader extends StreamHeader {
     return hmap.containsKey(h);
   }
 
-  public StreamHeader[] getHeaders() {
-    return hmap.keySet().toArray(new StreamHeader[0]);
+  public StreamHeader[] getHeaders(StreamHeader[] target) {
+    for (StreamHeader key : hmap.keySet())
+      target[hmap.get(key)] = key;
+    return target;
   }
 
-  public StreamHeader[] getHeaders(StreamHeader[] arrayType) {
-    return hmap.keySet().toArray(arrayType);
+  public StreamHeader[] getHeaders() {
+    StreamHeader[] sh = new StreamHeader[hmap.size()];
+    return getHeaders(sh);
   }
 
   public int size() {
@@ -69,8 +72,12 @@ public class MultiHeader extends StreamHeader {
       frames[pos] = f;
     }
 
-    public Set<StreamHeader> getHeaders() {
-      return hmap.keySet();
+    public StreamFrame getFrame(StreamHeader h) {
+      return frames[hmap.get(h)];
+    }
+
+    public StreamFrame getFrame(int index) {
+      return frames[index];
     }
 
     public StreamFrame[] getFrames() {

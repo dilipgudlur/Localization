@@ -1,7 +1,10 @@
 package edu.cmu.pandaa.module;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
+import edu.cmu.pandaa.header.ImpulseHeader;
+import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
@@ -12,6 +15,11 @@ public class AudioSynchronizationModule implements StreamModule {
   private final static int tolerance = Short.MAX_VALUE/100;
   private boolean firstPeakImpulseFound;
   RawAudioHeader rawAudioHeader;
+  private FeatureStreamModule feature;
+  private double threshold = 0;
+  private double deviance = 0;
+  int tcount = 0;
+  int averageNum = 10;
 
   @Override
   public StreamHeader init(StreamHeader inHeader) {
@@ -19,7 +27,14 @@ public class AudioSynchronizationModule implements StreamModule {
       throw new RuntimeException("Wrong header type");
     firstPeakImpulseFound = false;
     rawAudioHeader = (RawAudioHeader) inHeader;
+    feature = new FeatureStreamModule();
+    feature.init(inHeader);
     return rawAudioHeader;
+  }
+
+  private void augmentedAudio(String fname) throws Exception {
+    feature.augmentedAudio(fname);
+    feature.rafs.setHeader(rawAudioHeader);
   }
 
   @Override
@@ -29,33 +44,32 @@ public class AudioSynchronizationModule implements StreamModule {
     if (!(inFrame instanceof RawAudioFrame))
       throw new RuntimeException("Wrong frame type");
     RawAudioFrame audioFrame = (RawAudioFrame) inFrame;
-    short audioData[] = audioFrame.audioData;
     if (!firstPeakImpulseFound) {
+      short[] audioData = audioFrame.audioData.clone();
       int peakIndex = -1;
-      for (int i = 0; i < audioData.length; i++) {
-        if (!firstPeakImpulseFound &&
-                (audioData[i] >= (Short.MAX_VALUE-tolerance) ||
-                        audioData[i] <=  Short.MIN_VALUE + tolerance)) {
-          firstPeakImpulseFound = true;
-          peakIndex = i;
-          break;
-        }
+      ImpulseFrame features = feature.process(inFrame);
+      if (features != null && features.peakMagnitudes.length > 0) {
+        peakIndex = feature.timeToSampleOffset(features.peakOffsets[0]);
       }
+
       if (peakIndex == -1) {
-        audioFrame.audioData = null;
+        audioData = null;
       } else {
-        audioData = new short[audioFrame.audioData.length - peakIndex];
-        for (int i = 0; i < (audioFrame.audioData.length - peakIndex); i++)
-          audioData[i] = audioFrame.audioData[i + peakIndex];
-        audioFrame.audioData = audioData;
+        firstPeakImpulseFound = true;
+        short[] nAudioData = new short[audioData.length - peakIndex];
+        // TODO: Use array copy
+        for (int i = 0; i < (audioData.length - peakIndex); i++)
+          nAudioData[i] = audioData[i + peakIndex];
+        audioData = nAudioData;
       }
+      audioFrame.audioData = audioData;
     }
     return audioFrame;
   }
 
   @Override
   public void close() {
-
+    feature.close();
   }
 
   /*
@@ -77,12 +91,14 @@ public class AudioSynchronizationModule implements StreamModule {
       System.out.println("AudioSynchronization: " + outFileName + " from " + inFileName);
       syncModule = new AudioSynchronizationModule();
       outFile.setHeader(syncModule.init(inFile.getHeader()));
+      syncModule.augmentedAudio(outFileName + "-sync.wav");
       RawAudioFrame frame = null;
       while ((frame = (RawAudioFrame) syncModule.process(inFile.recvFrame())) != null) {
         outFile.sendFrame(frame);
       }
       inFile.close();
       outFile.close();
+      syncModule.close();
     } catch (IOException e) {
       e.printStackTrace();
     } catch (Exception e) {

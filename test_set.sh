@@ -1,9 +1,9 @@
 if [ "$IMPULSE_ALGORITHM" == "" ]; then
-  IMPULSE_ALGORITHM=1
+  IMPULSE_ALGORITHM=2
 fi
 
 if [ "$TDOA_ALGORITHM" == "" ]; then
-  TDOA_ALGORITHM=1
+  TDOA_ALGORITHM=2
 fi
 TARGET_SAMPLES=200
 DISTANCE_SMOOTH=100
@@ -47,7 +47,8 @@ FILESET="1 2 3 4 5 6 7 8 9"
 
 for file in $FILESET; do 
   if [ -f $INPUT-$file.wav ]; then
-    java $OPTS $PACKAGE.module.AudioSynchronizationModule sync-$file.wav $INPUT-$file.wav
+    #java $OPTS $PACKAGE.module.AudioSynchronizationModule sync-$file.wav $INPUT-$file.wav
+    cp $INPUT-$file.wav sync-$file.wav
     if [ $IMPULSE_ALGORITHM == 1 ]; then
       java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt sync-$file.wav
     elif [ $IMPULSE_ALGORITHM == 2 ]; then 
@@ -62,6 +63,16 @@ for file in $FILESET; do
   fi
 done
 
+if [ $TDOA_ALGORITHM == 3 ]; then
+ for a in $FILESET; do 
+  for b in $FILESET; do 
+   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
+     java $OPTS $PACKAGE.module.TDOACrossModule tdoa3-$a$b-raw.txt impulses-$a.txt impulses-$b.txt 
+   fi
+  done
+ done
+fi
+
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
@@ -69,6 +80,8 @@ for a in $FILESET; do
      java $OPTS $PACKAGE.module.TDOACorrelationModule tdoa1-$a$b.txt impulses-$a.txt impulses-$b.txt 
    elif [ $TDOA_ALGORITHM == 2 ]; then
      java $OPTS $PACKAGE.module.TDOACrossModule tdoa2-$a$b.txt impulses-$a.txt impulses-$b.txt 
+   elif [ $TDOA_ALGORITHM == 3 ]; then
+     java $OPTS $PACKAGE.module.TDOACrossModule -c tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
    fi
    java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt
    inputs="$inputs distance-$a$b.txt"

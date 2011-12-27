@@ -6,8 +6,8 @@ date > $RESULTS
 
 sets=`ls ${PREFIX}*${POSTFIX}`
 for set in $sets; do
- for impulse in 1 2 3; do
-  for tdoa in 1 2; do
+ for impulse in 2; do
+  for tdoa in 2 3; do
    setname=${set#${PREFIX}}
    setname=${setname%${POSTFIX}}
    export IMPULSE_ALGORITHM=$impulse

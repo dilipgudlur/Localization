@@ -8,18 +8,21 @@ import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
-import edu.cmu.pandaa.stream.DistanceFileStream;
-import edu.cmu.pandaa.stream.FileStream;
-import edu.cmu.pandaa.stream.ImpulseFileStream;
-import edu.cmu.pandaa.stream.MultiFrameStream;
+import edu.cmu.pandaa.stream.*;
 
+import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
   final int maxAbsDistance = 30 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
+  double pairTotal, pairWeight;
+  CalibrationFile cf;
+  boolean calibrated;
+  double calibration;
 
-  public StreamHeader init(StreamHeader inHeader) {
+  public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
     if (!(multiHeader.getOne() instanceof ImpulseHeader)) {
       throw new IllegalArgumentException("Input multiheader should contain ImpulseHeaders");
@@ -35,8 +38,19 @@ public class TDOACrossModule implements StreamModule {
     }
 
     String[] deviceIds = new String[] {impulseHeaders[0].id, impulseHeaders[1].id};
+    if (deviceIds[0].compareTo(deviceIds[1]) > 0) {
+      throw new RuntimeException("Frames out of order init");
+    }
 
     header = new DistanceHeader(inHeader.id, impulseHeaders[0].startTime, impulseHeaders[0].frameTime, deviceIds);
+
+    if (cf != null && calibrated) {
+      double d1 = cf.readCalibration(deviceIds[0]);
+      double d2 = cf.readCalibration(deviceIds[1]);
+      calibration = d1 - d2;
+      System.out.println("Calibration adjustment is " + calibration);
+    }
+
     return header;
   }
 
@@ -57,6 +71,11 @@ public class TDOACrossModule implements StreamModule {
     }
   }
 
+  public void setCalibrationFile(String fname, boolean calibrated) throws Exception {
+    cf = new CalibrationFile(fname);
+    this.calibrated = calibrated;
+  }
+
   private double calcWeight(int ao, int am, int bo, int bm) {
     int dist = Math.abs(ao - bo); // difference in us
     if (dist > maxAbsDistance)
@@ -65,18 +84,15 @@ public class TDOACrossModule implements StreamModule {
   }
 
   public StreamFrame process(StreamFrame inFrame) {
-    StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
-    if (!(frames[0] instanceof ImpulseFrame)) {
-      throw new IllegalArgumentException("Input multiframe should contain ImpulseFrames");
-    }
-    if (frames.length != 2) {
-      throw new IllegalArgumentException("Input multiframe should contain two elements");
-    }
-
-    ImpulseFrame aFrame = (ImpulseFrame) frames[0];
-    ImpulseFrame bFrame = (ImpulseFrame) frames[1];
+    MultiFrame mf = (MultiFrame) inFrame;
+    ImpulseFrame aFrame = (ImpulseFrame) mf.getFrame(0);
+    ImpulseFrame bFrame = (ImpulseFrame) mf.getFrame(1);
     int aSize = aFrame.peakOffsets.length;
     int bSize = bFrame.peakOffsets.length;
+
+    if (aFrame.getHeader().id.compareTo(bFrame.getHeader().id) > 0) {
+      throw new RuntimeException("Frames out of order process");
+    }
 
     List<Peak> peaks = new ArrayList<Peak>(aSize * bSize);
     for (int ai = 0; ai < aSize; ai++) {
@@ -111,19 +127,40 @@ public class TDOACrossModule implements StreamModule {
 
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
-      peakDeltas[i] = p.ao - p.bo;
+      int diff = p.ao - p.bo;
+      peakDeltas[i] = diff - calibration;
       peakMagnitudes[i] = p.weight;
+      pairTotal += diff * p.weight;
+      pairWeight += p.weight;
     }
 
     return header.makeFrame(peakDeltas, peakMagnitudes);
   }
 
   public void close() {
-
+    if (cf != null && !calibrated)
+      try {
+        String id0 = header.getId(0);
+        String id1 = header.getId(1);
+        if (id0.compareTo(id1) > 0) {
+          throw new RuntimeException("Frames out of order close");
+        }
+        cf.writeCalibration(id0, id1, pairTotal / pairWeight);
+        cf.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
   }
 
   public static void main(String[] args) throws Exception {
     int arg = 0;
+    boolean calibrated = false;
+
+    if (args[arg].equals("-c")) {
+      arg++;
+      calibrated = true;
+    }
+
     String outf = args[arg++];
     String in1 = args[arg++];
     String in2 = args[arg++];
@@ -138,9 +175,10 @@ public class TDOACrossModule implements StreamModule {
     mfs.setHeader(ifs1.getHeader());
     mfs.setHeader(ifs2.getHeader());
 
-    FileStream ofs = new DistanceFileStream(outf, true);
-
     TDOACrossModule tdoa = new TDOACrossModule();
+    tdoa.setCalibrationFile("calibration.txt", calibrated);
+
+    FileStream ofs = new DistanceFileStream(outf, true);
     ofs.setHeader(tdoa.init(mfs.getHeader()));
 
     try {
@@ -151,9 +189,11 @@ public class TDOACrossModule implements StreamModule {
           break;
         ofs.sendFrame(tdoa.process(mfs.recvFrame()));
       }
+
     } catch (Exception e) {
       e.printStackTrace();
     }
+    tdoa.close();
     ofs.close();
   }
 }

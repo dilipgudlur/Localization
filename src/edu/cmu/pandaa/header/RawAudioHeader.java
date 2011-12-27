@@ -90,9 +90,15 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
 		public short[] audioData;
     int dindex = 0;
 
-		public RawAudioFrame(int frameLength) {
-			audioData = new short[frameLength];
-		}
+    public RawAudioFrame(int frameLength) {
+      audioData = new short[frameLength];
+    }
+
+    public RawAudioFrame(RawAudioFrame clone) {
+      super(clone.seqNum);
+      audioData = clone.audioData.clone();
+      dindex = clone.dindex;
+    }
 
 		public short[] getAudioData() {
 			return audioData;
@@ -169,6 +175,10 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
         prev = save;
       }
       derrive_save[dindex++] = prev;
+    }
+
+    public RawAudioFrame clone() {
+      return new RawAudioFrame(this);
     }
   }
 
