@@ -1,7 +1,6 @@
 package edu.cmu.pandaa.stream;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.RandomAccessFile;
 
@@ -14,41 +13,47 @@ import java.io.RandomAccessFile;
 
 public class CalibrationFile {
   String fname;
+  public double calibration, max, average, stddev;
 
   public CalibrationFile(String fname) throws Exception {
     this.fname = fname;
   }
 
-  public void writeCalibration(String id1, String id2, double calibration) throws Exception {
+  public void writeCalibration(String id1, String id2, double calibration,double max,
+                               double avg, double var) throws Exception {
     RandomAccessFile raf = new RandomAccessFile("calibration.txt", "rw");
     raf.seek(raf.length());
-    String cal = id1 + "," + id2 + " " + calibration + "\n";
+    String cal = id1 + "," + id2 + " " + calibration + " " + max + " " + avg + " " + var +"\n";
     raf.write(cal.getBytes());
   }
 
-  public double readCalibration(String id) throws Exception {
-    if (!(new File(fname)).exists())
-      return 0.0;
-
+  public void readCalibration(String id, String id2) throws Exception {
     BufferedReader br = new BufferedReader(new FileReader(fname));
     double diff = 0;
     String lstart = id + ",";
-    String lsecond = "," + id + " ";
+    String lsecond = "," + id2;
+    String lboth = id + "," + id2;
     String line;
     int count = 0;
     while ((line = br.readLine()) != null) {
-      int space = line.indexOf(' ');
-      double value = Double.parseDouble(line.substring(space+1));
-      if (line.startsWith(lstart)) {
+      String[] parts = line.split(" ");
+      double cval = Double.parseDouble(parts[1]);
+      if (parts[0].startsWith(lstart)) {
         count++;
-        diff += value;
-      } else if (line.indexOf(lsecond) >= 0) {
+        diff += cval;
+      }
+      if (parts[0].endsWith(lsecond)) {
         count++;
-        diff -= value;
+        diff -= cval;
+      }
+      if (parts[0].equals(lboth)) {
+        max = Double.parseDouble(parts[2]);
+        average = Double.parseDouble(parts[3]);
+        stddev = Double.parseDouble(parts[4]);
       }
     }
     br.close();
-    return count > 0 ? diff / count : 0.0;
+    calibration = count > 0 ? diff / count : 0.0;
   }
 
   public void close() throws Exception {

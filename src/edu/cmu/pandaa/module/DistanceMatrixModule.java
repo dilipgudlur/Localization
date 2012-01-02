@@ -21,6 +21,7 @@ import edu.cmu.pandaa.stream.MultiFrameStream;
 public class DistanceMatrixModule implements StreamModule {
   GeometryHeader gHeader;
   DistanceHeader[] distanceHeaders;
+  double[][] previous;
   int numDevices;
 
   public DistanceMatrixModule()
@@ -103,40 +104,68 @@ public class DistanceMatrixModule implements StreamModule {
         }
       }
     }
+
+    if (compareMatrix(distanceMatrix, previous))
+      return null;
+
     GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
+    previous = distanceMatrix.clone();
     return gfOut;
   }
 
   public void close() {
   }
 
+  private boolean compareMatrix(double[][] a, double[][] b) {
+    if (a == null || b == null)
+      return a == b;
+
+    if (a.length != b.length)
+      return false;
+
+    for (int i = 0;i < a.length;i++) {
+      if (a[i].length != b[i].length)
+        return false;
+      for (int j = 0;j < a[i].length;j++) {
+        if (a[i][j] != b[i][j])
+          return false;
+      }
+    }
+
+    return true;
+  }
+
+
   public static void main(String[] args) throws Exception {
     int i = 0;
-    int argLen = args.length;
-    String[] inArg = new String[argLen-1];
+    int numDev = args.length - 1;
+    String[] inArg = new String[numDev];
     String outArg = args[i];
-    for(i = 0; i < argLen - 1; i++){
+    for(i = 0; i < numDev; i++){
       inArg[i] = args[i+1];
     }
-    if (i != argLen-1)
+    if (i != numDev)
       throw new IllegalArgumentException("Invalid number of arguments");
 
     System.out.print("DistanceMatrix: " + outArg);
-    for(i = 0; i < argLen - 1; i++) {
+    for(i = 0; i < numDev; i++) {
       System.out.print(" " + inArg[i]);
     }
     System.out.println();
 
-    FileStream[] ifs = new DistanceFileStream[argLen-1];
+    FileStream[] ifs = new DistanceFileStream[numDev];
 
-    for(i = 0; i < argLen - 1; i++){
+    for(i = 0; i < numDev; i++){
       ifs[i] = new DistanceFileStream(inArg[i]);
     }
 
     MultiFrameStream mfs = new MultiFrameStream("tdoa123");
 
-    for(i = 0; i < argLen - 1; i++){
-      mfs.setHeader(ifs[i].getHeader());
+    StreamHeader[] ifh = new StreamHeader[numDev];
+    StreamFrame[] iff = new StreamFrame[numDev];
+    for(i = 0; i < numDev; i++){
+      ifh[i] = ifs[i].getHeader();
+      mfs.setHeader(ifh[i]);
     }
 
     FileStream ofs = new GeometryFileStream(outArg, true, false);
@@ -144,19 +173,33 @@ public class DistanceMatrixModule implements StreamModule {
     DistanceMatrixModule ppd = new DistanceMatrixModule();
     ofs.setHeader(ppd.init(mfs.getHeader()));
 
+
     try {
       while(true){
-        for(i=0; i < argLen - 1; i++){
-          mfs.sendFrame(ifs[i].recvFrame());
+        int minSeq = 0;
+        for(i=0; i < numDev; i++){
+          if (iff[i] == null)
+            iff[i] = ifs[i].recvFrame();
+          if (iff[i] != null && (iff[i].seqNum < minSeq || minSeq == 0))
+            minSeq = iff[i].seqNum;
         }
+
+        for(i=0; i < numDev; i++){
+          mfs.sendFrame(iff[i]);
+          if (iff[i] != null && iff[i].seqNum == minSeq) {
+            iff[i] = null;
+          }
+        }
+
         if (!mfs.isReady())
           break;
 
-        StreamFrame frameOut = ppd.process(mfs.recvFrame());
+        StreamFrame frameIn = mfs.recvFrame();
+        if (frameIn == null)
+          break;
+        StreamFrame frameOut = ppd.process(frameIn);
         if(frameOut != null)
           ofs.sendFrame(frameOut);
-        else
-          break;
       }
     } catch (Exception e) {
       e.printStackTrace();

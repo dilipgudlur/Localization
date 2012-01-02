@@ -3,10 +3,10 @@ if [ "$IMPULSE_ALGORITHM" == "" ]; then
 fi
 
 if [ "$TDOA_ALGORITHM" == "" ]; then
-  TDOA_ALGORITHM=2
+  TDOA_ALGORITHM=3
 fi
-TARGET_SAMPLES=200
-DISTANCE_SMOOTH=100
+TARGET_SAMPLES=50000
+DISTANCE_SMOOTH=25
 GRAPH=yes
 
 JAR=Localization.jar
@@ -67,7 +67,7 @@ if [ $TDOA_ALGORITHM == 3 ]; then
  for a in $FILESET; do 
   for b in $FILESET; do 
    if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
-     java $OPTS $PACKAGE.module.TDOACrossModule tdoa3-$a$b-raw.txt impulses-$a.txt impulses-$b.txt 
+     java $OPTS $PACKAGE.module.TDOACrossModule tdoa3-$a$b.raw impulses-$a.txt impulses-$b.txt 
    fi
   done
  done

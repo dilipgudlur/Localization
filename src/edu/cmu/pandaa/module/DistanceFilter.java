@@ -119,7 +119,12 @@ public class DistanceFilter implements StreamModule {
   public DistanceFrame process(StreamFrame inFrame) throws Exception {
     DistanceFrame din = (DistanceFrame) inFrame;
     double scale = getScale();
-    for (int i = 0;i < din.peakDeltas.length; i++) {
+    double distSum = 0;
+    int count = din.peakDeltas.length;
+    if (count == 0 && inFrame.seqNum > 0)
+      return null;
+
+    for (int i = 0;i < count; i++) {
       double peak_magnitude = din.peakMagnitudes[i];
       double peak_tdoa = din.peakDeltas[i];
 
@@ -127,12 +132,14 @@ public class DistanceFilter implements StreamModule {
 
       average = (average * magnitude * weight + distance * peak_magnitude)/(weight * magnitude + peak_magnitude);
       magnitude = (magnitude * weight + peak_magnitude)/(weight + 1);
+      distSum += distance;
     }
 
     double[] deltas = { average };
     double[] magnitudes = { magnitude };
+    double[] values = { count > 0 ? distSum / count : 0 };
 
-    return h.makeFrame(deltas, magnitudes);
+    return h.makeFrame(inFrame.seqNum, deltas, magnitudes, values);
   }
 
   public void close() {

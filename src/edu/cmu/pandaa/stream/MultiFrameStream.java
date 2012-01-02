@@ -56,6 +56,11 @@ public class MultiFrameStream implements FrameStream {
     }
   }
 
+  public synchronized StreamFrame checkFrame(StreamHeader h) throws Exception {
+    return frames.get(h);
+  }
+
+
   @Override
   public synchronized MultiHeader getHeader() throws Exception {
     while (outHeader == null && isOpen) {

@@ -1,7 +1,6 @@
 package edu.cmu.pandaa.module;
 
 import edu.cmu.pandaa.header.DistanceHeader;
-import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.MultiHeader;
@@ -10,17 +9,18 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.*;
 
-import java.io.FileOutputStream;
-import java.io.RandomAccessFile;
 import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
   final int maxAbsDistance = 30 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
-  double pairTotal, pairWeight;
+  double pairTotal, pairWeight, pairWtSq;
+  int pairCount;
   CalibrationFile cf;
   boolean calibrated;
   double calibration;
+  double pairMax = 0;
+  double threshold = 0;
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -45,10 +45,10 @@ public class TDOACrossModule implements StreamModule {
     header = new DistanceHeader(inHeader.id, impulseHeaders[0].startTime, impulseHeaders[0].frameTime, deviceIds);
 
     if (cf != null && calibrated) {
-      double d1 = cf.readCalibration(deviceIds[0]);
-      double d2 = cf.readCalibration(deviceIds[1]);
-      calibration = d1 - d2;
-      System.out.println("Calibration adjustment is " + calibration);
+      cf.readCalibration(deviceIds[0],deviceIds[1]);
+      calibration = cf.calibration;
+      threshold = cf.average + cf.stddev*2;
+      System.out.println("Calibration adjustment is " + calibration + " threshold " + threshold);
     }
 
     return header;
@@ -77,10 +77,11 @@ public class TDOACrossModule implements StreamModule {
   }
 
   private double calcWeight(int ao, int am, int bo, int bm) {
-    int dist = Math.abs(ao - bo); // difference in us
+    double dist = Math.abs(ao - bo); // difference in us
     if (dist > maxAbsDistance)
       return 0;
-    return (double) am*bm*(maxAbsDistance - dist)/maxAbsDistance;
+    double mag = (double) am* (double) bm;
+    return mag *(maxAbsDistance - dist)/maxAbsDistance;
   }
 
   public StreamFrame process(StreamFrame inFrame) {
@@ -122,16 +123,21 @@ public class TDOACrossModule implements StreamModule {
       output.add(p);
     }
 
-    double[] peakDeltas = new double[output.size()];
-    double[] peakMagnitudes = new double[output.size()];
+    ArrayList<Double> peakDeltas = new ArrayList<Double>();
+    ArrayList<Double> peakMagnitudes = new ArrayList<Double>();
 
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
-      int diff = p.ao - p.bo;
-      peakDeltas[i] = diff - calibration;
-      peakMagnitudes[i] = p.weight;
-      pairTotal += diff * p.weight;
-      pairWeight += p.weight;
+      if (p.weight > threshold) {
+        int diff = p.ao - p.bo;
+        peakDeltas.add(diff - calibration);
+        peakMagnitudes.add(p.weight);
+        pairTotal += diff * p.weight;
+        pairWeight += p.weight;
+        pairWtSq += p.weight * p.weight;
+        pairMax = Math.max(pairMax, p.weight);
+        pairCount++;
+      }
     }
 
     return header.makeFrame(peakDeltas, peakMagnitudes);
@@ -145,7 +151,9 @@ public class TDOACrossModule implements StreamModule {
         if (id0.compareTo(id1) > 0) {
           throw new RuntimeException("Frames out of order close");
         }
-        cf.writeCalibration(id0, id1, pairTotal / pairWeight);
+        double avg = pairWeight / pairCount;
+        double var = Math.sqrt(pairWtSq/pairCount - avg * avg);
+        cf.writeCalibration(id0, id1, pairTotal / pairWeight, pairMax, avg, var);
         cf.close();
       } catch (Exception e) {
         e.printStackTrace();

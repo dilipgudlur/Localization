@@ -5,6 +5,8 @@ import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
+import java.awt.*;
+
 /**
  * Created by IntelliJ IDEA.
  * User: peringknife
@@ -35,13 +37,14 @@ public class DistanceFileStream extends FileStream {
       return;
     }
     DistanceFrame frame = (DistanceFrame) f;
+
     String msg = "" + frame.seqNum;
     for (int i = 0;i < frame.peakDeltas.length; i++) {
       msg += " " + frame.peakDeltas[i];
-    }
-    for (int i = 0;i < frame.peakMagnitudes.length; i++) {
       msg += " " + frame.peakMagnitudes[i];
+      msg += " " + frame.rawValues[i];
     }
+
     writeString(msg);
   }
 
@@ -61,16 +64,16 @@ public class DistanceFileStream extends FileStream {
     try {
       String[] parts = line.split(" ");
       int seqNum = Integer.parseInt(parts[0]);
-      int size = (parts.length - 1)/2;
+      int size = (parts.length - 1)/3;
       double[] peaks = new double[size];
       double[] mags = new double[size];
+      double[] vals = new double[size];
       for (int i = 0;i < size;i++) {
-        peaks[i] = Double.parseDouble(parts[i + 1]);
+        peaks[i] = Double.parseDouble(parts[i*3 + 1]);
+        mags[i] = Double.parseDouble(parts[i*3 + 2]);
+        vals[i] = Double.parseDouble(parts[i*3 + 3]);
       }
-      for (int i = 0;i < size;i++) {
-        mags[i] = Double.parseDouble(parts[i + size + 1]);
-      }
-      return header.makeFrame(peaks, mags);
+      return header.makeFrame(seqNum, peaks, mags);
     } catch (NumberFormatException e) {
       System.out.println("Error parsing: " + line + " from " + fileName);
       throw e;
