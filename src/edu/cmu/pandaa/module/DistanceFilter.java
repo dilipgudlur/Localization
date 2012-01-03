@@ -25,6 +25,7 @@ public class DistanceFilter implements StreamModule {
   GeometryFrame posFrame;
   int numDevices = 4;  // default unless we know otherwise
   int d1index = -1, d2index = -1;
+  int seqBase = 0;
 
   public DistanceFilter(double weight) {
     this.weight = weight;
@@ -139,7 +140,7 @@ public class DistanceFilter implements StreamModule {
     double[] magnitudes = { magnitude };
     double[] values = { count > 0 ? distSum / count : 0 };
 
-    return h.makeFrame(inFrame.seqNum, deltas, magnitudes, values);
+    return h.makeFrame(inFrame.seqNum + seqBase, deltas, magnitudes, values);
   }
 
   public void close() {
@@ -153,6 +154,8 @@ public class DistanceFilter implements StreamModule {
     String wString = args[arg++];
     String outArg = args[arg++];
     String inArg = args[arg++];
+    int setLen = Integer.parseInt(args[arg++]);
+    int loops = Integer.parseInt(args[arg++]);
     if (args.length != arg)
       distArg = args[arg++];
     if (args.length != arg) {
@@ -160,20 +163,35 @@ public class DistanceFilter implements StreamModule {
     }
 
     System.out.println("GeometryMatrix: " + outArg + " " + inArg);
-    DistanceFileStream in = new DistanceFileStream(inArg);
-    DistanceFileStream out = new DistanceFileStream(outArg, true);
-    GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
 
     try {
+      DistanceFileStream out = null;
       DistanceFilter df = new DistanceFilter(Double.parseDouble(wString));
-      out.setHeader(df.init(in.getHeader()));
-      if (pos != null)
-        df.setPositionStream(pos);
       StreamFrame frameIn;
-      while ((frameIn = in.recvFrame()) != null) {
-        out.sendFrame(df.process(frameIn));
+
+      int loopNum = 0;
+      while (loopNum++ < loops) {
+        DistanceFileStream in = new DistanceFileStream(inArg);
+        StreamHeader inH = in.getHeader();
+        GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
+        if (pos != null) {
+          df.setPositionStream(pos);
+        }
+        if (out == null) {
+          out = new DistanceFileStream(outArg, true);
+          out.setHeader(df.init(inH));
+        }
+
+        df.seqBase = setLen * (loopNum-1);
+        while ((frameIn = in.recvFrame()) != null) {
+          if (frameIn.seqNum > setLen)
+            break;
+          out.sendFrame(df.process(frameIn));
+        }
+        in.close();
+        if (pos != null)
+          pos.close();
       }
-      in.close();
       out.close();
       df.close();
     }catch(Exception e){

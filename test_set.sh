@@ -5,8 +5,8 @@ fi
 if [ "$TDOA_ALGORITHM" == "" ]; then
   TDOA_ALGORITHM=3
 fi
-TARGET_SAMPLES=50000
-DISTANCE_SMOOTH=25
+SAMPLE_LOOPS=4
+DISTANCE_SMOOTH=100
 GRAPH=yes
 
 JAR=Localization.jar
@@ -50,18 +50,16 @@ for file in $FILESET; do
     #java $OPTS $PACKAGE.module.AudioSynchronizationModule sync-$file.wav $INPUT-$file.wav
     cp $INPUT-$file.wav sync-$file.wav
     if [ $IMPULSE_ALGORITHM == 1 ]; then
-      java $OPTS $PACKAGE.module.ImpulseStreamModule impulse1-$file.txt sync-$file.wav
+      java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt sync-$file.wav
     elif [ $IMPULSE_ALGORITHM == 2 ]; then 
-      java $OPTS $PACKAGE.module.FeatureStreamModule impulse2-$file.txt sync-$file.wav
+      java $OPTS $PACKAGE.module.FeatureStreamModule impulses-$file.txt sync-$file.wav
     elif [ $IMPULSE_ALGORITHM == 3 ]; then 
-      java $OPTS $PACKAGE.module.DbImpulseStreamModule impulse3-$file.txt sync-$file.wav
+      java $OPTS $PACKAGE.module.DbImpulseStreamModule impulses-$file.txt sync-$file.wav
     fi
-    ifile=impulse$IMPULSE_ALGORITHM-$file.txt
-    size=`cat $ifile | wc -l`
-    repeat=$(($TARGET_SAMPLES/$size+1))
-    java $OPTS $PACKAGE.module.ConsolidateModule i-1-1-1-$repeat impulses-$file.txt $ifile
   fi
 done
+
+setlen=`tail -1 impulses-1.txt | awk '{ print $1 }'`
 
 if [ $TDOA_ALGORITHM == 3 ]; then
  for a in $FILESET; do 
@@ -83,7 +81,7 @@ for a in $FILESET; do
    elif [ $TDOA_ALGORITHM == 3 ]; then
      java $OPTS $PACKAGE.module.TDOACrossModule -c tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
    fi
-   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt
+   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS
    inputs="$inputs distance-$a$b.txt"
   fi
  done
@@ -102,7 +100,7 @@ inputs=""
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
-   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH adjusted-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt geometryOut.txt
+   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH adjusted-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS geometryOut.txt
    inputs="$inputs adjusted-$a$b.txt"
   fi
  done
