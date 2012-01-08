@@ -52,12 +52,14 @@ for file in $FILESET; do
     if [ $IMPULSE_ALGORITHM == 1 ]; then
       java $OPTS $PACKAGE.module.ImpulseStreamModule impulses-$file.txt sync-$file.wav
     elif [ $IMPULSE_ALGORITHM == 2 ]; then 
-      java $OPTS $PACKAGE.module.FeatureStreamModule impulses-$file.txt sync-$file.wav
+      java $OPTS $PACKAGE.module.FeatureStreamModule impulses-$file.txt sync-$file.wav &
     elif [ $IMPULSE_ALGORITHM == 3 ]; then 
       java $OPTS $PACKAGE.module.DbImpulseStreamModule impulses-$file.txt sync-$file.wav
     fi
   fi
 done
+
+wait
 
 setlen=`tail -1 impulses-1.txt | awk '{ print $1 }'`
 
@@ -79,13 +81,15 @@ for a in $FILESET; do
    elif [ $TDOA_ALGORITHM == 2 ]; then
      java $OPTS $PACKAGE.module.TDOACrossModule tdoa2-$a$b.txt impulses-$a.txt impulses-$b.txt 
    elif [ $TDOA_ALGORITHM == 3 ]; then
-     java $OPTS $PACKAGE.module.TDOACrossModule -c tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
+     java $OPTS $PACKAGE.module.TDOACrossModule -c$CAL_FACTOR tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
    fi
    java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS
    inputs="$inputs distance-$a$b.txt"
   fi
  done
 done
+
+wait
 
 if [ "$inputs" == "" ]; then
   echo no inputs genereated!
@@ -96,15 +100,15 @@ java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
 java $OPTS $PACKAGE.module.RMSModule rmsOut.txt geometryOut.txt $INPUT.txt
 
-inputs=""
 for a in $FILESET; do 
  for b in $FILESET; do 
   if [ -f impulses-$a.txt -a -f impulses-$b.txt -a $a -lt $b ]; then
-   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH adjusted-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS geometryOut.txt
-   inputs="$inputs adjusted-$a$b.txt"
+   java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH adjusted-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS geometryOut.txt &
   fi
  done
 done
+
+wait
 
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll2.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut2.txt geometryAll2.txt

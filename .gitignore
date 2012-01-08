@@ -2,8 +2,6 @@ bin/
 *.classpath
 *.project
 *~
-*.dat
-*.gif
 Localization.iml
 Localization.ipr
 Localization.iws

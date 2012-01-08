@@ -162,7 +162,7 @@ public class DistanceFilter implements StreamModule {
       throw new IllegalArgumentException("Invalid number of arguments");
     }
 
-    System.out.println("GeometryMatrix: " + outArg + " " + inArg);
+    System.out.println("Distance Filter: " + wString + " " + outArg + " " + inArg + " " + setLen + " " + loops + " " + distArg);
 
     try {
       DistanceFileStream out = null;
@@ -173,13 +173,14 @@ public class DistanceFilter implements StreamModule {
       while (loopNum++ < loops) {
         DistanceFileStream in = new DistanceFileStream(inArg);
         StreamHeader inH = in.getHeader();
-        GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
-        if (pos != null) {
-          df.setPositionStream(pos);
-        }
         if (out == null) {
           out = new DistanceFileStream(outArg, true);
           out.setHeader(df.init(inH));
+        }
+
+        GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
+        if (pos != null) {
+          df.setPositionStream(pos);
         }
 
         df.seqBase = setLen * (loopNum-1);

@@ -21,6 +21,7 @@ public class TDOACrossModule implements StreamModule {
   double calibration;
   double pairMax = 0;
   double threshold = 0;
+  static double calFactor = 1.0;
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -46,8 +47,8 @@ public class TDOACrossModule implements StreamModule {
 
     if (cf != null && calibrated) {
       cf.readCalibration(deviceIds[0],deviceIds[1]);
-      calibration = cf.calibration;
-      threshold = cf.average + cf.stddev*2;
+      calibration = cf.calibration * calFactor;
+      threshold = cf.average + cf.stddev*1;
       System.out.println("Calibration adjustment is " + calibration + " threshold " + threshold);
     }
 
@@ -126,11 +127,17 @@ public class TDOACrossModule implements StreamModule {
     ArrayList<Double> peakDeltas = new ArrayList<Double>();
     ArrayList<Double> peakMagnitudes = new ArrayList<Double>();
 
+    // to get a better calculation for a cut-off threshold
+    // in quiet situations (more ideal), account for lots of silent frames
+    if (output.size() == 0) {
+      pairCount++;
+    }
+
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
       if (p.weight > threshold) {
         int diff = p.ao - p.bo;
-        peakDeltas.add(diff - calibration);
+        peakDeltas.add(diff + calibration);
         peakMagnitudes.add(p.weight);
         pairTotal += diff * p.weight;
         pairWeight += p.weight;
@@ -164,9 +171,12 @@ public class TDOACrossModule implements StreamModule {
     int arg = 0;
     boolean calibrated = false;
 
-    if (args[arg].equals("-c")) {
-      arg++;
+    if (args[arg].startsWith("-c")) {
+      String calStr = args[arg++];
       calibrated = true;
+      if (calStr.length() > 2) {
+        calFactor = Double.parseDouble(calStr.substring(2));
+      }
     }
 
     String outf = args[arg++];
