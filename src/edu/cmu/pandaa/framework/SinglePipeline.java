@@ -29,7 +29,7 @@ public class SinglePipeline implements StreamModule {
 
   @Override
   public StreamHeader init(StreamHeader inHeader) throws Exception {
-    if (!(inHeader instanceof RawAudioHeader)) {
+    if (!(inHeader instanceof RawAudioHeader))  {
       throw new IllegalArgumentException("Requires RawAudioHeader");
     }
     StreamHeader header = impulse.init(inHeader);

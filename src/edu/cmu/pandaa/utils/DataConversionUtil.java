@@ -28,8 +28,12 @@ public class DataConversionUtil {
 		return value;
 	}
 
-	public static final short[] byteArrayToShortArray(byte[] bArray) {
-		int numShorts = (int) Math.ceil(bArray.length) / 2;
+  public static final short[] byteArrayToShortArray(byte[] bArray) {
+    return byteArrayToShortArray(bArray, bArray.length);
+  }
+
+	public static final short[] byteArrayToShortArray(byte[] bArray, int size) {
+		int numShorts = (int) Math.ceil(size) / 2;
 		int nextByteIndex = 0;
 		short[] shortArray = new short[numShorts];
 		byte[] dataBytes = new byte[2];

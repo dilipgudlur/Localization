@@ -22,8 +22,9 @@ public class App {
     if (args.length == 0) {
       new AcceptClients().start();
     } else {
+      String file1 = args[0];
       for (String file : args) {
-        RawAudioFileStream in = new RawAudioFileStream(file);
+        RawAudioFileStream in = new RawAudioFileStream(file, file1, 3);
         in.setTimeDialtion(0.5);
         activateNewDevice(in);
       }

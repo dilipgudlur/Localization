@@ -12,13 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.TargetDataLine;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -35,8 +28,6 @@ import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
-import edu.cmu.pandaa.utils.DataConversionUtil;
-import edu.cmu.pandaa.utils.WavUtil;
 
 public class LiveAudioCapture extends JPanel {
 	JButton convertWavToFrameButton, playWavAudioButton;
