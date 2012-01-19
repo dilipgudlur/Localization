@@ -8,7 +8,7 @@ import edu.cmu.pandaa.header.GeometryHeader.GeometryFrame;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import mdsj.*;
 
-class GeometryMatrixModule implements StreamModule{
+public class GeometryMatrixModule implements StreamModule {
   GeometryHeader hOut;
 
   public GeometryMatrixModule()

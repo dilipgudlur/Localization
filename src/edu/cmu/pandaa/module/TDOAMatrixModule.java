@@ -190,12 +190,11 @@ public class TDOAMatrixModule implements StreamModule {
     tdoa.setPositionStream(bfs);
 
     try {
+      mfs.noblock = true;
       while (true) {
         for (int i = 0; i < infs.length;i++) {
           mfs.sendFrame(infs[i].recvFrame());
         }
-        if (!mfs.isReady())
-          break;
         ofs.sendFrame(tdoa.process(mfs.recvFrame()));
       }
     } catch (Exception e) {

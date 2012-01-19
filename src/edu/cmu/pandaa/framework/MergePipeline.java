@@ -5,11 +5,11 @@ import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
-import edu.cmu.pandaa.module.DummyModule;
+import edu.cmu.pandaa.module.DistanceMatrixModule;
+import edu.cmu.pandaa.module.GeometryMatrixModule;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
-
 
 /**
  * Created by IntelliJ IDEA.
@@ -19,17 +19,9 @@ import edu.cmu.pandaa.stream.GeometryFileStream;
  */
 
 public class MergePipeline implements StreamModule {
-  /* fields onloy used for constructing the DummyModule -- remove when we have real code */
-  final long now = System.currentTimeMillis();
-  final int frameTime = 100;
-  String[] dummyIds = { "a", "b", "c" };
 
-  /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
-  StreamModule geometry = new DummyModule(new GeometryHeader(dummyIds, now, frameTime, 3, 3));
-
-  /* Then we consolidate bunches of impulse frames into larger consolidated frames for processing */
-  StreamModule smooth = new DummyModule(new GeometryHeader(dummyIds, now, frameTime, 3, 3));
-
+  StreamModule matrix = new DistanceMatrixModule();
+  StreamModule geometry = new GeometryMatrixModule();
   FileStream trace;
 
   @Override
@@ -38,8 +30,10 @@ public class MergePipeline implements StreamModule {
     if (!(multiHeader.getOne() instanceof DistanceHeader)) {
        throw new IllegalArgumentException("Merge pipe multiheader should contain ImpulseHeaders");
     }
-    StreamHeader header = geometry.init(inHeader);
-    header = smooth.init(header);
+
+    StreamHeader header = matrix.init(inHeader);
+    header = geometry.init(header);
+
     if (!(header instanceof GeometryHeader)) {
       throw new IllegalArgumentException("Output should be GeometryHeader");
     }
@@ -55,11 +49,11 @@ public class MergePipeline implements StreamModule {
     if (inFrame == null) {
       return null;
     }
-    StreamFrame frame = geometry.process(inFrame);
-    frame = smooth.process(frame);
+    StreamFrame frame = matrix.process(inFrame);
     trace.sendFrame(frame);
+    StreamFrame geomOut = geometry.process(frame);
 
-    return frame;
+    return geomOut;
   }
 
   @Override

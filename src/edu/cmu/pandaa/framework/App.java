@@ -30,7 +30,7 @@ public class App {
       }
     }
 
-    PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(), new DummyStream("output"));
+    PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(), new GeometryFileStream("output.txt", true));
     new Thread(combpipe, "combiner").start();
   }
 
@@ -106,8 +106,14 @@ public class App {
     private StreamHeader outHeader;
     private boolean closed = false;
     private int count = 0;
+    private boolean trace;
 
     PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out) throws Exception {
+      this(in, pipeline, out, false);
+    }
+
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, boolean trace) throws Exception {
+      this.trace = trace;
       if (in == null)
         throw new IllegalArgumentException("argument can not be null");
 
@@ -118,9 +124,13 @@ public class App {
       String pipeName = pipeline.getClass().getSimpleName();
       id = pipeName + '.' + in.getHeader().id;
       this.pipeline = pipeline;
+      if (trace)
+        System.err.println("Pipeline " + id + " created with " + outSet.size());
     }
 
     public void addOutput(MultiFrameStream out) throws Exception {
+      if (trace)
+        System.err.println("Adding stream " + out.id + " to " + id);
       if (closed) {
         throw new IllegalStateException("Pipeline closed");
       }
@@ -136,6 +146,8 @@ public class App {
     @Override
     public void run() {
       try {
+        if (trace)
+          System.err.println("Running stream " + id);
         Thread.sleep(STARTUP_DELAY);
 
         synchronized(outSet) {
@@ -147,18 +159,18 @@ public class App {
         }
 
         try {
-          StreamFrame frame;
-          do {
-            frame = pipeline.process(in.recvFrame());
-            if (frame != null) {
-              count++;
-              synchronized(outSet) {
-                for (FrameStream out : outSet) {
-                  out.sendFrame(frame);
-                }
+          while (true) {
+            StreamFrame frame = in.recvFrame();
+            if (frame == null)
+              break;
+            frame = pipeline.process(frame);
+            count++;
+            synchronized(outSet) {
+              for (FrameStream out : outSet) {
+                out.sendFrame(frame);
               }
             }
-          } while (frame != null);
+          }
         } catch (Exception e) {
           e.printStackTrace();
         }

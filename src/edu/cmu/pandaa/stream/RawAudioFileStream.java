@@ -2,7 +2,6 @@ package edu.cmu.pandaa.stream;
 
 import java.io.*;
 
-import com.sun.corba.se.spi.ior.iiop.IIOPFactories;
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
@@ -236,7 +235,7 @@ public class RawAudioFileStream implements FrameStream {
 
     byteCount += audioDataShort.length * 2;
 
-    if (bytesRead <= 0 || byteCount >= loopSize) {
+    if (bytesRead <= 0 || (byteCount >= loopSize && loopSize > 0)) {
       loopCount--;
       if (loopCount <= 0) {
         return null;

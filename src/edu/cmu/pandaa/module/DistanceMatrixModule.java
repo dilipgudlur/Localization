@@ -1,5 +1,6 @@
 package edu.cmu.pandaa.module;
 
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -175,6 +176,7 @@ public class DistanceMatrixModule implements StreamModule {
 
 
     try {
+      mfs.noblock = true;
       while(true){
         int minSeq = 0;
         for(i=0; i < numDev; i++){
@@ -191,9 +193,6 @@ public class DistanceMatrixModule implements StreamModule {
           }
         }
 
-        if (!mfs.isReady())
-          break;
-
         StreamFrame frameIn = mfs.recvFrame();
         if (frameIn == null)
           break;
@@ -201,6 +200,8 @@ public class DistanceMatrixModule implements StreamModule {
         if(frameOut != null)
           ofs.sendFrame(frameOut);
       }
+    } catch (IllegalBlockingModeException e) {
+      // ran out of data
     } catch (Exception e) {
       e.printStackTrace();
     }

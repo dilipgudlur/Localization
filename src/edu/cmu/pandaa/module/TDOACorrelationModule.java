@@ -161,11 +161,10 @@ public class TDOACorrelationModule implements StreamModule {
     ofs.setHeader(tdoa.init(mfs.getHeader()));
 
     try {
+      mfs.noblock = true;
       while (true) {
         mfs.sendFrame(ifs1.recvFrame());
         mfs.sendFrame(ifs2.recvFrame());
-        if (!mfs.isReady())
-          break;
         ofs.sendFrame(tdoa.process(mfs.recvFrame()));
       }
     } catch (Exception e) {

@@ -9,6 +9,7 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.*;
 
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
@@ -200,14 +201,14 @@ public class TDOACrossModule implements StreamModule {
     ofs.setHeader(tdoa.init(mfs.getHeader()));
 
     try {
+      mfs.noblock = true;
       while (true) {
         mfs.sendFrame(ifs1.recvFrame());
         mfs.sendFrame(ifs2.recvFrame());
-        if (!mfs.isReady())
-          break;
         ofs.sendFrame(tdoa.process(mfs.recvFrame()));
       }
-
+    } catch (IllegalBlockingModeException e) {
+      // normal termination due to no more data
     } catch (Exception e) {
       e.printStackTrace();
     }

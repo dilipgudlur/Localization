@@ -5,7 +5,6 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.*;
 import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FileStream;
-import edu.cmu.pandaa.stream.ImpulseFileStream;
 
 /**
  * Created by IntelliJ IDEA.
@@ -23,9 +22,7 @@ public class DualPipeline implements StreamModule {
   StreamModule tdoa = new TDOACorrelationModule();
 
   /* Then we consolidate bunches of impulsdummyIdse frames into larger consolidated frames for processing */
-  StreamModule smooth = new ConsolidateModule('d', 1, 1, 1, 1);
-
-  //  StreamModule smooth = new DummyModule(new DistanceHeader("smoother", now, frameTime, new String[] {"1", "2"}));
+  StreamModule distance = new DistanceFilter(10.0);
 
   FileStream trace;
 
@@ -35,12 +32,11 @@ public class DualPipeline implements StreamModule {
     if (!(multiHeader.getOne() instanceof ImpulseHeader)) {
        throw new IllegalArgumentException("Dual pipe multiheader should contain ImpulseHeaders");
     }
-    if (multiHeader.getHeaders().length != 2) {
-      throw new IllegalArgumentException("Dual pipe multiheader should contain two elements");
-    }
+
+    multiHeader.waitForHeaders(2);
 
     StreamHeader header = tdoa.init(inHeader);
-    header = smooth.init(header);
+    header = distance.init(header);
 
     if (!(header instanceof DistanceHeader)) {
       throw new IllegalArgumentException("Output should be DistanceHeader");
@@ -58,7 +54,7 @@ public class DualPipeline implements StreamModule {
       return null;
     }
     StreamFrame frame = tdoa.process(inFrame);
-    frame = smooth.process(frame);
+    frame = distance.process(frame);
     trace.sendFrame(frame);
     return frame;
   }

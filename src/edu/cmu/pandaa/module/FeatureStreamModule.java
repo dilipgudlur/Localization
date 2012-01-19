@@ -142,13 +142,14 @@ public class FeatureStreamModule implements StreamModule {
 
   @Override
   public ImpulseFrame process(StreamFrame inFrame) {
-    if (inFrame == null)
-      return pushResult(null);
+    if (inFrame == null) {
+        return pushResult(null);
+    }
 
     if (!(inFrame instanceof RawAudioFrame))
       throw new RuntimeException("Wrong frame type");
-
     RawAudioFrame raf = (RawAudioFrame) inFrame;
+
     double[] slowFrame = raf.smooth(slowWindow);
     double[] fastFrame = raf.smooth(fastWindow);
     short[] data = raf.getAudioData();
@@ -237,13 +238,15 @@ public class FeatureStreamModule implements StreamModule {
 
         RawAudioFrame audioFrame;
         ImpulseFrame impulses = null;
-        while (((audioFrame = (RawAudioFrame) rfs.recvFrame()) != null) || impulses != null) {
+        while (true) {
+          audioFrame = (RawAudioFrame) rfs.recvFrame();
+
           impulses = ism.process(audioFrame);
 
-          if (impulses == null)
-            continue;
+          if (impulses == null && audioFrame == null)
+            break;
 
-          if (iout != null)
+          if (iout != null && impulses != null)
             iout.sendFrame(impulses);
         }
 

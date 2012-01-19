@@ -1,6 +1,9 @@
 package edu.cmu.pandaa.stream;
 
+import java.nio.channels.IllegalBlockingModeException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import edu.cmu.pandaa.header.MultiHeader;
@@ -18,9 +21,9 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 public class MultiFrameStream implements FrameStream {
   public  final String id;
   private MultiHeader outHeader;
-  private Map<StreamHeader, StreamFrame> frames = new HashMap<StreamHeader, StreamFrame>();
+  private Map<StreamHeader, LinkedList<StreamFrame>> frames = new HashMap<StreamHeader, LinkedList<StreamFrame>>();
   private boolean isOpen = true;
-  private int dataCount = 0;
+  public boolean noblock = false;
 
   public MultiFrameStream(String id) throws Exception {
     this.id = id;
@@ -37,7 +40,6 @@ public class MultiFrameStream implements FrameStream {
     } else {
       outHeader.addHeader(h);
     }
-    frames.put(h, null);
   }
 
   // send a frame of data
@@ -46,20 +48,12 @@ public class MultiFrameStream implements FrameStream {
     if (m == null)
       return;
     StreamHeader h = m.getHeader();
-    while (frames.get(h) != null && isOpen) {
-      wait();
+    if (!frames.containsKey(h)) {
+      frames.put(h, new LinkedList<StreamFrame>());
     }
-    frames.put(h, m);
-    dataCount++;
-    if (dataCount == frames.size()) {
-      notifyAll();
-    }
+    frames.get(h).addLast(m);
+    notifyAll();
   }
-
-  public synchronized StreamFrame checkFrame(StreamHeader h) throws Exception {
-    return frames.get(h);
-  }
-
 
   @Override
   public synchronized MultiHeader getHeader() throws Exception {
@@ -69,34 +63,28 @@ public class MultiFrameStream implements FrameStream {
     return outHeader;
   }
 
-  public boolean isReady() {
-    return (dataCount == frames.size() && dataCount > 0);
-  }
-
-  // will block until there's a frame available
   @Override
   public synchronized MultiFrame recvFrame() throws Exception {
-    if (outHeader == null) {
-      return null;
-    }
-    while (!isReady() && isOpen) {
-      wait();
-    }
-    if (!isOpen) {
+    if (outHeader == null || !isOpen) {
       return null;
     }
     MultiFrame frame = outHeader.makeFrame();
-    for (StreamHeader in : frames.keySet()) {
-      StreamFrame f = frames.get(in);
-      if (f == null) {
-        throw new IllegalArgumentException("What happened to my frame?");
+    int count = 0;
+    while (isOpen && count <= 0) {
+      for (StreamHeader in : frames.keySet()) {
+        StreamFrame f = frames.get(in).pollFirst();
+        if (f != null) {
+          frame.setFrame(f);
+          count++;
+        }
       }
-      if (f != null) {
-        frame.setFrame(f);
-        frames.put(in, null); // keep header key in set, but remove frame
-        dataCount--;
+      if (count <= 0) {
+        if (noblock)
+          throw new IllegalBlockingModeException();
+        wait();
       }
     }
+
     notifyAll();
     return frame;
   }

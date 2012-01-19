@@ -18,11 +18,18 @@ public class MultiHeader extends StreamHeader {
     addHeader(header);
   }
 
-  public void addHeader(StreamHeader header) {
+  public synchronized void addHeader(StreamHeader header) {
     if (header.getClass() != first.getClass()) {
       throw new IllegalArgumentException("StreamHeaders should match for multi-header");
     }
     hmap.put(header, hmap.size());
+    notifyAll();
+  }
+
+  public synchronized void waitForHeaders(int num) throws InterruptedException {
+    while (hmap.size() != num) {
+      wait();
+    }
   }
 
   protected String getMetaId() {

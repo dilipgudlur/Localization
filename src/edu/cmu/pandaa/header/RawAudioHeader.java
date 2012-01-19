@@ -94,6 +94,11 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
       audioData = new short[frameLength];
     }
 
+    public RawAudioFrame(int frameLength, int seqNum) {
+      super(seqNum);
+      audioData = new short[frameLength];
+    }
+
     public RawAudioFrame(RawAudioFrame clone) {
       super(clone.seqNum);
       audioData = clone.audioData.clone();
@@ -185,6 +190,10 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
   public void initFilters(int win, int der) {
     smooth_save = new int[(int) getSamplingRate()*win/22050];
     derrive_save = new short[der];
+  }
+
+  public RawAudioFrame makeFrame(int frameLength, int seqNum) {
+    return new RawAudioFrame(frameLength, seqNum);
   }
 
   public RawAudioFrame makeFrame(int frameLength) {
