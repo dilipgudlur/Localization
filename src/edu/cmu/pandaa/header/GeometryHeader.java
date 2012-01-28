@@ -1,5 +1,8 @@
 package edu.cmu.pandaa.header;
 
+import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +18,12 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     this.cols = cols;
     if (deviceIds.length != rows)
       throw new IllegalArgumentException("Mismatched array dimensions");
+  }
+
+  public GeometryHeader(StreamHeader prototype, int rows, int cols) {
+    super(prototype);
+    this.rows = rows;
+    this.cols = cols;
   }
 
   public GeometryHeader(String id, long startTime, int frameTime, int rows, int cols) {
@@ -60,6 +69,11 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     }
 
     public GeometryFrame(double[][] geometry) {
+      init(geometry);
+    }
+
+    public GeometryFrame(StreamFrame prototype, double[][] geometry) {
+      super(prototype);
       init(geometry);
     }
 
@@ -149,7 +163,15 @@ public class GeometryHeader extends StreamHeader implements Serializable {
     return new GeometryFrame(geometry);
   }
 
+  public GeometryFrame makeFrame(StreamFrame prototype, double[][] geometry) {
+    return new GeometryFrame(prototype, geometry);
+  }
+
   public GeometryFrame makeFrame(int seq, double[][] geometry) {
     return new GeometryFrame(seq, geometry);
+  }
+
+  public FileStream createOutput()  throws Exception {
+    return new GeometryFileStream();
   }
 }

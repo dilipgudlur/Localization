@@ -74,6 +74,9 @@ public class DistanceMatrixModule implements StreamModule {
   }
 
   public StreamFrame process(StreamFrame inFrame) {
+    if (inFrame == null) {
+      return null;
+    }
     int numDevices = getNumDevices();
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     for(int i = 0; i < frames.length; i++){

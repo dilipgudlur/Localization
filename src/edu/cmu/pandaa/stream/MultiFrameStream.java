@@ -65,12 +65,9 @@ public class MultiFrameStream implements FrameStream {
 
   @Override
   public synchronized MultiFrame recvFrame() throws Exception {
-    if (outHeader == null || !isOpen) {
-      return null;
-    }
     MultiFrame frame = outHeader.makeFrame();
     int count = 0;
-    while (isOpen && count <= 0) {
+    while (count <= 0) {
       for (StreamHeader in : frames.keySet()) {
         StreamFrame f = frames.get(in).pollFirst();
         if (f != null) {
@@ -79,8 +76,12 @@ public class MultiFrameStream implements FrameStream {
         }
       }
       if (count <= 0) {
-        if (noblock)
+        if (!isOpen) {
+          return null;
+        }
+        if (noblock) {
           throw new IllegalBlockingModeException();
+        }
         wait();
       }
     }
@@ -92,7 +93,6 @@ public class MultiFrameStream implements FrameStream {
   @Override
   public synchronized void close() {
     isOpen = false;
-    outHeader = null;
     notifyAll();
   }
 

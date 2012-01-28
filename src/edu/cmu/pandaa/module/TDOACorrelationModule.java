@@ -44,6 +44,9 @@ public class TDOACorrelationModule implements StreamModule {
   }
 
   public StreamFrame process(StreamFrame inFrame) {
+    if (inFrame == null) {
+      return null;
+    }
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     if (!(frames[0] instanceof ImpulseFrame)) {
       throw new IllegalArgumentException("Input multiframe should contain ImpulseFrames");

@@ -126,6 +126,7 @@ public class App {
       this.pipeline = pipeline;
       if (trace)
         System.err.println("Pipeline " + id + " created with " + outSet.size());
+      Thread.sleep(1000);
     }
 
     public void addOutput(MultiFrameStream out) throws Exception {
@@ -136,7 +137,7 @@ public class App {
       }
       String outId = out.id;
       synchronized(outSet) {
-        System.out.println("Adding output " + outId + " to pipe " + id + " at frame " + count);
+        System.out.println("Adding output " + outId + " from pipe " + id + " at frame " + count);
         outSet.add(out);
         if (outHeader != null)
           out.setHeader(outHeader);
@@ -155,8 +156,11 @@ public class App {
           for (FrameStream out : outSet) {
             out.setHeader(outHeader);
           }
-          System.out.println("Starting pipe " + id);
         }
+
+        System.out.println("Delay pipe " + id);
+        Thread.sleep(10000);
+        System.out.println("Start pipe " + id);
 
         try {
           while (true) {

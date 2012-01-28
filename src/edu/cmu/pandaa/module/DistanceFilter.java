@@ -118,6 +118,9 @@ public class DistanceFilter implements StreamModule {
   }
 
   public DistanceFrame process(StreamFrame inFrame) throws Exception {
+    if (inFrame == null) {
+      return null;
+    }
     DistanceFrame din = (DistanceFrame) inFrame;
     double scale = getScale();
     double distSum = 0;

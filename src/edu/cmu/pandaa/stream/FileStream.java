@@ -22,13 +22,24 @@ public class FileStream implements FrameStream {
   private PrintWriter pw;
   protected ObjectOutputStream oos;
   protected ObjectInputStream ois;
-  private int seqNum = 0;
+  private int fileSeqNum = 0;
   protected final String fileName;
   final String padding = "0000";
+  private boolean asJosn;
+  boolean useMultipleFiles = false;
+  private boolean first;
+  private boolean inArray;
+  private String lastLine, inputLine;
+  private StreamHeader prototypeHeader;
+
+  public FileStream() {
+    fileName = null;
+  }
 
   public FileStream(String fileName) throws IOException {
     this.fileName = fileName;
     is = new FileInputStream(fileName);
+    os = null;
   }
 
   public FileStream(String fileName, boolean overwrite) throws IOException {
@@ -42,6 +53,12 @@ public class FileStream implements FrameStream {
 
   @Override
   public void close() {
+    if (pw != null && asJosn) {
+      pw.println((inArray ? "]" : "}" ) + "} ] }");
+    }
+    if (lastLine != null) {
+      throw new RuntimeException("Extra data left on line: " + lastLine);
+    }
     try {
       if (ois != null) {
         ois.close();
@@ -77,7 +94,7 @@ public class FileStream implements FrameStream {
     close();
     int mark = fileName.lastIndexOf('.');
     String nextFile = fileName.substring(0,mark);
-    String seqNumStr = "" + seqNum;
+    String seqNumStr = "" + fileSeqNum;
     if (!isRead)
       new File(nextFile).mkdir();
     nextFile = nextFile + File.separatorChar + padding.substring(0,padding.length() - seqNumStr.length()) +
@@ -90,8 +107,9 @@ public class FileStream implements FrameStream {
       is = new FileInputStream(nextFile);
     } else {
       os = new FileOutputStream(nextFile);
+      ensureOutputStreams();
     }
-    seqNum++;
+    fileSeqNum++;
     return true;
   }
 
@@ -103,7 +121,72 @@ public class FileStream implements FrameStream {
       br = new BufferedReader(new InputStreamReader(is));
     }
 
-    return br.readLine();
+    inputLine = br.readLine();
+    return inputLine;
+  }
+
+  public void setFormatJson(boolean asJson) {
+    this.asJosn = asJson;
+  }
+
+  public void setOutputStream(OutputStream os) {
+    pw = new PrintWriter(os);
+  }
+
+  public void createObjectStreams() throws Exception {
+    if (oos != null) {
+      throw new RuntimeException("setHeader called twice!");
+    }
+    oos = new ObjectOutputStream(os);
+
+    if (ois != null) {
+      throw new RuntimeException("getHeader called twice!");
+    }
+    ois = new ObjectInputStream(is);
+
+  }
+
+  protected void writeValue(String id, long value) {
+    writeValue(id, "" + value);
+  }
+
+  protected void readFormatting() throws IOException {
+    if (useMultipleFiles) {
+      if (lastLine != null) {
+        throw new RuntimeException("Extra data left over");
+      }
+      lastLine = readLine();
+      if (lastLine != null)
+        lastLine = lastLine.trim();
+    }
+  }
+
+  protected void writeFormatting() {
+    if (useMultipleFiles) {
+      pw.println();
+      first = true;
+    } else {
+      pw.print("    ");
+    }
+  }
+
+  protected void writeValue(String id, String value) {
+    if (asJosn) {
+      pw.print((first ? "" : ", "));
+      if (id == null) {
+        if (!inArray) {
+          inArray = true;
+          pw.print("\"data\": [ ");
+        }
+      } else {
+        pw.print("\"" + id + "\": ");
+      }
+      pw.print("\"" + value + "\"");
+    } else if (value == null || !value.contains(" "))
+      pw.print((first ? "" : " ") + value);
+    else
+      throw new RuntimeException("Invalid output value");
+    first = false;
   }
 
   protected void writeString(String out) {
@@ -111,36 +194,104 @@ public class FileStream implements FrameStream {
       pw = new PrintWriter(os);
     }
     pw.println(out);
+    first = true;
+  }
+
+  private void ensureOutputStreams() {
+    if (pw == null) {
+      pw = new PrintWriter(os);
+    }
+    first = true;
   }
 
   @Override
   public void setHeader(StreamHeader h) throws Exception {
     if (oos != null) {
-      throw new RuntimeException("setHeader called twice!");
+      oos.writeObject(h);
+      oos.flush();
+      return;
     }
-    oos = new ObjectOutputStream(os);
-    oos.writeObject(h);
-    oos.flush();
+
+    ensureOutputStreams();
+    if (asJosn) {
+      pw.println("{ \"header\": {");
+    }
+    writeValue("type", h.getClass().getSimpleName());
+    writeValue("id", h.id);
+    writeValue("frameTime", h.frameTime);
+    writeValue("startTime", h.startTime);
+    writeValue("nextSeq", h.nextSeq);
   }
 
   @Override
   public void sendFrame(StreamFrame m) throws Exception {
-    oos.writeObject(m);
-    oos.flush();
+    if (oos != null) {
+      oos.writeObject(m);
+      oos.flush();
+      return;
+    }
+
+    if (asJosn) {
+      pw.println("},");
+      pw.print("\"frames\": [ { ");
+    }
+
+    if (useMultipleFiles) {
+      nextFile();
+    } else {
+      pw.println();
+      first = true;
+    }
+
+    writeValue("seqNum", m.seqNum);
   }
 
   @Override
   public StreamHeader getHeader() throws Exception {
     if (ois != null) {
-      throw new RuntimeException("getHeader called twice!");
+      return (StreamHeader) ois.readObject();
     }
-    ois = new ObjectInputStream(is);
-    return (StreamHeader) ois.readObject();
+    lastLine = readLine();
+    String targetClass = consumeString();
+    prototypeHeader = new StreamHeader(consumeString(), consumeInt(), consumeInt(), consumeInt(), targetClass);
+    return prototypeHeader;
   }
 
   @Override
   public StreamFrame recvFrame() throws Exception {
-    return (StreamFrame) ois.readObject();
+    if (ois != null) {
+      return (StreamFrame) ois.readObject();
+    }
+    if (useMultipleFiles)
+      nextFile();
+    lastLine = readLine();
+    if (lastLine == null) {
+      return null;
+    }
+    lastLine = lastLine.trim();
+    return prototypeHeader.makeFrame(consumeInt());
+  }
+
+  protected String consumeString() {
+    try {
+      int mark = lastLine.indexOf(' ');
+      String part;
+      if (mark >= 0) {
+        part = lastLine.substring(0,mark);
+        lastLine = lastLine.substring(mark+1).trim();
+      } else {
+        part = lastLine;
+        lastLine = null;
+      }
+      return part;
+    } catch (RuntimeException e) {
+      System.err.println("While processing input line: "+ inputLine);
+      throw e;
+    }
+  }
+
+  protected int consumeInt() {
+    return Integer.parseInt(consumeString());
   }
 
   public static void main(String[] args) throws Exception {

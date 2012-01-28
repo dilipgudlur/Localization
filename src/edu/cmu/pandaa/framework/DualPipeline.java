@@ -18,6 +18,9 @@ public class DualPipeline implements StreamModule {
   final long now = System.currentTimeMillis();
   final int frameTime = 100;
 
+  /* First we take two streams and make sure they're reasonably synchronized in time */
+  StreamModule sync = new MultiSyncModule();
+
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
   StreamModule tdoa = new TDOACorrelationModule();
 
@@ -35,7 +38,9 @@ public class DualPipeline implements StreamModule {
 
     multiHeader.waitForHeaders(2);
 
-    StreamHeader header = tdoa.init(inHeader);
+    StreamHeader header = inHeader;
+    header = sync.init(header);
+    header = tdoa.init(header);
     header = distance.init(header);
 
     if (!(header instanceof DistanceHeader)) {
@@ -53,7 +58,9 @@ public class DualPipeline implements StreamModule {
     if (inFrame == null) {
       return null;
     }
-    StreamFrame frame = tdoa.process(inFrame);
+    StreamFrame frame = inFrame;
+    frame = sync.process(frame);
+    frame = tdoa.process(frame);
     frame = distance.process(frame);
     trace.sendFrame(frame);
     return frame;

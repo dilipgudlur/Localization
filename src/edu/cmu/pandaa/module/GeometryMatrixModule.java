@@ -42,6 +42,9 @@ public class GeometryMatrixModule implements StreamModule {
   }
 
   public StreamFrame process(StreamFrame inFrame) {
+    if (inFrame == null) {
+      return null;
+    }
     if (!(inFrame instanceof GeometryFrame))
       throw new RuntimeException("Wrong frame type");
     GeometryFrame gfIn = (GeometryFrame) inFrame ;

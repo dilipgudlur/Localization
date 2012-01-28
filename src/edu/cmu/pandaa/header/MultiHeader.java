@@ -10,12 +10,20 @@ import java.util.*;
  */
 public class MultiHeader extends StreamHeader {
   private final Map<StreamHeader, Integer> hmap = new HashMap<StreamHeader, Integer>();
-  final StreamHeader first;
+  public final StreamHeader first;
 
   public MultiHeader(String id, StreamHeader header) {
     super(id, header.startTime, header.frameTime);
     first = header;
     addHeader(header);
+  }
+
+  public MultiHeader(String id, StreamHeader[] headers) {
+    super(id, headers[0].startTime, headers[0].frameTime);
+    first = headers[0];
+    for (int i = 0;i < headers.length;i++) {
+      addHeader(headers[i]);
+    }
   }
 
   public synchronized void addHeader(StreamHeader header) {

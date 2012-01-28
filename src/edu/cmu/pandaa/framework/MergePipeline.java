@@ -7,9 +7,12 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.DistanceMatrixModule;
 import edu.cmu.pandaa.module.GeometryMatrixModule;
+import edu.cmu.pandaa.module.MultiSyncModule;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
+import edu.cmu.pandaa.stream.WebViewStream;
 
 /**
  * Created by IntelliJ IDEA.
@@ -20,8 +23,11 @@ import edu.cmu.pandaa.stream.GeometryFileStream;
 
 public class MergePipeline implements StreamModule {
 
+  StreamModule sync = new MultiSyncModule();
   StreamModule matrix = new DistanceMatrixModule();
   StreamModule geometry = new GeometryMatrixModule();
+  FrameStream view = new WebViewStream();
+
   FileStream trace;
 
   @Override
@@ -31,8 +37,12 @@ public class MergePipeline implements StreamModule {
        throw new IllegalArgumentException("Merge pipe multiheader should contain ImpulseHeaders");
     }
 
-    StreamHeader header = matrix.init(inHeader);
+    StreamHeader header = inHeader;
+    header = sync.init(header);
+    header = matrix.init(header);
     header = geometry.init(header);
+
+    view.setHeader(header);
 
     if (!(header instanceof GeometryHeader)) {
       throw new IllegalArgumentException("Output should be GeometryHeader");
@@ -49,11 +59,15 @@ public class MergePipeline implements StreamModule {
     if (inFrame == null) {
       return null;
     }
-    StreamFrame frame = matrix.process(inFrame);
+    StreamFrame frame = inFrame;
+    frame = sync.process(frame);
+    frame = matrix.process(frame);
     trace.sendFrame(frame);
-    StreamFrame geomOut = geometry.process(frame);
+    frame = geometry.process(frame);
 
-    return geomOut;
+    view.sendFrame(frame);
+
+    return frame;
   }
 
   @Override
