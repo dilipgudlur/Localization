@@ -1,5 +1,9 @@
 package edu.cmu.pandaa.header;
 
+import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.GeometryFileStream;
+import edu.cmu.pandaa.stream.ImpulseFileStream;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,5 +57,9 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
       peakMagnitudes[i] = magnitudes.get(i);
     }
     return new ImpulseFrame(peakOffsets, peakMagnitudes);
+  }
+
+  public FileStream createOutput()  throws Exception {
+    return new ImpulseFileStream();
   }
 }

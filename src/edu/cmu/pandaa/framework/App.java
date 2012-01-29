@@ -17,6 +17,9 @@ public class App {
   static final int SERVER_PORT = 12345;
   MultiFrameStream combiner = new MultiFrameStream("combiner");
   final Map<StreamHeader, PipeHandler> inHeaders = new HashMap<StreamHeader, PipeHandler>();
+  private int basePort = 8000;
+  private int nextDevicePort = basePort + 20;
+  private int nextCombinePort = basePort + 40;
 
   public App(String[] args) throws Exception {
     if (args.length == 0) {
@@ -25,12 +28,13 @@ public class App {
       String file1 = args[0];
       for (String file : args) {
         RawAudioFileStream in = new RawAudioFileStream(file, file1, 3);
-        in.setTimeDialtion(0.5);
+        in.setTimeDialtion(1.0);
         activateNewDevice(in);
       }
     }
 
-    PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(), new GeometryFileStream("output.txt", true));
+    PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(),
+            new GeometryFileStream("output.txt", true), basePort);
     new Thread(combpipe, "combiner").start();
   }
 
@@ -60,9 +64,9 @@ public class App {
 
   private synchronized void activateNewDevice(FrameStream in) throws Exception {
     StreamHeader inHeader = in.getHeader();
-    System.out.println("Activating device " + inHeader.id);
+    System.out.println("Activating device " + inHeader.id + " on " + nextDevicePort);
     StreamModule pipeline = new SinglePipeline();
-    PipeHandler pipe = new PipeHandler(in, pipeline, null);
+    PipeHandler pipe = new PipeHandler(in, pipeline, null, nextDevicePort++);
     new Thread(pipe, inHeader.id).start();
 
     for (StreamHeader other : inHeaders.keySet()) {
@@ -71,7 +75,7 @@ public class App {
       PipeHandler otherPipe = inHeaders.get(other);
       pipe.addOutput(mixer);
       otherPipe.addOutput(mixer);
-      PipeHandler dualPipe = new PipeHandler(mixer, new DualPipeline(), combiner);
+      PipeHandler dualPipe = new PipeHandler(mixer, new DualPipeline(), combiner, nextCombinePort++);
       new Thread(dualPipe, id).start();
     }
     inHeaders.put(inHeader, pipe);
@@ -107,12 +111,13 @@ public class App {
     private boolean closed = false;
     private int count = 0;
     private boolean trace;
+    private WebViewStream view;
 
-    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out) throws Exception {
-      this(in, pipeline, out, false);
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port) throws Exception {
+      this(in, pipeline, out, port, false);
     }
 
-    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, boolean trace) throws Exception {
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port, boolean trace) throws Exception {
       this.trace = trace;
       if (in == null)
         throw new IllegalArgumentException("argument can not be null");
@@ -126,7 +131,7 @@ public class App {
       this.pipeline = pipeline;
       if (trace)
         System.err.println("Pipeline " + id + " created with " + outSet.size());
-      Thread.sleep(1000);
+      view = new WebViewStream(port);
     }
 
     public void addOutput(MultiFrameStream out) throws Exception {
@@ -156,6 +161,7 @@ public class App {
           for (FrameStream out : outSet) {
             out.setHeader(outHeader);
           }
+          view.setHeader(outHeader);
         }
 
         System.out.println("Delay pipe " + id);
@@ -168,6 +174,7 @@ public class App {
             if (frame == null)
               break;
             frame = pipeline.process(frame);
+            view.sendFrame(frame);
             count++;
             synchronized(outSet) {
               for (FrameStream out : outSet) {

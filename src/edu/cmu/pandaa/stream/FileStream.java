@@ -31,6 +31,7 @@ public class FileStream implements FrameStream {
   private boolean inArray;
   private String lastLine, inputLine;
   private StreamHeader prototypeHeader;
+  private int frameCount = 0;
 
   public FileStream() {
     fileName = null;
@@ -54,7 +55,13 @@ public class FileStream implements FrameStream {
   @Override
   public void close() {
     if (pw != null && asJosn) {
-      pw.println((inArray ? "]" : "}" ) + "} ] }");
+      if (frameCount == 0) {
+        pw.println("},");
+        pw.print("\"frames\": [ ");
+      }  else {
+        pw.print((inArray ? "]" : "}" ) + "} ");
+      }
+      pw.println("] }");
     }
     if (lastLine != null) {
       throw new RuntimeException("Extra data left on line: " + lastLine);
@@ -221,15 +228,22 @@ public class FileStream implements FrameStream {
     writeValue("frameTime", h.frameTime);
     writeValue("startTime", h.startTime);
     writeValue("nextSeq", h.nextSeq);
+
   }
 
   @Override
   public void sendFrame(StreamFrame m) throws Exception {
+    if (m == null) {
+      return;
+    }
+
     if (oos != null) {
       oos.writeObject(m);
       oos.flush();
       return;
     }
+
+    frameCount++;
 
     if (asJosn) {
       pw.println("},");

@@ -26,7 +26,6 @@ public class MergePipeline implements StreamModule {
   StreamModule sync = new MultiSyncModule();
   StreamModule matrix = new DistanceMatrixModule();
   StreamModule geometry = new GeometryMatrixModule();
-  FrameStream view = new WebViewStream();
 
   FileStream trace;
 
@@ -41,8 +40,6 @@ public class MergePipeline implements StreamModule {
     header = sync.init(header);
     header = matrix.init(header);
     header = geometry.init(header);
-
-    view.setHeader(header);
 
     if (!(header instanceof GeometryHeader)) {
       throw new IllegalArgumentException("Output should be GeometryHeader");
@@ -64,8 +61,6 @@ public class MergePipeline implements StreamModule {
     frame = matrix.process(frame);
     trace.sendFrame(frame);
     frame = geometry.process(frame);
-
-    view.sendFrame(frame);
 
     return frame;
   }

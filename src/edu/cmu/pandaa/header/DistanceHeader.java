@@ -1,5 +1,9 @@
 package edu.cmu.pandaa.header;
 
+import edu.cmu.pandaa.stream.DistanceFileStream;
+import edu.cmu.pandaa.stream.FileStream;
+import edu.cmu.pandaa.stream.ImpulseFileStream;
+
 import java.util.List;
 import java.util.logging.Level;
 
@@ -94,5 +98,9 @@ public class DistanceHeader extends StreamHeader {
       marray[i] = magnitudes.get(i);
     }
     return new DistanceFrame(darray, marray, values);
+  }
+
+  public FileStream createOutput()  throws Exception {
+    return new DistanceFileStream();
   }
 }

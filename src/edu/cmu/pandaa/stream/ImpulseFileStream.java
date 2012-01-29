@@ -15,6 +15,10 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 public class ImpulseFileStream extends FileStream {
   private ImpulseHeader header;
 
+  public ImpulseFileStream() throws Exception {
+    super();
+  }
+
   public ImpulseFileStream(String filename) throws Exception {
     super(filename);
   }

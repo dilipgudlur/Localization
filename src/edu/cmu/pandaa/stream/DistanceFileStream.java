@@ -17,6 +17,9 @@ import java.awt.*;
 public class DistanceFileStream extends FileStream {
   private DistanceHeader header;
 
+  public DistanceFileStream() throws Exception {
+  }
+
   public DistanceFileStream(String filename) throws Exception {
     super(filename);
   }

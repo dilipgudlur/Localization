@@ -1,0 +1,72 @@
+<html>
+ <div id="container" class="container"></div>
+
+ <style type="text/css">
+   .container {
+     width: 500px;
+     height: 500px;
+     border: 1px solid black;
+   }
+   .target {
+     width: 10px;
+     height: 10px;
+     background: black;
+     position: absolute;
+   }
+ </style>
+
+ <script>
+  var getTargetElement = function(id) {
+    var tid = 'target-' + id;
+    var el = document.getElementById(tid);
+    if (!el) {
+      el = document.createElement('div');
+      el.setAttribute('id', tid);
+      el.setAttribute('class', "target");
+      container.appendChild(el);
+    }
+    return el;    
+  }
+
+  var update = function(data) {
+    var ids = data.header.id.split(",");
+    var index = 0;
+    if (data.frames.length == 0) {
+      return
+    }
+    var frame = data.frames[0].data;
+    for (me in ids) {
+      var element = getTargetElement(ids[me]);
+      var x = frame[index++]-0;      
+      var y = frame[index++]-0;
+      x = container.offsetWidth/2 + x/10;
+      y = container.offsetHeight/2 - y/10;
+      if (x < 0) {
+        x = 0;
+      }
+      if (x > container.offsetWidth) {
+        x = container.offsetWidth;
+      }
+      if (y < 0) {
+        y = 0;
+      }
+      if (y > container.offsetWidth) {
+        y = container.offsetWidth;
+      }
+      element.style.left = x;
+      element.style.top = y;
+    }
+  };
+  var fetch = function() {
+    xmlhttp=new XMLHttpRequest();
+    xmlhttp.open("GET","json",false);
+    xmlhttp.send();
+    var data = xmlhttp.responseText;
+    update(eval('(' + data + ')'));
+  };
+
+  var container = document.getElementById('container');
+  window.setInterval(fetch, 1000);
+
+ </script>
+</html>
