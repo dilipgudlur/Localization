@@ -18,8 +18,8 @@ public class DualPipeline implements StreamModule {
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
   StreamModule tdoa = new TDOACorrelationModule();
 
-  /* Then we consolidate bunches of impulsdummyIdse frames into larger consolidated frames for processing */
-  StreamModule distance = new DistanceFilter(10.0);
+  /* Then take the output and smooth and average over time */
+  StreamModule distance = new DistanceFilter(100);
 
   FileStream trace;
 
@@ -40,7 +40,7 @@ public class DualPipeline implements StreamModule {
       throw new IllegalArgumentException("Output should be DistanceHeader");
     }
 
-    trace = new DistanceFileStream(inHeader.id + ".txt", true);
+    trace = new DistanceFileStream(App.TRACE_DIR + header.id + ".txt", true);
     trace.setHeader(header);
 
     return header;
@@ -61,5 +61,7 @@ public class DualPipeline implements StreamModule {
   @Override
   public void close() {
     trace.close();
+    tdoa.close();
+    distance.close();
   }
 }

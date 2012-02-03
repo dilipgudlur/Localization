@@ -1,15 +1,16 @@
 package edu.cmu.pandaa.framework;
 
+import java.io.File;
 import java.net.ServerSocket;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.*;
+
+import javax.naming.spi.DirectoryManager;
 
 // server app
 public class App {
@@ -21,10 +22,17 @@ public class App {
   private int nextDevicePort = basePort + 20;
   private int nextCombinePort = basePort + 40;
 
+  public static final String TRACE_DIR = "trace/";
+
   public App(String[] args) throws Exception {
+    new File(TRACE_DIR).mkdir();
+
     if (args.length == 0) {
       new AcceptClients().start();
     } else {
+      if (!new File(args[0]).exists()) {
+        args = expandFiles(args[0]);
+      }
       String file1 = args[0];
       for (String file : args) {
         RawAudioFileStream in = new RawAudioFileStream(file, file1, 3);
@@ -34,8 +42,21 @@ public class App {
     }
 
     PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(),
-            new GeometryFileStream("output.txt", true), basePort, true);
+            new GeometryFileStream(TRACE_DIR + "output.txt", true), basePort, true);
     new Thread(combpipe, "combiner").start();
+  }
+
+  private String[] expandFiles(String base) {
+    ArrayList<String> output = new ArrayList<String>();
+    String dir = new File(base).getParent();
+    base = base.substring(dir.length()+1);
+    String[] files = new File(dir).list();
+    for (String file : files) {
+      if (file.startsWith(base) && file.endsWith(".wav")) {
+        output.add(dir + File.separatorChar + file);
+      }
+    }
+    return output.toArray(new String[] {});
   }
 
   public static void main(String[] args) {

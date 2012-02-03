@@ -11,6 +11,7 @@ import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 import java.io.File;
 import java.util.LinkedList;
+import java.util.zip.DeflaterOutputStream;
 
 public class FeatureStreamModule implements StreamModule {
   private double usPerSample;
@@ -106,6 +107,14 @@ public class FeatureStreamModule implements StreamModule {
 
     saveFrames = (peakWindowMs + inHeader.frameTime - 1)/ inHeader.frameTime;
 
+    if (rafs != null) {
+      try {
+        rafs.setHeader(inHeader);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     return header;
   }
 
@@ -188,6 +197,9 @@ public class FeatureStreamModule implements StreamModule {
   }
 
   public void augmentedAudio(String outFile) throws Exception {
+    if (header != null) {
+      throw new Exception("Need to call augmentAudio before init");
+    }
     rafs = new RawAudioFileStream(outFile, true);
   }
 
@@ -230,7 +242,6 @@ public class FeatureStreamModule implements StreamModule {
         System.out.println("FeatureStream: " + impulseFilename + " " + audioFilename + " " + outFile);
 
         RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
-        ism.rafs.setHeader(header);
         ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
 
         if (iout != null)

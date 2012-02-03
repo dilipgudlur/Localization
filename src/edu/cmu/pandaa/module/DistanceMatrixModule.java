@@ -88,7 +88,6 @@ public class DistanceMatrixModule implements StreamModule {
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
-    int seqNum = -1;
 
     for(int i = 0; i < numDevices; i++){
       for(int j = 0; j < numDevices; j++){
@@ -98,7 +97,7 @@ public class DistanceMatrixModule implements StreamModule {
           distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
         else {
           if (dfIn[count] == null || dfIn[count].peakDeltas.length == 0)
-            distanceMatrix[i][j] = Double.NaN;
+            distanceMatrix[i][j] = previous[i][j];
           else if (dfIn[count].peakDeltas.length == 1) {
             distanceMatrix[i][j] = dfIn[count].peakDeltas[0];
           } else

@@ -43,7 +43,7 @@ public class MergePipeline implements StreamModule {
       throw new IllegalArgumentException("Output should be GeometryHeader");
     }
 
-    trace = new GeometryFileStream(inHeader.id + ".txt", true, true);
+    trace = new GeometryFileStream(App.TRACE_DIR + inHeader.id + ".txt", true, false);
     trace.setHeader(header);
 
     return header;
@@ -65,4 +65,6 @@ public class MergePipeline implements StreamModule {
   @Override
   public void close() {
     trace.close();
+    matrix.close();
+    geometry.close();
   }}

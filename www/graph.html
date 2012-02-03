@@ -10,8 +10,10 @@
    .target {
      width: 10px;
      height: 10px;
-     background: black;
+     background: #333;
+     color: #AAA;
      position: absolute;
+     white-space: nowrap;
    }
  </style>
 
@@ -23,6 +25,7 @@
       el = document.createElement('div');
       el.setAttribute('id', tid);
       el.setAttribute('class', "target");
+      el.textContent = id;
       container.appendChild(el);
     }
     return el;    

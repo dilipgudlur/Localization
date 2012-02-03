@@ -119,7 +119,7 @@ if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
   if [ "$*" != "" ]; then
     ../grid_multi.sh $INPUT_SET "$@"
   else
-    cp rmsOut-actual/0000.txt actual.dat
+    tail --lines +2 rmsOut-actual/0000.txt > actual.dat
     ../grid_anim.sh $INPUT_SET actual.dat
   fi
 fi

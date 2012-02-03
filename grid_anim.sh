@@ -17,7 +17,7 @@ fi
 echo $pcmd >> .tmp.plt
 echo Generating $pcmd to $AUDIO_SET.gif
 for file in $FILES; do
-  cp $file $AUDIO_SET.dat
+  tail --lines +2 $file > $AUDIO_SET.dat
   (gnuplot < .tmp.plt 2>/dev/null && echo -n .) || echo -n X
   target=${file%.txt}.gif
   mv graph.gif $target

@@ -81,8 +81,14 @@ public class ConsolidateModule implements StreamModule {
   }
 
   public void close() {
-    out.close();
-    in.close();
+    if (out != null) {
+      out.close();
+      out = null;
+    }
+    if (in != null) {
+      in.close();
+      in = null;
+    }
   }
 
   interface Factory {

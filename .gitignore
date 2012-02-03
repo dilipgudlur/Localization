@@ -9,5 +9,6 @@ Localization.jar
 gen/
 out/
 test/
+trace/
 android-app/default.properties
 results.txt
