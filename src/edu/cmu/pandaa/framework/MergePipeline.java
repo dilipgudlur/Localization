@@ -23,7 +23,6 @@ import edu.cmu.pandaa.stream.WebViewStream;
 
 public class MergePipeline implements StreamModule {
 
-  StreamModule sync = new MultiSyncModule();
   StreamModule matrix = new DistanceMatrixModule();
   StreamModule geometry = new GeometryMatrixModule();
 
@@ -37,7 +36,6 @@ public class MergePipeline implements StreamModule {
     }
 
     StreamHeader header = inHeader;
-    header = sync.init(header);
     header = matrix.init(header);
     header = geometry.init(header);
 
@@ -57,7 +55,6 @@ public class MergePipeline implements StreamModule {
       return null;
     }
     StreamFrame frame = inFrame;
-    frame = sync.process(frame);
     frame = matrix.process(frame);
     trace.sendFrame(frame);
     frame = geometry.process(frame);

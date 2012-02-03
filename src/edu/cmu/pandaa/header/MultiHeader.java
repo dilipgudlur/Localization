@@ -76,9 +76,14 @@ public class MultiHeader extends StreamHeader {
   }
 
   public class MultiFrame extends StreamFrame {
-    final StreamFrame[] frames;
+    private final StreamFrame[] frames;
 
     public MultiFrame() {
+      frames = new StreamFrame[hmap.size()];
+    }
+
+    public MultiFrame(int seqNum) {
+      super(seqNum);
       frames = new StreamFrame[hmap.size()];
     }
 
@@ -103,5 +108,10 @@ public class MultiHeader extends StreamHeader {
   @Override
   public MultiFrame makeFrame() {
     return new MultiFrame();
+  }
+
+  @Override
+  public MultiFrame makeFrame(int seqNum) {
+    return new MultiFrame(seqNum);
   }
 }

@@ -63,6 +63,10 @@ public class StreamHeader implements Serializable {
     public String toString() {
       return id + "#" + seqNum;
     }
+
+    public long getStartTime() {
+      return startTime + frameTime * seqNum;
+    }
   }
 
   public StreamFrame makeFrame() {

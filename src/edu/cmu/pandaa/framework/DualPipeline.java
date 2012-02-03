@@ -14,12 +14,6 @@ import edu.cmu.pandaa.stream.FileStream;
  */
 
 public class DualPipeline implements StreamModule {
-  /* fileds only used for dummy distance header -- remove when we have real code */
-  final long now = System.currentTimeMillis();
-  final int frameTime = 100;
-
-  /* First we take two streams and make sure they're reasonably synchronized in time */
-  StreamModule sync = new MultiSyncModule();
 
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
   StreamModule tdoa = new TDOACorrelationModule();
@@ -39,7 +33,6 @@ public class DualPipeline implements StreamModule {
     multiHeader.waitForHeaders(2);
 
     StreamHeader header = inHeader;
-    header = sync.init(header);
     header = tdoa.init(header);
     header = distance.init(header);
 
@@ -59,7 +52,6 @@ public class DualPipeline implements StreamModule {
       return null;
     }
     StreamFrame frame = inFrame;
-    frame = sync.process(frame);
     frame = tdoa.process(frame);
     frame = distance.process(frame);
     trace.sendFrame(frame);

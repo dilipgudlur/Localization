@@ -48,23 +48,25 @@ public class TDOACorrelationModule implements StreamModule {
       return null;
     }
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
-    if (!(frames[0] instanceof ImpulseFrame)) {
-      throw new IllegalArgumentException("Input multiframe should contain ImpulseFrames");
-    }
     if (frames.length != 2) {
       throw new IllegalArgumentException("Input multiframe should contain two elements");
     }
-    
+    for (int i = 0;i < frames.length;i++) {
+      if (frames[i] != null && !(frames[i] instanceof ImpulseFrame)) {
+        throw new IllegalArgumentException("Input multiframe should contain ImpulseFrames");
+      }
+    }
+
     /* Try to match peaks in the two frames.
-     * We're assuming that the same sound impulse reaches devices
-     * within less than 29ms (speed of sound over 10m, a generous 
-     * room size). Tweaking may be needed.
-     */
+    * We're assuming that the same sound impulse reaches devices
+    * within less than 29ms (speed of sound over 10m, a generous
+    * room size). Tweaking may be needed.
+    */
     ImpulseFrame aFrame = (ImpulseFrame) frames[0];
     ImpulseFrame bFrame = (ImpulseFrame) frames[1];
     
     // if any of the frames has no impulses, then there's nothing to be matched
-    if (aFrame.peakOffsets.length == 0 || bFrame.peakOffsets.length == 0) {
+    if (aFrame == null || aFrame.peakOffsets.length == 0 || bFrame == null || bFrame.peakOffsets.length == 0) {
       return header.makeFrame(new double[] {}, new double[] {});
     }
     
@@ -176,28 +178,6 @@ public class TDOACorrelationModule implements StreamModule {
     ofs.close();
   }
 
-  public static void main2(String[] args) {
-    ImpulseHeader i1Header = new ImpulseHeader("i1", System.currentTimeMillis(), 100);
-    ImpulseHeader i2Header = new ImpulseHeader("i2", System.currentTimeMillis() + 10, 100);
-
-    MultiHeader inHeader = new MultiHeader("additup", i1Header);
-    inHeader.addHeader(i2Header);
-
-    TDOACorrelationModule tdoa = new TDOACorrelationModule();
-    tdoa.init(inHeader);
-
-    ImpulseFrame i1Frame = i1Header.makeFrame(new int[] {10}, new short[] {4000});
-    ImpulseFrame i2Frame = i2Header.makeFrame(new int[] {15}, new short[] {2000});
-
-    MultiFrame inFrame = inHeader.makeFrame();
-    inFrame.setFrame(i1Frame);
-    inFrame.setFrame(i2Frame);
-
-    DistanceFrame outFrame = (DistanceFrame) tdoa.process(inFrame);
-
-    System.out.println("DistanceFrame output: frame #" + outFrame.seqNum + ", deltas " + outFrame.peakDeltas[0] + ", magnitudes " + outFrame.peakMagnitudes[0]);
-  }
-  
   static class ArrayComparator implements Comparator<int[]> {
     private int index;
     ArrayComparator(int index) {

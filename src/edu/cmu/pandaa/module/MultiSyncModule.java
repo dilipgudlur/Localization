@@ -13,21 +13,22 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
  */
 
 public class MultiSyncModule implements StreamModule {
-  MultiHeader syncedPairHeader;
-  MultiFrame lastOut;
+  private MultiHeader syncedHeader;
+  private MultiFrame lastOut;
+  private long lastTime;
 
   @Override
   public StreamHeader init(StreamHeader inHeader) throws Exception {
-    syncedPairHeader = new MultiHeader(inHeader.id + "-sync", ((MultiHeader) inHeader).getHeaders());
-    lastOut = syncedPairHeader.makeFrame();
-    return syncedPairHeader;
+    syncedHeader = new MultiHeader(inHeader.id + "-sync", ((MultiHeader) inHeader).getHeaders());
+    lastOut = syncedHeader.makeFrame();
+    return syncedHeader;
   }
 
   @Override
   public StreamHeader.StreamFrame process(StreamFrame inFrame) throws Exception {
     MultiFrame multi = (MultiFrame) inFrame;
     StreamFrame[] frames = multi.getFrames();
-    MultiFrame out = syncedPairHeader.makeFrame();
+    MultiFrame out = syncedHeader.makeFrame();
     boolean incomplete = false;
 
     for (int i = 0; i < frames.length; i++) {

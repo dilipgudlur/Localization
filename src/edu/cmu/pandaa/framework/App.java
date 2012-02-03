@@ -34,7 +34,7 @@ public class App {
     }
 
     PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(),
-            new GeometryFileStream("output.txt", true), basePort);
+            new GeometryFileStream("output.txt", true), basePort, true);
     new Thread(combpipe, "combiner").start();
   }
 
@@ -164,15 +164,14 @@ public class App {
           view.setHeader(outHeader);
         }
 
-        System.out.println("Delay pipe " + id);
-        Thread.sleep(10000);
-        System.out.println("Start pipe " + id);
-
         try {
           while (true) {
             StreamFrame frame = in.recvFrame();
             if (frame == null)
               break;
+            if (trace) {
+              System.err.println(frame.toString());
+            }
             frame = pipeline.process(frame);
             view.sendFrame(frame);
             count++;

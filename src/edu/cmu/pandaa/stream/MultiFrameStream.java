@@ -1,6 +1,8 @@
 package edu.cmu.pandaa.stream;
 
+import java.lang.annotation.IncompleteAnnotationException;
 import java.nio.channels.IllegalBlockingModeException;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +26,7 @@ public class MultiFrameStream implements FrameStream {
   private Map<StreamHeader, LinkedList<StreamFrame>> frames = new HashMap<StreamHeader, LinkedList<StreamFrame>>();
   private boolean isOpen = true;
   public boolean noblock = false;
+  private long lastTime;
 
   public MultiFrameStream(String id) throws Exception {
     this.id = id;
@@ -65,17 +68,26 @@ public class MultiFrameStream implements FrameStream {
 
   @Override
   public synchronized MultiFrame recvFrame() throws Exception {
-    MultiFrame frame = outHeader.makeFrame();
-    int count = 0;
-    while (count <= 0) {
+    long minTime;
+    boolean incomplete;
+
+    do {
+      incomplete = false;
+      minTime = -1;
       for (StreamHeader in : frames.keySet()) {
-        StreamFrame f = frames.get(in).pollFirst();
-        if (f != null) {
-          frame.setFrame(f);
-          count++;
+        StreamFrame f = frames.get(in).peekFirst();
+        if (f == null) {
+          incomplete = true;
+        } else {
+          long time = f.getStartTime();
+          if ((minTime < 0)||(time < minTime)) {
+            minTime = time;
+          } else if ((time - minTime) % in.frameTime != 0) {
+            throw new RuntimeException("Timebases are not aligned");
+          }
         }
       }
-      if (count <= 0) {
+      if (incomplete) {
         if (!isOpen) {
           return null;
         }
@@ -83,6 +95,18 @@ public class MultiFrameStream implements FrameStream {
           throw new IllegalBlockingModeException();
         }
         wait();
+      }
+    } while (incomplete);
+
+    int seqNum = (int) ((minTime - outHeader.startTime)/outHeader.frameTime);
+    MultiFrame frame = outHeader.makeFrame(seqNum);
+    for (StreamHeader in : frames.keySet()) {
+      StreamFrame f = frames.get(in).peekFirst();
+      if (f != null) {
+        long time = f.getStartTime();
+        if (time == minTime) {
+          frame.setFrame(frames.get(in).pollFirst());
+        }
       }
     }
 

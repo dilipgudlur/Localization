@@ -80,7 +80,7 @@ public class DistanceMatrixModule implements StreamModule {
     int numDevices = getNumDevices();
     StreamFrame[] frames = ((MultiFrame) inFrame).getFrames();
     for(int i = 0; i < frames.length; i++){
-      if (!(frames[i] instanceof DistanceFrame)) {
+      if (frames[i] != null && !(frames[i] instanceof DistanceFrame)) {
         throw new IllegalArgumentException("Input multiframe should contain DistanceFrames");
       }
     }
@@ -88,6 +88,7 @@ public class DistanceMatrixModule implements StreamModule {
     DistanceFrame[] dfIn = Arrays.copyOf(frames, frames.length, DistanceFrame[].class);
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
+    int seqNum = -1;
 
     for(int i = 0; i < numDevices; i++){
       for(int j = 0; j < numDevices; j++){
@@ -96,7 +97,7 @@ public class DistanceMatrixModule implements StreamModule {
         else if (j < i)
           distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
         else {
-          if (dfIn[count].peakDeltas.length == 0)
+          if (dfIn[count] == null || dfIn[count].peakDeltas.length == 0)
             distanceMatrix[i][j] = Double.NaN;
           else if (dfIn[count].peakDeltas.length == 1) {
             distanceMatrix[i][j] = dfIn[count].peakDeltas[0];
@@ -112,7 +113,7 @@ public class DistanceMatrixModule implements StreamModule {
     if (compareMatrix(distanceMatrix, previous))
       return null;
 
-    GeometryFrame gfOut = gHeader.makeFrame(dfIn[0].seqNum, distanceMatrix);
+    GeometryFrame gfOut = gHeader.makeFrame(inFrame.seqNum, distanceMatrix);
     previous = distanceMatrix.clone();
     return gfOut;
   }
