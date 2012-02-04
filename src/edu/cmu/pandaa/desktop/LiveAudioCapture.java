@@ -114,7 +114,7 @@ public class LiveAudioCapture extends JPanel {
 					int returnVal = fc.showSaveDialog(LiveAudioCapture.this);
 					if (returnVal == JFileChooser.APPROVE_OPTION) {
 					filePath = fc.getSelectedFile().toString() + File.separator + txtTrialName.getText() + "-" + txtDeviceName.getText() + ".wav";
-					saveAudio(new LiveAudioStream(20000), filePath);
+					//saveAudio(new LiveAudioStream(20000), filePath);
 					} else {
 						log.setText("Audio capture cancelled");
 					}
