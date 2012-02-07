@@ -98,7 +98,9 @@ fi
 
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut.txt geometryAll.txt
-java $OPTS $PACKAGE.module.RMSModule rmsOut.txt geometryOut.txt $INPUT.txt
+if [ -f "$INPUT.txt" ]; then
+  java $OPTS $PACKAGE.module.RMSModule rmsOut.txt geometryOut.txt $INPUT.txt
+fi
 
 for a in $FILESET; do 
  for b in $FILESET; do 
@@ -112,7 +114,9 @@ wait
 
 java $OPTS $PACKAGE.module.DistanceMatrixModule geometryAll2.txt $inputs
 java $OPTS $PACKAGE.module.GeometryMatrixModule geometryOut2.txt geometryAll2.txt
-java $OPTS $PACKAGE.module.RMSModule rmsOut2.txt geometryOut2.txt $INPUT.txt
+if [ -f "$INPUT.txt" ]; then
+  java $OPTS $PACKAGE.module.RMSModule rmsOut2.txt geometryOut2.txt $INPUT.txt
+fi
 
 if [ "$*" != "" -a "$GRAPH" == "yes" ]; then
   shift

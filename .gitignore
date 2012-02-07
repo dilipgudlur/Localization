@@ -10,5 +10,6 @@ gen/
 out/
 test/
 trace/
+capture/
 android-app/default.properties
 results.txt

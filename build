@@ -4,6 +4,6 @@ modules=`find src/edu/cmu/pandaa/module/ -name \*.java`
 mkdir out
 javac -sourcepath src/ -d out/ -classpath lib/mdsj.jar $modules
 javac -Xlint:unchecked -sourcepath src/ -d out/ src/edu/cmu/pandaa/framework/App.java -classpath lib/mdsj.jar 
-javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/stream/RawAudioFileStream.java
+javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/desktop/LiveAudioStream.java
 jar cf Localization.jar -C out/ .
 

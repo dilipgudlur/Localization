@@ -4,13 +4,11 @@ import java.io.File;
 import java.net.ServerSocket;
 import java.util.*;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
+import edu.cmu.pandaa.desktop.LiveAudioStream;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.*;
-
-import javax.naming.spi.DirectoryManager;
 
 // server app
 public class App {
@@ -29,6 +27,11 @@ public class App {
 
     if (args.length == 0) {
       new AcceptClients().start();
+    } else if (args[0].equalsIgnoreCase("local")) {
+      List<FrameStream> streams = LiveAudioStream.getLiveAudioStreams();
+      for (FrameStream in : streams) {
+        activateNewDevice(in);
+      }
     } else {
       if (!new File(args[0]).exists()) {
         args = expandFiles(args[0]);
