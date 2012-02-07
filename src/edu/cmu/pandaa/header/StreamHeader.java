@@ -69,6 +69,10 @@ public class StreamHeader implements Serializable {
     }
   }
 
+  public long getNextFrameTime() {
+    return startTime + frameTime * nextSeq;
+  }
+
   public StreamFrame makeFrame() {
     return new StreamFrame();
   }

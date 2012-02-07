@@ -17,7 +17,6 @@ import edu.cmu.pandaa.utils.DataConversionUtil;
 public class LiveAudioStream implements FrameStream {
   ByteArrayOutputStream byteArrayOutputStream;
   public long startTime;
-  public long[] usecTime = new long[4];
   CaptureThread captureThread;
   AudioCaptureState audioCaptureState = AudioCaptureState.BEFORE;
   final static int syncFrames = 10;
@@ -97,11 +96,7 @@ public class LiveAudioStream implements FrameStream {
   @Override
   public StreamHeader getHeader() throws Exception {
     if (header == null) {
-      String comment = "stime:" + (usecTime[1] - usecTime[0]) + "," + (usecTime[2] - usecTime[1])
-              + "," + (usecTime[3] - usecTime[2]);
-      startTime = 0;
-      header = new RawAudioHeader(fileName, startTime, frameTime, audioEncoding, numChannels,
-              samplingRate, bitsPerSample, comment);
+      startCapturing();
     }
     return header;
   }
@@ -169,13 +164,17 @@ public class LiveAudioStream implements FrameStream {
             audioCaptureState == AudioCaptureState.PREFETCH;
   }
 
-  private void startCaptureThread() throws Exception {
-    System.err.println(System.currentTimeMillis() + " Started data line " + fileName);
+  private void startCapturing() throws Exception {
+    long startTime = alignStartTime();
+    String comment = "stime:" + startTime;
+    header = new RawAudioHeader(fileName, startTime, frameTime, audioEncoding, numChannels,
+            samplingRate, bitsPerSample, comment);
+
+    System.err.println(System.currentTimeMillis() + " Starting data line " + fileName);
 
     dataSize = (int) (frameTime * numChannels * samplingRate / 1000 * 2);
     byteArrayOutputStream = new ByteArrayOutputStream();
 
-    usecTime[0] = System.nanoTime() / 1000;
     captureThread = new CaptureThread(targetDataLine, fileName);
     setState(AudioCaptureState.PREFETCH);
     captureThread.start();
@@ -197,7 +196,13 @@ public class LiveAudioStream implements FrameStream {
     @Override
     public void run() {
       try {
-        long loopStartTime = System.currentTimeMillis();
+        long loopStartTime = header.startTime;
+        long delay = loopStartTime - System.currentTimeMillis();
+        System.err.println(System.currentTimeMillis() + " Delaying start for " + delay);
+        Thread.sleep(delay);
+        readySetGo(targetDataLine);
+        setState(AudioCaptureState.RUNNING);
+
         while (isRunning()) {
           if (captureTimeMs >= 0 && System.currentTimeMillis() - loopStartTime > captureTimeMs) {
             break;
@@ -263,7 +268,6 @@ public class LiveAudioStream implements FrameStream {
       String fileName = hostname + "-" + cnt;
       LiveAudioStream stream = new LiveAudioStream(line, -1, fileName);
       streams.add(stream);
-      stream.startLiveCapture();
       cnt++;
     }
     return streams;
@@ -298,6 +302,7 @@ public class LiveAudioStream implements FrameStream {
   private static void readySetGo(TargetDataLine targetDataLine) throws InterruptedException {
     synchronized(lines) {
       lineCount++;
+      //System.out.println("Linecount is ++ " + lineCount);
       if (lineCount == lines.size()) {
         lines.notifyAll();
       } else while (lineCount < lines.size()) {
@@ -305,24 +310,36 @@ public class LiveAudioStream implements FrameStream {
       }
       targetDataLine.start();
 
-      // this flush is necessary on some versions of the JDK that seem to start capture before start()!
-      targetDataLine.flush();
+      if (targetDataLine.available() > 0) {
+        System.err.println("Target line already has " + targetDataLine.available());
+        // this flush is necessary on some versions of the JDK that seem to start capture before start()!
+        targetDataLine.flush();
+      }
     }
+    //System.out.println("Linecount is == "+ + lineCount);
     Thread.sleep(1); // let other threads start their lines
     synchronized(lines) {
       lineCount--;
+      //System.out.println("Linecount is -- "+ + lineCount);
       while (lineCount > 0) {
         lines.wait();
       }
       lines.notifyAll();
     }
+    System.err.println(System.currentTimeMillis() + " Releasing line");
   }
 
-  private void startLiveCapture() throws Exception {
-    System.err.println("Starting live capture of audio from " + lines.get(targetDataLine).getMixerInfo().getName());
-    startCaptureThread();
-    targetDataLine.start();
-    setState(AudioCaptureState.RUNNING);
+  private long alignStartTime() throws Exception {
+    if ((delayWindowMs % frameTime) != 0) {
+      throw new IllegalArgumentException("delayWindowMs(" + delayWindowMs +
+              ") must be a mod of frameTime("+frameTime+")");
+    }
+    long loopTime = System.currentTimeMillis();
+    int delay = delayWindowMs - (int) (loopTime % delayWindowMs);
+    if (delay < frameTime*2)
+      delay += delayWindowMs;
+    loopTime += delay;
+    return loopTime;
   }
 
   private void startSaveAudio(int segmentLengthMs)
@@ -330,32 +347,20 @@ public class LiveAudioStream implements FrameStream {
     RawAudioFileStream rawAudioOutputStream = null;
     String segmentName = fileName;
     try {
-      startCaptureThread();
-
-      int delay = delayWindowMs - (int) (System.currentTimeMillis() % delayWindowMs);
-      if (delay < frameTime*2)
-        delay += delayWindowMs;
-      System.err.println(System.currentTimeMillis() + " Delaying start for " + delay);
-      Thread.sleep(delay);
-
-      readySetGo(targetDataLine);
-      setState(AudioCaptureState.RUNNING);
-      long loopTime = System.currentTimeMillis();
-
-      System.err.println(System.currentTimeMillis() + " " + fileName + " has available " +
-              targetDataLine.available());
-
       StreamFrame frame;
 
       int frameCount = 0;
       int captured = 0;
+      long loopTime = -1;
 
       do {
         if (rawAudioOutputStream == null) {
+          StreamHeader header = getHeader();
+          loopTime = header.getNextFrameTime();
           segmentName = String.format(fileName, loopTime) + ".wav";
           rawAudioOutputStream = new RawAudioFileStream(segmentName, true);
-          rawAudioOutputStream.setHeader(getHeader());
-          System.err.println(System.currentTimeMillis() + " Saving captured audio to " + segmentName);
+          rawAudioOutputStream.setHeader(header);
+          System.err.println(System.currentTimeMillis() + " Saving captured audio to: " + segmentName);
           frameCount = segmentLengthMs / frameTime;
           captured = 0;
           long phase = System.currentTimeMillis() - loopTime;

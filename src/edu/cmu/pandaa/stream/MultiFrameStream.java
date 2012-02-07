@@ -69,7 +69,7 @@ public class MultiFrameStream implements FrameStream {
     boolean incomplete;
 
     do {
-      incomplete = false;
+      incomplete = frames.size() == 0;
       minTime = -1;
       for (StreamHeader in : frames.keySet()) {
         StreamFrame f = frames.get(in).peekFirst();
