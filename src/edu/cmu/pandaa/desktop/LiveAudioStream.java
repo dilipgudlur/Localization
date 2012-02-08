@@ -23,6 +23,7 @@ public class LiveAudioStream implements FrameStream {
   static final Map<TargetDataLine, Mixer> lines = new HashMap<TargetDataLine, Mixer>();
   static int lineCount = 0;
   final static int delayWindowMs = 10 * 1000;
+  private RawAudioFileStream rawAudioOutputStream;
 
   public enum AudioCaptureState {
     BEFORE, PREFETCH, RUNNING, STOPPED;
@@ -34,8 +35,12 @@ public class LiveAudioStream implements FrameStream {
   private final int frameTime;
   private final int captureTimeMs;
   private final String fileName;
+  private final String id;
   private int dataSize = -1;
   private RawAudioHeader header;
+  private int framesDesired, framesCaptured;
+  private long loopTime;
+  private final int segmentLengthMs;
 
   private final static int DEFAULT_ENCODING = 1; // PCM
   private final static int DEFAULT_CHANNELS = 1; // MONO
@@ -43,21 +48,23 @@ public class LiveAudioStream implements FrameStream {
   private final static int DEFAULT_FRAME_TIME = 125; // 125ms per frame
   private final static int DEFAULT_BITS_PER_SAMPLE = 16;
 
-  public LiveAudioStream(int encoding, int samplingRate, int bitsPerSample, int frameTime,
-                         int captureTimeMs, TargetDataLine line, String fileName) {
+  private LiveAudioStream(String id, int encoding, int samplingRate, int bitsPerSample, int frameTime,
+                          int captureTimeMs, int segmentLengthMs, TargetDataLine line, String fileName) {
+    this.id = id;
     this.audioEncoding = encoding;
     this.samplingRate = samplingRate;
     this.bitsPerSample = bitsPerSample;
     this.frameTime = frameTime;
     this.numChannels = DEFAULT_CHANNELS;
     this.captureTimeMs = captureTimeMs;
+    this.segmentLengthMs = segmentLengthMs;
     this.targetDataLine = line;
     this.fileName = fileName;
   }
 
-  public LiveAudioStream(TargetDataLine line, int captureTime, String name) {
-    this(DEFAULT_ENCODING, (int) line.getFormat().getSampleRate(), line.getFormat().getSampleSizeInBits(),
-            DEFAULT_FRAME_TIME, captureTime, line, name);
+  public LiveAudioStream(String id, TargetDataLine line, int captureTime, int segmentLengthMs, String fileName) {
+    this(id, DEFAULT_ENCODING, (int) line.getFormat().getSampleRate(), line.getFormat().getSampleSizeInBits(),
+            DEFAULT_FRAME_TIME, captureTime, segmentLengthMs, line, fileName);
   }
 
   public static void findTargetDataLines(AudioFormat audioFormat) {
@@ -103,6 +110,21 @@ public class LiveAudioStream implements FrameStream {
 
   @Override
   public StreamFrame recvFrame() throws Exception {
+    if (rawAudioOutputStream == null) {
+      StreamHeader header = getHeader();
+      loopTime = header.getNextFrameTime();
+      String segmentFile = String.format(fileName, loopTime);
+      rawAudioOutputStream = new RawAudioFileStream(segmentFile, true);
+      rawAudioOutputStream.setHeader(header);
+      System.err.println(System.currentTimeMillis() + " Saving captured audio to: " + segmentFile);
+      framesDesired = segmentLengthMs / frameTime;
+      framesCaptured = 0;
+      long phase = System.currentTimeMillis() - loopTime;
+      if (phase > frameTime*2 || phase < 0) {
+        System.err.println(System.currentTimeMillis() + " Excessive frame drift detected: " + phase);
+      }
+    }
+
     byte[] audioData;
     synchronized (byteArrayOutputStream) {
       while (byteArrayOutputStream.size() == 0) {
@@ -126,6 +148,19 @@ public class LiveAudioStream implements FrameStream {
 
     RawAudioFrame audioFrame = header.makeFrame();
     audioFrame.audioData = DataConversionUtil.byteArrayToShortArray(audioData);
+
+    if (rawAudioOutputStream != null) {
+      rawAudioOutputStream.sendFrame(audioFrame);
+      framesCaptured++;
+
+      if (framesCaptured == framesDesired) {
+        System.err.println(System.currentTimeMillis() + " Audio stream complete for " + id);
+        rawAudioOutputStream.close();
+        rawAudioOutputStream = null;
+        loopTime += framesCaptured * frameTime;
+      }
+    }
+
     return audioFrame;
   }
 
@@ -144,6 +179,9 @@ public class LiveAudioStream implements FrameStream {
     }
     if (targetDataLine != null) {
       targetDataLine.close();
+    }
+    if (rawAudioOutputStream != null) {
+      rawAudioOutputStream.close();
     }
   }
 
@@ -167,15 +205,15 @@ public class LiveAudioStream implements FrameStream {
   private void startCapturing() throws Exception {
     long startTime = alignStartTime();
     String comment = "stime:" + startTime;
-    header = new RawAudioHeader(fileName, startTime, frameTime, audioEncoding, numChannels,
+    header = new RawAudioHeader(id, startTime, frameTime, audioEncoding, numChannels,
             samplingRate, bitsPerSample, comment);
 
-    System.err.println(System.currentTimeMillis() + " Starting data line " + fileName);
+    System.err.println(System.currentTimeMillis() + " Starting data line " + id);
 
-    dataSize = (int) (frameTime * numChannels * samplingRate / 1000 * 2);
+    dataSize = (frameTime * numChannels * samplingRate / 1000 * 2);
     byteArrayOutputStream = new ByteArrayOutputStream();
 
-    captureThread = new CaptureThread(targetDataLine, fileName);
+    captureThread = new CaptureThread(targetDataLine, id);
     setState(AudioCaptureState.PREFETCH);
     captureThread.start();
   }
@@ -241,21 +279,19 @@ public class LiveAudioStream implements FrameStream {
     System.err.println("Starting audio capture for " + captureTimeMs/1000.0 + "s in "+segmentLengthMs/1000.0+"s segments");
     AudioFormat audioFormat = new AudioFormat((float) DEFAULT_SAMPLING_RATE,
             DEFAULT_BITS_PER_SAMPLE, DEFAULT_CHANNELS, true, false);
-    findTargetDataLines(audioFormat);
-    if (lines.size() == 0) {
-      throw new Exception("No valid data lines found");
-    }
-    int cnt = 1;
-    for (TargetDataLine line : lines.keySet()) {
-      String fileName = hostname + "_%d-" + cnt;
-      AudioRunner runner = new AudioRunner(fileName, captureTimeMs, segmentLengthMs, line);
-      cnt++;
-      new Thread(runner, fileName).start();
+    List<LiveAudioStream> streams = getLiveAudioStreams(null, captureTimeMs, segmentLengthMs);
+    for (LiveAudioStream stream : streams) {
+      AudioRunner runner = new AudioRunner(stream);
+      new Thread(runner, stream.id).start();
     }
   }
 
-  public static List<FrameStream> getLiveAudioStreams() throws Exception {
+  public static List<LiveAudioStream> getLiveAudioStreams(String path, int captureTimeMs, int segmentLengthMs)
+          throws Exception {
     String hostname = getHostName().replace('-', '+').replace('_','+');
+    if (path == null) {
+      path = "";
+    }
     AudioFormat audioFormat = new AudioFormat((float) DEFAULT_SAMPLING_RATE,
             DEFAULT_BITS_PER_SAMPLE, DEFAULT_CHANNELS, true, false);
     findTargetDataLines(audioFormat);
@@ -263,10 +299,11 @@ public class LiveAudioStream implements FrameStream {
       throw new Exception("No valid data lines found");
     }
     int cnt = 1;
-    List<FrameStream> streams = new ArrayList<FrameStream>();
+    List<LiveAudioStream> streams = new ArrayList<LiveAudioStream>();
     for (TargetDataLine line : lines.keySet()) {
-      String fileName = hostname + "-" + cnt;
-      LiveAudioStream stream = new LiveAudioStream(line, -1, fileName);
+      String id = hostname + "-" + cnt;
+      String fileName = path + id + "_%d.wav";
+      LiveAudioStream stream = new LiveAudioStream(id, line, captureTimeMs,segmentLengthMs, fileName);
       streams.add(stream);
       cnt++;
     }
@@ -274,28 +311,21 @@ public class LiveAudioStream implements FrameStream {
   }
 
   static class AudioRunner implements Runnable {
-    final String fileName;
-    final int captureTimeMs;
-    final int segmentLengthMs;
-    final TargetDataLine line;
+    final LiveAudioStream stream;
 
-    private AudioRunner(String fileName, int captureTimeMs, int segmentLengthMs, TargetDataLine line) {
-      this.fileName = fileName;
-      this.captureTimeMs = captureTimeMs;
-      this.segmentLengthMs = segmentLengthMs;
-      this.line = line;
+    private AudioRunner(LiveAudioStream stream) {
+      this.stream = stream;
     }
 
     public void run() {
+      System.err.println("Starting capture loop " + stream.id);
       try {
-        LiveAudioStream liveAudioStream = new LiveAudioStream(line, captureTimeMs, fileName);
-        System.err.println(System.currentTimeMillis() + " Starting capture thread for " + fileName);
-        liveAudioStream.startSaveAudio(segmentLengthMs);
-        liveAudioStream.close();
+        stream.startSaveAudio();
+        stream.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
-      System.err.println("Terminating capture loop " + fileName);
+      System.err.println("Terminating capture loop " + stream.id);
     }
   }
 
@@ -342,47 +372,16 @@ public class LiveAudioStream implements FrameStream {
     return loopTime;
   }
 
-  private void startSaveAudio(int segmentLengthMs)
+  private void startSaveAudio()
           throws Exception {
-    RawAudioFileStream rawAudioOutputStream = null;
-    String segmentName = fileName;
+    String segmentName = id;
     try {
       StreamFrame frame;
 
-      int frameCount = 0;
-      int captured = 0;
-      long loopTime = -1;
-
       do {
-        if (rawAudioOutputStream == null) {
-          StreamHeader header = getHeader();
-          loopTime = header.getNextFrameTime();
-          segmentName = String.format(fileName, loopTime) + ".wav";
-          rawAudioOutputStream = new RawAudioFileStream(segmentName, true);
-          rawAudioOutputStream.setHeader(header);
-          System.err.println(System.currentTimeMillis() + " Saving captured audio to: " + segmentName);
-          frameCount = segmentLengthMs / frameTime;
-          captured = 0;
-          long phase = System.currentTimeMillis() - loopTime;
-          if (phase > frameTime*2 || phase < 0) {
-            System.err.println(System.currentTimeMillis() + " Excessive frame drift detected: " + phase);
-          }
-        }
         frame = recvFrame();
-        rawAudioOutputStream.sendFrame(frame);
-        captured++;
-
-        if (captured == frameCount) {
-          System.err.println(System.currentTimeMillis() + " Audio stream complete for " + segmentName);
-          rawAudioOutputStream.close();
-          rawAudioOutputStream = null;
-          loopTime += captured * frameTime;
-        }
       } while (frame != null);
     } finally {
-      if (rawAudioOutputStream != null) {
-        rawAudioOutputStream.close();
-      }
       System.err.println("Audio stream " + segmentName + " complete at " + System.currentTimeMillis());
       close();
     }

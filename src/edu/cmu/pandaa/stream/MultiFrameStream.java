@@ -97,6 +97,10 @@ public class MultiFrameStream implements FrameStream {
 
     int seqNum = (int) ((minTime - outHeader.startTime)/outHeader.frameTime);
     MultiFrame frame = outHeader.makeFrame(seqNum);
+    if (frame.getStartTime() != minTime) {
+      throw new RuntimeException("Time inconsistency");
+    }
+
     for (StreamHeader in : frames.keySet()) {
       StreamFrame f = frames.get(in).peekFirst();
       if (f != null) {

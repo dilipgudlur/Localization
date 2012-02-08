@@ -201,6 +201,7 @@ public class FileStream implements FrameStream {
       pw = new PrintWriter(os);
     }
     pw.println(out);
+    pw.flush();
     first = true;
   }
 
@@ -242,6 +243,8 @@ public class FileStream implements FrameStream {
       oos.flush();
       return;
     }
+
+    pw.flush();  // can't easily flush after we write something, so flush the previous frame
 
     frameCount++;
 

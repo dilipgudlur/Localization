@@ -10,6 +10,7 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.zip.DeflaterOutputStream;
 
@@ -25,13 +26,15 @@ public class FeatureStreamModule implements StreamModule {
   private LinkedList<Short> peakMagnitudes = new LinkedList<Short>();
   private LinkedList<RawAudioFrame> ras = new LinkedList<RawAudioFrame>();
   private int saveFrames = -1;
-  public RawAudioFileStream rafs;
+  private RawAudioFileStream rafs;
+  private String augmentFile;
 
   /* parameters we may want/need to tweak */
   static int derive = 0;  // non-zero to use 1st derivative
   static int slowWindow = 1024;
   static int fastWindow = 256;
   static int peakWindowMs = 80;  // peakDetection window in Ms
+  static long segmentTimeMs = 100 * 1000; // 100 second segments
 
   public FeatureStreamModule() {
   }
@@ -63,7 +66,7 @@ public class FeatureStreamModule implements StreamModule {
     ImpulseFrame impulses = header.makeFrame(newOffsets, newMagnitudes);
 
     RawAudioFrame audioFrame = ras.removeFirst();
-    if (rafs != null) {
+    if (ensureRafs(audioFrame) != null) {
       try {
         augmentAudio(audioFrame, impulses);
         rafs.sendFrame(audioFrame);
@@ -73,6 +76,25 @@ public class FeatureStreamModule implements StreamModule {
     }
 
     return impulses;
+  }
+
+  private RawAudioFileStream ensureRafs(StreamFrame frame) {
+    try {
+      if (rafs != null) {
+        if (rafs.getCurrentLength() >= segmentTimeMs) {
+          rafs.close();
+          rafs = null;
+        }
+      }
+      if (rafs == null && augmentFile != null) {
+        String outFile = String.format(augmentFile, frame.getStartTime());
+        rafs = new RawAudioFileStream(outFile, true);
+        rafs.setHeader(frame.getHeader());
+      }
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
+    }
+    return rafs;
   }
 
   private void augmentAudio(RawAudioFrame audioFrame, ImpulseFrame impulses) throws Exception {
@@ -106,14 +128,6 @@ public class FeatureStreamModule implements StreamModule {
     prevPeak = peakWindowSamples; // supress initial synchronization peak
 
     saveFrames = (peakWindowMs + inHeader.frameTime - 1)/ inHeader.frameTime;
-
-    if (rafs != null) {
-      try {
-        rafs.setHeader(inHeader);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
 
     return header;
   }
@@ -200,11 +214,13 @@ public class FeatureStreamModule implements StreamModule {
     if (header != null) {
       throw new Exception("Need to call augmentAudio before init");
     }
-    rafs = new RawAudioFileStream(outFile, true);
+    augmentFile = outFile;
   }
 
   public void close() {
-    rafs.close();
+    if (rafs != null) {
+      rafs.close();
+    }
   }
 
   public static void main(String[] args) throws Exception {

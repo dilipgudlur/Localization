@@ -34,7 +34,7 @@ public class AudioSynchronizationModule implements StreamModule {
 
   private void augmentedAudio(String fname) throws Exception {
     feature.augmentedAudio(fname);
-    feature.rafs.setHeader(rawAudioHeader);
+   // feature.rafs.setHeader(rawAudioHeader);
   }
 
   @Override

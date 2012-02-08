@@ -30,7 +30,7 @@ public class SinglePipeline implements StreamModule {
       throw new IllegalArgumentException("Requires RawAudioHeader");
     }
 
-    impulse.augmentedAudio(App.TRACE_DIR + inHeader.id + "-augment.wav");
+    impulse.augmentedAudio(App.TRACE_DIR + inHeader.id + "-%d-augment.wav");
     StreamHeader header = impulse.init(inHeader);
     if (!(header instanceof ImpulseHeader)) {
       throw new IllegalArgumentException("Output should be ImpulseHeader");
@@ -43,15 +43,12 @@ public class SinglePipeline implements StreamModule {
   }
 
   @Override
-  public StreamFrame process(StreamFrame inFrame) throws Exception {
-    if (inFrame == null) {
+  public StreamFrame process(StreamFrame frame) throws Exception {
+    if (frame == null) {
       return null;
     }
-
-    StreamFrame frame = impulse.process(inFrame);
-
+    frame = impulse.process(frame);
     trace.sendFrame(frame);
-
     return frame;
   }
 

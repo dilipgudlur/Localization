@@ -19,6 +19,7 @@ public class App {
   private int basePort = 8000;
   private int nextDevicePort = basePort + 20;
   private int nextCombinePort = basePort + 40;
+  private final int SEGMENT_LENGTH_MS = 100 * 1000;
 
   public static final String TRACE_DIR = "trace/";
 
@@ -28,8 +29,8 @@ public class App {
     if (args.length == 0) {
       new AcceptClients().start();
     } else if (args[0].equalsIgnoreCase("local")) {
-      List<FrameStream> streams = LiveAudioStream.getLiveAudioStreams();
-      for (FrameStream in : streams) {
+      List<LiveAudioStream> streams = LiveAudioStream.getLiveAudioStreams(TRACE_DIR, -1, SEGMENT_LENGTH_MS);
+      for (LiveAudioStream in : streams) {
         activateNewDevice(in);
       }
     } else {

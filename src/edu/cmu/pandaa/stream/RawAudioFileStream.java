@@ -15,8 +15,9 @@ public class RawAudioFileStream implements FrameStream {
   DataInputStream dis;
   DataOutputStream dos;
   private final String fileName;
-  RawAudioHeader headerRef;
-  double timeDilation;
+  private RawAudioHeader headerRef;
+  private int startFrame;
+  private double timeDilation;
   private int byteCount = 0;
   private int update_pos1, update_pos2, wavDataSize;
   private int loopSize, loopCount = 1;
@@ -250,6 +251,7 @@ public class RawAudioFileStream implements FrameStream {
   @Override
   public void setHeader(StreamHeader h) throws Exception {
     headerRef = (RawAudioHeader) h;
+    startFrame = headerRef.nextSeq;
     if (dos != null) {
       throw new RuntimeException("setHeader called twice!");
     }
@@ -306,6 +308,10 @@ public class RawAudioFileStream implements FrameStream {
       byteCount += 2;
     }
     dos.flush();
+  }
+
+  public long getCurrentLength() {
+    return (headerRef.nextSeq - startFrame) * headerRef.frameTime;
   }
 
   private void updateWavLength() throws Exception {
