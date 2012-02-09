@@ -11,8 +11,9 @@ import java.util.List;
 public class ImpulseHeader extends StreamHeader implements Serializable {
   public int rollingWindow = 1;
 
-  public ImpulseHeader(StreamHeader src) {
+  public ImpulseHeader(StreamHeader src, int rollingWindow) {
     super(src);
+    this.rollingWindow = rollingWindow;
   }
 
   public ImpulseHeader(String id, long startTime, int frameTime) {

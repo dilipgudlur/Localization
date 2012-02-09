@@ -34,6 +34,9 @@ public class StreamHeader implements Serializable {
     if (id == null || id.trim().equals("") || id.indexOf(" ") >= 0) {
       throw new IllegalArgumentException("ID can not be null/empty");
     }
+    if (frameTime <= 0) {
+      throw new IllegalArgumentException("frameTime must be > 0");
+    }
     this.id = id;
     this.startTime = startTime;
     this.frameTime = frameTime;

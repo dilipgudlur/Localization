@@ -1,5 +1,6 @@
 package edu.cmu.pandaa.stream;
 
+import edu.cmu.pandaa.header.GeometryHeader;
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.StreamHeader;
@@ -29,8 +30,9 @@ public class ImpulseFileStream extends FileStream {
 
   @Override
   public void setHeader(StreamHeader h) throws Exception {
+    super.setHeader(h);
     ImpulseHeader header = (ImpulseHeader) h;
-    writeString(header.id + " " + header.startTime + " " + header.frameTime + " " + header.rollingWindow);
+    writeValue("rows", header.rollingWindow);
   }
 
   @Override
@@ -48,10 +50,8 @@ public class ImpulseFileStream extends FileStream {
 
   @Override
   public ImpulseHeader getHeader() throws Exception {
-    String line = readLine();
-    String[] parts = line.split(" ");
-    header = new ImpulseHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]));
-    header.rollingWindow = Integer.parseInt(parts[3]);
+    StreamHeader prototype = super.getHeader();
+    header = new ImpulseHeader(prototype, consumeInt());
     return header;
   }
 

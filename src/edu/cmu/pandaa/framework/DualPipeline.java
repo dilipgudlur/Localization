@@ -3,8 +3,11 @@ package edu.cmu.pandaa.framework;
 import edu.cmu.pandaa.header.*;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.*;
+import edu.cmu.pandaa.stream.CalibrationManager;
 import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FileStream;
+
+import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -14,25 +17,34 @@ import edu.cmu.pandaa.stream.FileStream;
  */
 
 public class DualPipeline implements StreamModule {
+  final Set<StreamHeader> devices;
+  static final double calFactor = 1.0;
 
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
-  StreamModule tdoa = new TDOACorrelationModule();
+  TDOACrossModule tdoa = new TDOACrossModule();
 
   /* Then take the output and smooth and average over time */
   StreamModule distance = new DistanceFilter(100);
 
   FileStream trace;
 
+  public DualPipeline(Set<StreamHeader> devides) {
+    this.devices = devides; // do not synchronize on this in the constructor, since it's locked by the caller
+  }
+
   @Override
   public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
     if (!(multiHeader.getOne() instanceof ImpulseHeader)) {
-       throw new IllegalArgumentException("Dual pipe multiheader should contain ImpulseHeaders");
+      throw new IllegalArgumentException("Dual pipe multiheader should contain ImpulseHeaders");
     }
 
     multiHeader.waitForHeaders(2);
 
     StreamHeader header = inHeader;
+
+    tdoa.setCalibrationFile(new CalibrationManager(null, multiHeader.getHeaders()[0].id,
+            multiHeader.getHeaders()[1].id, calFactor));
     header = tdoa.init(header);
     header = distance.init(header);
 

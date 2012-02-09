@@ -15,13 +15,7 @@ import java.util.*;
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
   final int maxAbsDistance = 30 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
-  double pairTotal, pairWeight, pairWtSq;
-  int pairCount;
-  CalibrationFile cf;
-  boolean calibrated;
-  double calibration;
-  double pairMax = 0;
-  double threshold = 0;
+  CalibrationManager cf;
   static double calFactor = 1.0;
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
@@ -46,13 +40,6 @@ public class TDOACrossModule implements StreamModule {
 
     header = new DistanceHeader(inHeader.id, impulseHeaders[0].startTime, impulseHeaders[0].frameTime, deviceIds);
 
-    if (cf != null && calibrated) {
-      cf.readCalibration(deviceIds[0],deviceIds[1]);
-      calibration = cf.calibration * calFactor;
-      threshold = cf.average + cf.stddev*1;
-      System.out.println("Calibration adjustment is " + calibration + " threshold " + threshold);
-    }
-
     return header;
   }
 
@@ -73,9 +60,8 @@ public class TDOACrossModule implements StreamModule {
     }
   }
 
-  public void setCalibrationFile(String fname, boolean calibrated) throws Exception {
-    cf = new CalibrationFile(fname);
-    this.calibrated = calibrated;
+  public void setCalibrationFile(CalibrationManager calibrationManager) throws Exception {
+    cf = calibrationManager;
   }
 
   private double calcWeight(int ao, int am, int bo, int bm) {
@@ -128,23 +114,13 @@ public class TDOACrossModule implements StreamModule {
     ArrayList<Double> peakDeltas = new ArrayList<Double>();
     ArrayList<Double> peakMagnitudes = new ArrayList<Double>();
 
-    // to get a better calculation for a cut-off threshold
-    // in quiet situations (more ideal), account for lots of silent frames
-    if (output.size() == 0) {
-      pairCount++;
-    }
-
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
-      if (p.weight > threshold) {
+      if (p.weight > cf.threshold) {
         int diff = p.ao - p.bo;
-        peakDeltas.add(diff + calibration);
+        peakDeltas.add(diff + cf.calibration);
         peakMagnitudes.add(p.weight);
-        pairTotal += diff * p.weight;
-        pairWeight += p.weight;
-        pairWtSq += p.weight * p.weight;
-        pairMax = Math.max(pairMax, p.weight);
-        pairCount++;
+        cf.updateCalibration(diff, p.weight);
       }
     }
 
@@ -152,20 +128,6 @@ public class TDOACrossModule implements StreamModule {
   }
 
   public void close() {
-    if (cf != null && !calibrated)
-      try {
-        String id0 = header.getId(0);
-        String id1 = header.getId(1);
-        if (id0.compareTo(id1) > 0) {
-          throw new RuntimeException("Frames out of order close");
-        }
-        double avg = pairWeight / pairCount;
-        double var = Math.sqrt(pairWtSq/pairCount - avg * avg);
-        cf.writeCalibration(id0, id1, pairTotal / pairWeight, pairMax, avg, var);
-        cf.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
   }
 
   public static void main(String[] args) throws Exception {
@@ -191,11 +153,17 @@ public class TDOACrossModule implements StreamModule {
     FileStream ifs2 = new ImpulseFileStream(in2);
 
     MultiFrameStream mfs = new MultiFrameStream("tdoa");
-    mfs.setHeader(ifs1.getHeader());
-    mfs.setHeader(ifs2.getHeader());
+    StreamHeader h1, h2;
+    mfs.setHeader(h1 = ifs1.getHeader());
+    mfs.setHeader(h2 = ifs2.getHeader());
+
+    CalibrationManager cf = new CalibrationManager("calibration.txt", h1.id, h2.id, calFactor);
+    if (calibrated) {
+      cf.readCalibration();
+    }
 
     TDOACrossModule tdoa = new TDOACrossModule();
-    tdoa.setCalibrationFile("calibration.txt", calibrated);
+    tdoa.setCalibrationFile(cf);
 
     FileStream ofs = new DistanceFileStream(outf, true);
     ofs.setHeader(tdoa.init(mfs.getHeader()));
@@ -214,5 +182,9 @@ public class TDOACrossModule implements StreamModule {
     }
     tdoa.close();
     ofs.close();
+
+    if (!calibrated) {
+      cf.writeCalibration();
+    }
   }
 }

@@ -31,8 +31,8 @@ public class GeometryFileStream extends FileStream {
   public void setHeader(StreamHeader h) throws Exception {
     super.setHeader(h);
     GeometryHeader header = (GeometryHeader) h;
-    writeValue("rows", ""+header.rows);
-    writeValue("cols", ""+header.cols);
+    writeValue("rows", header.rows);
+    writeValue("cols", header.cols);
   }
 
   public void sendFrame(StreamFrame f) throws Exception {
@@ -53,7 +53,7 @@ public class GeometryFileStream extends FileStream {
         // simple way to keep the numbers reasonable (not too much precision)
         // really ony to make it visually look better...
         val = Math.floor(val*100.0)/100.0;
-        writeValue(null, "" + val);
+        writeValue(null, val);
       }
     }
   }

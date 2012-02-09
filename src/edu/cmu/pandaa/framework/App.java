@@ -94,16 +94,20 @@ public class App {
     PipeHandler pipe = new PipeHandler(in, pipeline, null, nextDevicePort++);
     new Thread(pipe, inHeader.id).start();
 
-    for (StreamHeader other : inHeaders.keySet()) {
-      String id = makeId(inHeader, other);
-      MultiFrameStream mixer = new MultiFrameStream(id);
-      PipeHandler otherPipe = inHeaders.get(other);
-      pipe.addOutput(mixer);
-      otherPipe.addOutput(mixer);
-      PipeHandler dualPipe = new PipeHandler(mixer, new DualPipeline(), combiner, nextCombinePort++);
-      new Thread(dualPipe, id).start();
+    synchronized (inHeaders) {
+      for (StreamHeader other : inHeaders.keySet()) {
+        String id = makeId(inHeader, other);
+        MultiFrameStream mixer = new MultiFrameStream(id);
+        PipeHandler otherPipe = inHeaders.get(other);
+        pipe.addOutput(mixer);
+        otherPipe.addOutput(mixer);
+        PipeHandler dualPipe = new PipeHandler(mixer, new DualPipeline(inHeaders.keySet()),
+                combiner, nextCombinePort++);
+        new Thread(dualPipe, id).start();
+      }
+
+      inHeaders.put(inHeader, pipe);
     }
-    inHeaders.put(inHeader, pipe);
   }
 
   // server thread, spawning off one client thread per connection

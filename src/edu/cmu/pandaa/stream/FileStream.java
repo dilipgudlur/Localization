@@ -157,6 +157,10 @@ public class FileStream implements FrameStream {
     writeValue(id, "" + value);
   }
 
+  protected void writeValue(String id, double value) {
+    writeValue(id, "" + value);
+  }
+
   protected void readFormatting() throws IOException {
     if (useMultipleFiles) {
       if (lastLine != null) {
@@ -226,10 +230,9 @@ public class FileStream implements FrameStream {
     }
     writeValue("type", h.getClass().getSimpleName());
     writeValue("id", h.id);
-    writeValue("frameTime", h.frameTime);
     writeValue("startTime", h.startTime);
+    writeValue("frameTime", h.frameTime);
     writeValue("nextSeq", h.nextSeq);
-
   }
 
   @Override
@@ -269,9 +272,14 @@ public class FileStream implements FrameStream {
       return (StreamHeader) ois.readObject();
     }
     lastLine = readLine();
-    String targetClass = consumeString();
-    prototypeHeader = new StreamHeader(consumeString(), consumeInt(), consumeInt(), consumeInt(), targetClass);
-    return prototypeHeader;
+    try {
+      String targetClass = consumeString();
+      prototypeHeader = new StreamHeader(consumeString(), consumeInt(), consumeInt(), consumeInt(), targetClass);
+      return prototypeHeader;
+    } catch (Exception e) {
+      System.err.println("While processing inputline: " + inputLine);
+      throw e;
+    }
   }
 
   @Override
