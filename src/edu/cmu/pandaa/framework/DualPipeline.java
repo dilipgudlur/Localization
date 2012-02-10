@@ -43,7 +43,7 @@ public class DualPipeline implements StreamModule {
 
     StreamHeader header = inHeader;
 
-    tdoa.setCalibrationFile(new CalibrationManager(null, multiHeader.getHeaders()[0].id,
+    tdoa.setCalibrationFile(new CalibrationManager(null, true, multiHeader.getHeaders()[0].id,
             multiHeader.getHeaders()[1].id, calFactor));
     header = tdoa.init(header);
     header = distance.init(header);

@@ -14,9 +14,10 @@ import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
-  final int maxAbsDistance = 30 * 1000;   // max plausible distance between peaks of the same event (micro-seconds)
+  final int maxAbsDistance = 60 * 1000;   // max plausible distance between peaks of the same event (us, NOT ms)
   CalibrationManager cf;
   static double calFactor = 1.0;
+  ImpulseFrame savedFrames[] = new ImpulseFrame[2];
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
     MultiHeader multiHeader = (MultiHeader) inHeader;
@@ -72,30 +73,41 @@ public class TDOACrossModule implements StreamModule {
     return mag *(maxAbsDistance - dist)/maxAbsDistance;
   }
 
+  private ImpulseFrame getCombinedFrame(MultiFrame mf, int i) {
+    ImpulseFrame newFrame = (ImpulseFrame) mf.getFrame(i);
+    ImpulseFrame oldFrame = savedFrames[i];
+    savedFrames[i] = newFrame;
+    if (oldFrame == null) {
+      return newFrame;
+    }
+    return newFrame.prepend(oldFrame);
+  }
+
   public StreamFrame process(StreamFrame inFrame) {
     MultiFrame mf = (MultiFrame) inFrame;
-    ImpulseFrame aFrame = (ImpulseFrame) mf.getFrame(0);
-    ImpulseFrame bFrame = (ImpulseFrame) mf.getFrame(1);
-    int aSize = aFrame.peakOffsets.length;
-    int bSize = bFrame.peakOffsets.length;
-
+    ImpulseFrame aFrame = getCombinedFrame(mf, 0);
+    ImpulseFrame bFrame = getCombinedFrame(mf, 1);
     if (aFrame.getHeader().id.compareTo(bFrame.getHeader().id) > 0) {
-      throw new RuntimeException("Frames out of order process");
+      throw new RuntimeException("Frames ids not ordered properly");
     }
 
+    int aSize = aFrame.peakOffsets.length;
+    int bSize = bFrame.peakOffsets.length;
     List<Peak> peaks = new ArrayList<Peak>(aSize * bSize);
     for (int ai = 0; ai < aSize; ai++) {
       for (int bi = 0; bi < bSize; bi++) {
         double weight = calcWeight(aFrame.peakOffsets[ai], aFrame.peakMagnitudes[ai],
                 bFrame.peakOffsets[bi], bFrame.peakMagnitudes[bi]);
-        peaks.add(new Peak(
-                ai, aFrame.peakOffsets[ai],
-                bi, bFrame.peakOffsets[bi],
-                weight));
+        if (weight > 0) {
+          peaks.add(new Peak(
+                  ai, aFrame.peakOffsets[ai],
+                  bi, bFrame.peakOffsets[bi],
+                  weight));
+        }
       }
     }
 
-    // Totally not the most efficient data-structure, but I don't care\
+    // Totally not the most efficient data-structure, but I don't care
     boolean[] aMark = new boolean[aSize];
     boolean[] bMark = new boolean[bSize];
     List<Peak> output = new ArrayList<Peak>(Math.min(aSize, bSize));
@@ -104,6 +116,8 @@ public class TDOACrossModule implements StreamModule {
     Arrays.sort(peakArray);
     for (int i = 0;i < peakArray.length;i ++) {
       Peak p = peakArray[i];
+      if (p.ao < 0 && p.bo < 0)
+        continue;
       if (aMark[p.ai] || bMark[p.bi])
         continue;
       aMark[p.ai] = true;
@@ -157,7 +171,7 @@ public class TDOACrossModule implements StreamModule {
     mfs.setHeader(h1 = ifs1.getHeader());
     mfs.setHeader(h2 = ifs2.getHeader());
 
-    CalibrationManager cf = new CalibrationManager("calibration.txt", h1.id, h2.id, calFactor);
+    CalibrationManager cf = new CalibrationManager("calibration.txt", false, h1.id, h2.id, calFactor);
     if (calibrated) {
       cf.readCalibration();
     }

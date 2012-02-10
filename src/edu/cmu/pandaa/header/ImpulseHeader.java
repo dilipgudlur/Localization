@@ -39,6 +39,19 @@ public class ImpulseHeader extends StreamHeader implements Serializable {
       peakOffsets = peaks;
       peakMagnitudes = magnitudes;
     }
+
+    public ImpulseFrame prepend(ImpulseFrame a) {
+      ImpulseFrame b = this;
+      int[] peaks = new int[a.peakOffsets.length + b.peakOffsets.length];
+      short[] mags = new short[a.peakMagnitudes.length + b.peakMagnitudes.length];
+      for (int i = 0; i < a.peakOffsets.length; i++) {
+        peaks[i] = a.peakOffsets[i] - frameTime * 1000; // convert from ms to us
+      }
+      System.arraycopy(a.peakMagnitudes, 0, mags, 0, a.peakMagnitudes.length);
+      System.arraycopy(b.peakOffsets, 0, peaks, a.peakOffsets.length, b.peakOffsets.length);
+      System.arraycopy(b.peakMagnitudes, 0, mags, a.peakOffsets.length, b.peakMagnitudes.length);
+      return new ImpulseFrame(b.seqNum, peaks, mags);
+    }
   }
 
   public ImpulseFrame makeFrame(int[] peaks, short[] mags) {
