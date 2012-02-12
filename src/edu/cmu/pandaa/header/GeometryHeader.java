@@ -40,21 +40,13 @@ public class GeometryHeader extends StreamHeader implements Serializable {
 
   public int indexOf(String id) {
     if (indexMap == null) {
-      String[] ids = getDeviceIds();
+      String[] ids = getIds();
       indexMap = new HashMap<String, Integer>(ids.length);
       for (int i = 0;i < ids.length;i++) {
         indexMap.put(ids[i], i);
       }
     }
     return indexMap.get(id);
-  }
-
-  private static String[] getIds(String id) {
-    return id.split(",");
-  }
-
-  public String[] getDeviceIds() {
-    return getIds();
   }
 
   public class GeometryFrame extends StreamFrame implements Serializable {

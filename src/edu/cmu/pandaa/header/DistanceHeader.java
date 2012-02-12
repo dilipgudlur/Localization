@@ -17,6 +17,12 @@ public class DistanceHeader extends StreamHeader {
     deviceIds = in.getDeviceIds();
   }
 
+  public DistanceHeader(StreamHeader in, int rollingWindow) {
+    super(in);
+    this.rollingWindow = rollingWindow;
+    deviceIds = in.getIds();
+  }
+
   public DistanceHeader(String id, long startTime, int frameTime) {
     this(id, startTime, frameTime, 1);
   }
@@ -49,6 +55,13 @@ public class DistanceHeader extends StreamHeader {
     public double[] rawValues; // unaveraged values for peaks
 
     DistanceFrame(double[] deltas, double[] magnitudes, double[] raw) {
+      peakDeltas = deltas;
+      peakMagnitudes = magnitudes;
+      rawValues = raw;
+    }
+
+    DistanceFrame(StreamFrame prototype, double[] deltas, double[] magnitudes, double[] raw) {
+      super(prototype);
       peakDeltas = deltas;
       peakMagnitudes = magnitudes;
       rawValues = raw;
@@ -98,6 +111,18 @@ public class DistanceHeader extends StreamHeader {
       marray[i] = magnitudes.get(i);
     }
     return new DistanceFrame(darray, marray, values);
+  }
+
+  public DistanceFrame makeFrame(StreamFrame prototype, List<Double> deltas, List<Double> magnitudes, List<Double> raw) {
+    int size = deltas.size();
+    double[] darray = new double[size];
+    double[] marray = new double[size];
+    double[] values = new double[size];
+    for (int i = 0; i < size; i++) {
+      darray[i] = deltas.get(i);
+      marray[i] = magnitudes.get(i);
+    }
+    return new DistanceFrame(prototype, darray, marray, values);
   }
 
   public FileStream createOutput()  throws Exception {

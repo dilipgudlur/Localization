@@ -5,7 +5,7 @@ import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
-import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * Created by IntelliJ IDEA.
@@ -30,8 +30,8 @@ public class DistanceFileStream extends FileStream {
 
   @Override
   public void setHeader(StreamHeader h) throws Exception {
-    DistanceHeader header = (DistanceHeader) h;
-    writeString(header.id + " " + header.startTime + " " + header.frameTime + " " + header.getRollingWindow());
+    super.setHeader(h);
+    writeValue("window", ((DistanceHeader) h).getRollingWindow());
   }
 
   @Override
@@ -39,48 +39,40 @@ public class DistanceFileStream extends FileStream {
     if (f == null) {
       return;
     }
+    super.sendFrame(f);
     DistanceFrame frame = (DistanceFrame) f;
-
-    String msg = "" + frame.seqNum;
+    writeArray("dist");
     for (int i = 0;i < frame.peakDeltas.length; i++) {
-      msg += " " + frame.peakDeltas[i];
-      msg += " " + frame.peakMagnitudes[i];
-      msg += " " + frame.rawValues[i];
+      writeArrayObject();
+      writeValue("delta", frame.peakDeltas[i]);
+      writeValue("mag", frame.peakMagnitudes[i]);
+      writeValue("raw", frame.rawValues[i]);
     }
-
-    writeString(msg);
+    writeEndArray();
   }
 
   @Override
   public DistanceHeader getHeader() throws Exception {
-    String line = readLine();
-    String[] parts = line.split(" ");
-    header = new DistanceHeader(parts[0],Long.parseLong(parts[1]),Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+    StreamHeader prototype = super.getHeader();
+    header = new DistanceHeader(prototype, consumeInt());
     return header;
   }
 
   @Override
   public DistanceHeader.DistanceFrame recvFrame() throws Exception {
-    String line = readLine();
-    if (line == null || line.trim().equals(""))
+    StreamFrame prototype = super.recvFrame();
+    if (prototype == null) {
       return null;
-    try {
-      String[] parts = line.split(" ");
-      int seqNum = Integer.parseInt(parts[0]);
-      int size = (parts.length - 1)/3;
-      double[] peaks = new double[size];
-      double[] mags = new double[size];
-      double[] vals = new double[size];
-      for (int i = 0;i < size;i++) {
-        peaks[i] = Double.parseDouble(parts[i*3 + 1]);
-        mags[i] = Double.parseDouble(parts[i*3 + 2]);
-        vals[i] = Double.parseDouble(parts[i*3 + 3]);
-      }
-      return header.makeFrame(seqNum, peaks, mags);
-    } catch (NumberFormatException e) {
-      System.out.println("Error parsing: " + line + " from " + fileName);
-      throw e;
     }
+    ArrayList<Double> offsets = new ArrayList<Double>();
+    ArrayList<Double> mags = new ArrayList<Double>();
+    ArrayList<Double> raw = new ArrayList<Double>();
+    while (hasMoreData()) {
+      offsets.add(consumeDouble());
+      mags.add(consumeDouble());
+      raw.add(consumeDouble());
+    }
+    return header.makeFrame(prototype, offsets, mags, raw);
   }
 
   public static void main(String[] args) throws Exception {

@@ -32,6 +32,8 @@ public class FileStream implements FrameStream {
   private String lastLine, inputLine;
   private StreamHeader prototypeHeader;
   private int frameCount = 0;
+  private long writtenSeqNum = -1, lastReadSeqNum = -1;
+  private boolean prefetched;
 
   public FileStream() {
     fileName = null;
@@ -121,6 +123,10 @@ public class FileStream implements FrameStream {
   }
 
   protected String readLine() throws IOException {
+    return readLine(false);
+  }
+
+  protected String readLine(boolean tryPrefetch) throws IOException {
     if (is == null)
       return null;
 
@@ -128,7 +134,23 @@ public class FileStream implements FrameStream {
       br = new BufferedReader(new InputStreamReader(is));
     }
 
+    if (prefetched) {
+      prefetched = false;
+      return inputLine;
+    }
+
     inputLine = br.readLine();
+
+    if (tryPrefetch) {
+      String prefix = lastReadSeqNum + " ";
+      if (inputLine != null && inputLine.startsWith(prefix)) {
+        return inputLine.substring(prefix.length());
+      } else {
+        prefetched = true;
+        return null;
+      }
+    }
+
     return inputLine;
   }
 
@@ -151,6 +173,14 @@ public class FileStream implements FrameStream {
     }
     ois = new ObjectInputStream(is);
 
+  }
+
+  protected void writeValue(String id, int value) {
+    writeValue(id, "" + value);
+  }
+
+  protected void writeValue(String id, short value) {
+    writeValue(id, "" + value);
   }
 
   protected void writeValue(String id, long value) {
@@ -181,13 +211,44 @@ public class FileStream implements FrameStream {
     }
   }
 
+  protected void writeArray(String name) {
+    if (inArray) {
+      throw new IllegalArgumentException("Can't have directly nested arrays");
+    }
+    inArray = true;
+    if (asJosn) {
+      pw.print((first ? "" : ", "));
+      pw.print("\"" + name + "\": [ ");
+    } else if (!first) {
+      pw.print(" ");
+    }
+    first = true;
+  }
+
+  protected void writeEndArray() {
+    if (asJosn) {
+      pw.print(inArray ? " ] " : " } ] ");
+    }
+    first = true;
+    inArray = false;
+  }
+
+  protected void writeArrayObject() {
+    if (asJosn) {
+      pw.print(inArray ? " { " : " }, { ");
+    } else if (!first) {
+      pw.print("\n" + writtenSeqNum + " ");
+    }
+    inArray = false;
+    first = true;
+  }
+
   protected void writeValue(String id, String value) {
     if (asJosn) {
       pw.print((first ? "" : ", "));
       if (id == null) {
         if (!inArray) {
-          inArray = true;
-          pw.print("\"data\": [ ");
+          throw new IllegalArgumentException("Array value not in array");
         }
       } else {
         pw.print("\"" + id + "\": ");
@@ -264,6 +325,7 @@ public class FileStream implements FrameStream {
     }
 
     writeValue("seqNum", m.seqNum);
+    writtenSeqNum = m.seqNum;
   }
 
   @Override
@@ -294,7 +356,12 @@ public class FileStream implements FrameStream {
       return null;
     }
     lastLine = lastLine.trim();
-    return prototypeHeader.makeFrame(consumeInt());
+    int seqNum = consumeInt();
+    if (seqNum <= lastReadSeqNum) {
+      throw new IllegalArgumentException("Sequence numbers not advancing");
+    }
+    lastReadSeqNum = seqNum;
+    return prototypeHeader.makeFrame(seqNum);
   }
 
   protected String consumeString() {
@@ -315,8 +382,26 @@ public class FileStream implements FrameStream {
     }
   }
 
+  protected boolean hasMoreData()  throws IOException {
+    boolean hasMore = lastLine != null && lastLine.trim().length() > 0;
+
+    if (!hasMore) {
+      String newLine = readLine(true);
+      if (newLine != null) {
+        lastLine = newLine.trim();
+        hasMore = true;
+      }
+    }
+
+    return hasMore;
+  }
+
   protected int consumeInt() {
     return Integer.parseInt(consumeString());
+  }
+
+  protected double consumeDouble() {
+    return Double.parseDouble(consumeString());
   }
 
   public static void main(String[] args) throws Exception {

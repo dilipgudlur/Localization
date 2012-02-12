@@ -6,6 +6,8 @@ import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
+import java.util.ArrayList;
+
 /**
  * Created by IntelliJ IDEA.
  * User: peringknife
@@ -40,12 +42,15 @@ public class ImpulseFileStream extends FileStream {
     if (f == null) {
       return;
     }
+    super.sendFrame(f);
     ImpulseFrame frame = (ImpulseFrame) f;
-    String msg = "" + frame.seqNum;
+    writeArray("impulses");
     for (int i = 0;i < frame.peakOffsets.length; i++) {
-      msg += " " + frame.peakMagnitudes[i] + " " + frame.peakOffsets[i];
+      writeArrayObject();
+      writeValue("offset", frame.peakOffsets[i]);
+      writeValue("mag", frame.peakMagnitudes[i]);
     }
-    writeString(msg);
+    writeEndArray();
   }
 
   @Override
@@ -57,26 +62,14 @@ public class ImpulseFileStream extends FileStream {
 
   @Override
   public ImpulseFrame recvFrame() throws Exception {
-    String line = readLine();
-    if (line == null || line.trim().equals(""))
-      return null;
-    try {
-      String[] parts = line.split(" ");
-      int size = (parts.length - 1)/2;
-      int[] peaks = new int[size];
-      int seqNum = 0;
-      seqNum = Integer.parseInt(parts[0]);
-      short[] mags = new short[size];
-      int j = 1;
-      for (int i = 0;i < size;i++) {
-        mags[i] = Short.parseShort(parts[j++]);
-        peaks[i] = Integer.parseInt(parts[j++]);
-      }
-      return header.makeFrame(seqNum, peaks, mags);
-    } catch (NumberFormatException e) {
-      System.out.println("Error parsing: " + line + " from " + fileName);
-      throw e;
+    StreamFrame prototype = super.recvFrame();
+    ArrayList<Integer> offsets = new ArrayList<Integer>();
+    ArrayList<Short> mags = new ArrayList<Short>();
+    while (hasMoreData()) {
+      offsets.add(consumeInt());
+      mags.add((short) consumeInt());
     }
+    return header.makeFrame(prototype, offsets, mags);
   }
 
   public static void main(String[] args) throws Exception {

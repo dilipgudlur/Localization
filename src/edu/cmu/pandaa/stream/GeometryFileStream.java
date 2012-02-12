@@ -48,6 +48,7 @@ public class GeometryFileStream extends FileStream {
     String msg = "";
     for (int j = 0; j < cols; j++) {
       writeFormatting();
+      writeArray("data");
       for (int i = 0;i < rows; i++) {
         double val = frame.geometry[i][j];
         // simple way to keep the numbers reasonable (not too much precision)
@@ -55,6 +56,7 @@ public class GeometryFileStream extends FileStream {
         val = Math.floor(val*100.0)/100.0;
         writeValue(null, val);
       }
+      writeEndArray();
     }
   }
 

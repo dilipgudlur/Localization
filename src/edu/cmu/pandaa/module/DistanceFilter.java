@@ -102,7 +102,7 @@ public class DistanceFilter implements StreamModule {
 
     String d1id = inHeader.getDeviceIds()[0];
     String d2id = inHeader.getDeviceIds()[1];
-    String[] did = gh.getDeviceIds();
+    String[] did = gh.getIds();
     for (int i = 0;i < numDevices;i++) {
       if (d1id.equals(did[i]))
         d1index = i;

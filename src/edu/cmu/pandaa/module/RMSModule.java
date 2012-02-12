@@ -55,12 +55,12 @@ public class RMSModule implements StreamModule{
       throw new RuntimeException("Wrong header type");
     GeometryHeader hIn = (GeometryHeader)i1 ;
     String id = "";
-    String[] did = hIn.getDeviceIds();
+    String[] did = hIn.getIds();
     for(int i = 0; i < did.length; i++)
     {
       id += did[i];
     }
-    dOut = new DistanceHeader(id, hIn.startTime, hIn.frameTime, hIn.getDeviceIds());
+    dOut = new DistanceHeader(id, hIn.startTime, hIn.frameTime, hIn.getIds());
     return dOut;
   }
 
