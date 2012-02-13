@@ -128,14 +128,20 @@ public class TDOACrossModule implements StreamModule {
     ArrayList<Double> peakDeltas = new ArrayList<Double>();
     ArrayList<Double> peakMagnitudes = new ArrayList<Double>();
 
+    int updates = 0;
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
       if (p.weight > cf.threshold) {
         int diff = p.ao - p.bo;
-        peakDeltas.add(diff + cf.calibration);
+        peakDeltas.add(diff - cf.calibration);
         peakMagnitudes.add(p.weight);
         cf.updateCalibration(diff, p.weight);
+        updates++;
       }
+    }
+
+    if (updates == 0) {
+      cf.updateCalibration(0, 0);
     }
 
     return header.makeFrame(peakDeltas, peakMagnitudes);

@@ -1,8 +1,10 @@
 package edu.cmu.pandaa.stream;
 
+import javax.rmi.CORBA.StubDelegate;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.RandomAccessFile;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by IntelliJ IDEA.
@@ -14,8 +16,8 @@ import java.io.RandomAccessFile;
 public class CalibrationManager {
   private String fname;
   private final int calMethod;
-  private double pairTotal, pairWeight, pairCount, pairWtSq, pairMax;
-  public double calibration, max, avgWt, stddev, threshold;
+  private double pairTotal, pairWeight, pairCount, pairWtSq;
+  public double calibration, avgWt, stddev, threshold;
   private final String id1, id2;
   private final boolean dynamic;
 
@@ -31,12 +33,15 @@ public class CalibrationManager {
     }
   }
 
+  private void calcThreshold() {
+    threshold = avgWt + stddev/2;
+  }
+
   private void updateComponents() {
-    max = pairMax;
     calibration = pairTotal / pairWeight;
     avgWt = pairWeight / pairCount;
     stddev = Math.sqrt(pairWtSq/pairCount - avgWt * avgWt);
-    threshold = avgWt + stddev*2;
+    calcThreshold();
   }
 
   public void updateCalibration(double diff, double weight) {
@@ -44,7 +49,6 @@ public class CalibrationManager {
     pairWeight += weight;
     pairWtSq += weight * weight;
     pairCount++;
-    pairMax = Math.max(pairMax, weight);
 
     if (dynamic) {
       updateComponents();
@@ -55,7 +59,7 @@ public class CalibrationManager {
     updateComponents();
     RandomAccessFile raf = new RandomAccessFile(fname, "rw");
     raf.seek(raf.length());
-    String cal = id1 + "," + id2 + " " + calibration + " " + max + " " + avgWt + " " + stddev + "\n";
+    String cal = id1 + "," + id2 + " " + calibration + " " + avgWt + " " + stddev + "\n";
     raf.write(cal.getBytes());
     raf.close();
     fname = null; // prevent double-usage
@@ -66,34 +70,40 @@ public class CalibrationManager {
       throw new IllegalStateException("Can't be dynamic and read calibration");
     }
     BufferedReader br = new BufferedReader(new FileReader(fname));
-    double diff1 = 0, weight1 = 0;
-    double diff2 = 0, weight2 = 0;
+    double diff2 = 0, weight2 = 0, stdev2 = 0;
+    int ccount = 0;
     String line;
     while ((line = br.readLine()) != null) {
       String[] parts = line.split(" ");
       String[] pieces = parts[0].split(",");
-      double cval = Double.parseDouble(parts[1]);
-      double cweight = Double.parseDouble(parts[3]);
+      double ccal = Double.parseDouble(parts[1]);
+      double cavgWt = Double.parseDouble(parts[2]);
+      double cstddev = Double.parseDouble(parts[3]);
       if (pieces[0].equals(id1) || pieces[1].equals(id2)) {
-        weight2 += cweight;
-        diff2 += cval * cweight;
+        ccount++;
+        weight2 += cavgWt;
+        diff2 += ccal * cavgWt;
+        stdev2 += cstddev * cavgWt;
       }
       if (pieces[1].equals(id1) || pieces[0].equals(id2)) {
-        weight2 += cweight;
-        diff2 -= cval * cweight;
+        ccount++;
+        weight2 += cavgWt;
+        diff2 -= ccal * cavgWt;
+        stdev2 += cstddev * cavgWt;
       }
       if (pieces[0].equals(id1) && pieces[1].equals(id2)) {
-        weight1 += cweight;
-        diff1 += cval * cweight;
-        max = Double.parseDouble(parts[2]);
-        avgWt = Double.parseDouble(parts[3]);
-        stddev = Double.parseDouble(parts[4]);
+        calibration = ccal;
+        avgWt = cavgWt;
+        stddev = cstddev;
       }
     }
     br.close();
-    double calibration1 = -(weight1 > 0 ? diff1 / weight1 : 0.0);
-    double calibration2 = -(weight2 > 0 ? diff2 / weight2 : 0.0) * 3/2;
-    calibration = calMethod <= 1 ? calibration1 : calibration2;
+    if (calMethod >= 2) {
+      calibration = diff2 / weight2;
+      stddev = stdev2 / weight2;
+      avgWt = weight2 / ccount;
+    }
+    calcThreshold();
     fname = null; // prevent double-read of calibration file
   }
 }
