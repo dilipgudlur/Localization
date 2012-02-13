@@ -202,6 +202,16 @@ public class LiveAudioStream implements FrameStream {
             audioCaptureState == AudioCaptureState.PREFETCH;
   }
 
+  private synchronized void waitActive() {
+    try {
+      while (audioCaptureState == AudioCaptureState.PREFETCH) {
+        wait();
+      }
+    } catch (InterruptedException e) {
+      //
+    }
+  }
+
   private void startCapturing() throws Exception {
     long startTime = alignStartTime();
     String comment = "stime:" + startTime;
@@ -216,6 +226,7 @@ public class LiveAudioStream implements FrameStream {
     captureThread = new CaptureThread(targetDataLine, id);
     setState(AudioCaptureState.PREFETCH);
     captureThread.start();
+    waitActive();
   }
 
   class CaptureThread extends Thread {
@@ -369,6 +380,7 @@ public class LiveAudioStream implements FrameStream {
     if (delay < frameTime*2)
       delay += delayWindowMs;
     loopTime += delay;
+    System.out.println("Aiming to start at " + loopTime);
     return loopTime;
   }
 

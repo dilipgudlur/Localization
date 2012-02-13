@@ -81,7 +81,7 @@ for a in $FILESET; do
    elif [ $TDOA_ALGORITHM == 2 ]; then
      java $OPTS $PACKAGE.module.TDOACrossModule tdoa2-$a$b.txt impulses-$a.txt impulses-$b.txt 
    elif [ $TDOA_ALGORITHM == 3 ]; then
-     java $OPTS $PACKAGE.module.TDOACrossModule -c$CAL_FACTOR tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
+     java $OPTS $PACKAGE.module.TDOACrossModule -c$CAL_METHOD tdoa3-$a$b.txt impulses-$a.txt impulses-$b.txt 
    fi
    java $OPTS $PACKAGE.module.DistanceFilter $DISTANCE_SMOOTH distance-$a$b.txt tdoa$TDOA_ALGORITHM-$a$b.txt $setlen $SAMPLE_LOOPS
    inputs="$inputs distance-$a$b.txt"

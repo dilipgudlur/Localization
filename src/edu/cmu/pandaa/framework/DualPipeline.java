@@ -18,7 +18,7 @@ import java.util.Set;
 
 public class DualPipeline implements StreamModule {
   final Set<StreamHeader> devices;
-  static final double calFactor = 1.0;
+  static final int calMethod = 1;
 
   /* First step is to take in a multiFrame consisting of impulseframes and turn it into time differences */
   TDOACrossModule tdoa = new TDOACrossModule();
@@ -44,7 +44,7 @@ public class DualPipeline implements StreamModule {
     StreamHeader header = inHeader;
 
     tdoa.setCalibrationFile(new CalibrationManager(null, true, multiHeader.getHeaders()[0].id,
-            multiHeader.getHeaders()[1].id, calFactor));
+            multiHeader.getHeaders()[1].id, calMethod));
     header = tdoa.init(header);
     header = distance.init(header);
 

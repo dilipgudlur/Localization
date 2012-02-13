@@ -13,15 +13,15 @@ import java.io.RandomAccessFile;
 
 public class CalibrationManager {
   private String fname;
-  private final double calFactor;
+  private final int calMethod;
   private double pairTotal, pairWeight, pairCount, pairWtSq, pairMax;
   public double calibration, max, avgWt, stddev, threshold;
   private final String id1, id2;
   private final boolean dynamic;
 
   public CalibrationManager(String fname, boolean dynamic,
-                            String id1, String id2, double calFactor) throws Exception {
-    this.calFactor = calFactor;
+                            String id1, String id2, int calMethod) throws Exception {
+    this.calMethod = calMethod;
     this.fname = fname;
     this.id1 = id1;
     this.id2 = id2;
@@ -66,33 +66,34 @@ public class CalibrationManager {
       throw new IllegalStateException("Can't be dynamic and read calibration");
     }
     BufferedReader br = new BufferedReader(new FileReader(fname));
-    double diff = 0, weight = 0;
+    double diff1 = 0, weight1 = 0;
+    double diff2 = 0, weight2 = 0;
     String line;
     while ((line = br.readLine()) != null) {
       String[] parts = line.split(" ");
       String[] pieces = parts[0].split(",");
       double cval = Double.parseDouble(parts[1]);
       double cweight = Double.parseDouble(parts[3]);
-      /*
-      if (pieces[0].equals(id1) || pieces[0].equals(id2)) {
-        weight += cweight;
-        diff += cval * cweight;
+      if (pieces[0].equals(id1) || pieces[1].equals(id2)) {
+        weight2 += cweight;
+        diff2 += cval * cweight;
       }
-      if (pieces[1].equals(id1) || pieces[1].equals(id2)) {
-        weight += cweight;
-        diff -= cval * cweight;
+      if (pieces[1].equals(id1) || pieces[0].equals(id2)) {
+        weight2 += cweight;
+        diff2 -= cval * cweight;
       }
-      */
       if (pieces[0].equals(id1) && pieces[1].equals(id2)) {
-        weight += cweight;
-        diff += cval * cweight;
+        weight1 += cweight;
+        diff1 += cval * cweight;
         max = Double.parseDouble(parts[2]);
         avgWt = Double.parseDouble(parts[3]);
         stddev = Double.parseDouble(parts[4]);
       }
     }
     br.close();
-    calibration = (weight > 0 ? diff / weight : 0.0) * -1;
+    double calibration1 = -(weight1 > 0 ? diff1 / weight1 : 0.0);
+    double calibration2 = -(weight2 > 0 ? diff2 / weight2 : 0.0) * 3/2;
+    calibration = calMethod <= 1 ? calibration1 : calibration2;
     fname = null; // prevent double-read of calibration file
   }
 }

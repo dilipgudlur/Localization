@@ -89,8 +89,8 @@ public class DistanceMatrixModule implements StreamModule {
     double[][] distanceMatrix = new double[numDevices][numDevices];
     int count = 0;
 
-    for(int i = 0; i < numDevices; i++){
-      for(int j = 0; j < numDevices; j++){
+    for(int i = 0; i < numDevices; i++) {
+      for(int j = 0; j < numDevices; j++) {
         if(i == j)
           distanceMatrix[i][j] = 0.0; //distance of device with itself
         else if (j < i)
@@ -98,11 +98,12 @@ public class DistanceMatrixModule implements StreamModule {
         else {
           if (dfIn[count] == null || dfIn[count].peakDeltas.length == 0)
             distanceMatrix[i][j] = previous[i][j];
-          else if (dfIn[count].peakDeltas.length == 1) {
-            distanceMatrix[i][j] = dfIn[count].peakDeltas[0];
-          } else
-            throw new RuntimeException("Multiple distance peaks not supported!");
-
+          else {
+            distanceMatrix[i][j] = 0;
+            for (int k = 0; k < dfIn[count].peakDeltas.length; k++)
+              distanceMatrix[i][j] += dfIn[count].peakDeltas[k];
+            distanceMatrix[i][j] /= dfIn[count].peakDeltas.length;
+          }
           // TODO: Try to find a better way to do this because it seems very unstable through code changes
           count++; // only increment for the "active" half of the matrix we're populating
         }

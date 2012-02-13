@@ -16,7 +16,7 @@ public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
   final int maxAbsDistance = 60 * 1000;   // max plausible distance between peaks of the same event (us, NOT ms)
   CalibrationManager cf;
-  static double calFactor = 1.0;
+  static int calMethod = 1;
   ImpulseFrame savedFrames[] = new ImpulseFrame[2];
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
@@ -152,7 +152,7 @@ public class TDOACrossModule implements StreamModule {
       String calStr = args[arg++];
       calibrated = true;
       if (calStr.length() > 2) {
-        calFactor = Double.parseDouble(calStr.substring(2));
+        calMethod = Integer.parseInt(calStr.substring(2));
       }
     }
 
@@ -171,7 +171,7 @@ public class TDOACrossModule implements StreamModule {
     mfs.setHeader(h1 = ifs1.getHeader());
     mfs.setHeader(h2 = ifs2.getHeader());
 
-    CalibrationManager cf = new CalibrationManager("calibration.txt", false, h1.id, h2.id, calFactor);
+    CalibrationManager cf = new CalibrationManager("calibration.txt", false, h1.id, h2.id, calMethod);
     if (calibrated) {
       cf.readCalibration();
     }
