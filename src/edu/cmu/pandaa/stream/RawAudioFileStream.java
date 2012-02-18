@@ -9,7 +9,6 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.utils.DataConversionUtil;
 
 public class RawAudioFileStream implements FrameStream {
-  int wavFrameLength;
   private OutputStream os;
   private InputStream is;
   DataInputStream dis;
@@ -20,8 +19,14 @@ public class RawAudioFileStream implements FrameStream {
   private double timeDilation;
   private int byteCount = 0;
   private int update_pos1, update_pos2, wavDataSize;
-  private int loopSize, loopCount = 1;
+  private int loopSize = 0;
+  public int loopCount = 1;
   private final int BITS_PER_BYTE = 8;
+  private int wavFrameLength;
+
+  int wavSamplingRate;
+  int wavSampleCount;
+  int wavBitsPerSample;
 
   private final short MONO = 1;
   private final short STEREO = 2;
@@ -35,7 +40,6 @@ public class RawAudioFileStream implements FrameStream {
   private final String commentString = "ICMT";
   private final String subChunk2String = "data";
   private final int DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
-  private final int HEADER_SIZE_BASE = 32; // For PCM
 
   public RawAudioFileStream(String fileName) throws IOException {
     this.fileName = fileName;
@@ -53,13 +57,17 @@ public class RawAudioFileStream implements FrameStream {
     wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
   }
 
-  public RawAudioFileStream(String fileName, String prototype, int loops) throws Exception {
+  public RawAudioFileStream(String fileName, String prototype, int length) throws Exception {
     this(fileName);
-    RawAudioFileStream protoStream = new RawAudioFileStream(prototype);
-    protoStream.getHeader();
-    loopSize = protoStream.wavDataSize;
-    loopCount = loops;
-    protoStream.close();
+    if (prototype != null) {
+      RawAudioFileStream protoStream = null;
+      protoStream = new RawAudioFileStream(prototype);
+      protoStream.getHeader();
+      loopSize = protoStream.wavDataSize;
+      int samples = protoStream.wavSamplingRate * length;
+      loopCount = samples * protoStream.wavBitsPerSample / BITS_PER_BYTE / loopSize + 1;
+      protoStream.close();
+    }
   }
 
   public String getFileName() {
@@ -99,9 +107,9 @@ public class RawAudioFileStream implements FrameStream {
     byte[] tmpInt16 = new byte[2];
 
     int wavFileSize = 0, wavSubChunk1Size = 0;
-    int wavByteRate = 0, wavSamplingRate = 0;
+    int wavByteRate = 0;
     String wavComment = null;
-    int wavFormat = 0, wavChannels = 0, wavBlockAlign = 0, wavBitsPerSample = 0;
+    int wavFormat = 0, wavChannels = 0, wavBlockAlign = 0;
 
     byte[] chunkID = new byte[4];
     int retval = dis.read(chunkID, 0, 4);
@@ -174,6 +182,7 @@ public class RawAudioFileStream implements FrameStream {
 
     dis.read(tmpInt32);
     wavDataSize = DataConversionUtil.byteArrayToInt(tmpInt32);
+    wavSampleCount = wavDataSize * wavBitsPerSample / BITS_PER_BYTE;
     headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength, wavFormat, wavChannels,
             wavSamplingRate, wavBitsPerSample, wavComment);
     return headerRef;

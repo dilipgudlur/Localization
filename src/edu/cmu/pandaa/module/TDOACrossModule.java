@@ -16,7 +16,6 @@ public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
   final int maxAbsDistance = 60 * 1000;   // max plausible distance between peaks of the same event (us, NOT ms)
   CalibrationManager cf;
-  static int calMethod = 1;
   ImpulseFrame savedFrames[] = new ImpulseFrame[2];
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
@@ -65,7 +64,7 @@ public class TDOACrossModule implements StreamModule {
     cf = calibrationManager;
   }
 
-  private double calcWeight(int ao, int am, int bo, int bm) {
+  private double calcWeight(int ao, int am, int bo, int bm, double calibration) {
     double dist = Math.abs(ao - bo); // difference in us
     if (dist > maxAbsDistance)
       return 0;
@@ -94,15 +93,16 @@ public class TDOACrossModule implements StreamModule {
     int aSize = aFrame.peakOffsets.length;
     int bSize = bFrame.peakOffsets.length;
     List<Peak> peaks = new ArrayList<Peak>(aSize * bSize);
+    int cal = (int) cf.getCalibration();
     for (int ai = 0; ai < aSize; ai++) {
       for (int bi = 0; bi < bSize; bi++) {
-        double weight = calcWeight(aFrame.peakOffsets[ai], aFrame.peakMagnitudes[ai],
-                bFrame.peakOffsets[bi], bFrame.peakMagnitudes[bi]);
+        int ao = aFrame.peakOffsets[ai];
+        int bo = bFrame.peakOffsets[bi];
+        ao = ao - cal;
+        double weight = calcWeight(ao, aFrame.peakMagnitudes[ai],
+                bo, bFrame.peakMagnitudes[bi], cal);
         if (weight > 0) {
-          peaks.add(new Peak(
-                  ai, aFrame.peakOffsets[ai],
-                  bi, bFrame.peakOffsets[bi],
-                  weight));
+          peaks.add(new Peak(ai, ao, bi, bo, weight));
         }
       }
     }
@@ -127,24 +127,24 @@ public class TDOACrossModule implements StreamModule {
 
     ArrayList<Double> peakDeltas = new ArrayList<Double>();
     ArrayList<Double> peakMagnitudes = new ArrayList<Double>();
+    ArrayList<Double> peakRaw = new ArrayList<Double>();
 
-    int updates = 0;
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
-      if (p.weight > cf.threshold) {
-        int diff = p.ao - p.bo;
-        peakDeltas.add(diff - cf.calibration);
+      int diff = p.ao - p.bo;
+      if (cf.updateCalibration(diff, p.weight)) {
+        peakDeltas.add((double) diff);
         peakMagnitudes.add(p.weight);
-        cf.updateCalibration(diff, p.weight);
-        updates++;
+        peakRaw.add((double) diff);
       }
     }
 
-    if (updates == 0) {
+    // empty frames (no correlation) should lower the average...
+    if (output.size() == 0) {
       cf.updateCalibration(0, 0);
     }
 
-    return header.makeFrame(peakDeltas, peakMagnitudes);
+    return header.makeFrame(peakDeltas, peakMagnitudes, peakRaw);
   }
 
   public void close() {
@@ -154,12 +154,14 @@ public class TDOACrossModule implements StreamModule {
     int arg = 0;
     boolean calibrated = false;
 
+    int calMethod = 0;
     if (args[arg].startsWith("-c")) {
       String calStr = args[arg++];
       calibrated = true;
       if (calStr.length() > 2) {
         calMethod = Integer.parseInt(calStr.substring(2));
-      }
+      } else
+        calMethod = 1;
     }
 
     String outf = args[arg++];
@@ -177,10 +179,7 @@ public class TDOACrossModule implements StreamModule {
     mfs.setHeader(h1 = ifs1.getHeader());
     mfs.setHeader(h2 = ifs2.getHeader());
 
-    CalibrationManager cf = new CalibrationManager("calibration.txt", false, h1.id, h2.id, calMethod);
-    if (calibrated) {
-      cf.readCalibration();
-    }
+    CalibrationManager cf = new CalibrationManager(h1.id, h2.id, calMethod);
 
     TDOACrossModule tdoa = new TDOACrossModule();
     tdoa.setCalibrationFile(cf);
@@ -203,8 +202,6 @@ public class TDOACrossModule implements StreamModule {
     tdoa.close();
     ofs.close();
 
-    if (!calibrated) {
-      cf.writeCalibration();
-    }
+    cf.writeCalibration("calibration-" + calMethod + ".txt");
   }
 }

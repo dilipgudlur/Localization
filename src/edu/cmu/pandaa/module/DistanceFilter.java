@@ -157,45 +157,37 @@ public class DistanceFilter implements StreamModule {
     String wString = args[arg++];
     String outArg = args[arg++];
     String inArg = args[arg++];
-    int setLen = Integer.parseInt(args[arg++]);
-    int loops = Integer.parseInt(args[arg++]);
     if (args.length != arg)
       distArg = args[arg++];
     if (args.length != arg) {
       throw new IllegalArgumentException("Invalid number of arguments");
     }
 
-    System.out.println("Distance Filter: " + wString + " " + outArg + " " + inArg + " " + setLen + " " + loops + " " + distArg);
+    System.out.println("Distance Filter: " + wString + " " + outArg + " " + inArg + " " + " " + distArg);
 
     try {
       DistanceFileStream out = null;
       DistanceFilter df = new DistanceFilter(Double.parseDouble(wString));
       StreamFrame frameIn;
 
-      int loopNum = 0;
-      while (loopNum++ < loops) {
-        DistanceFileStream in = new DistanceFileStream(inArg);
-        StreamHeader inH = in.getHeader();
-        if (out == null) {
-          out = new DistanceFileStream(outArg, true);
-          out.setHeader(df.init(inH));
-        }
-
-        GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
-        if (pos != null) {
-          df.setPositionStream(pos);
-        }
-
-        df.seqBase = setLen * (loopNum-1);
-        while ((frameIn = in.recvFrame()) != null) {
-          if (frameIn.seqNum > setLen)
-            break;
-          out.sendFrame(df.process(frameIn));
-        }
-        in.close();
-        if (pos != null)
-          pos.close();
+      DistanceFileStream in = new DistanceFileStream(inArg);
+      StreamHeader inH = in.getHeader();
+      if (out == null) {
+        out = new DistanceFileStream(outArg, true);
+        out.setHeader(df.init(inH));
       }
+
+      GeometryFileStream pos = distArg == null ? null : new GeometryFileStream(distArg);
+      if (pos != null) {
+        df.setPositionStream(pos);
+      }
+
+      while ((frameIn = in.recvFrame()) != null) {
+        out.sendFrame(df.process(frameIn));
+      }
+      in.close();
+      if (pos != null)
+        pos.close();
       out.close();
       df.close();
     }catch(Exception e){

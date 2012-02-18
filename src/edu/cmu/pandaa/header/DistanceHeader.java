@@ -101,7 +101,7 @@ public class DistanceHeader extends StreamHeader {
     return new DistanceFrame(seq, deltas, magnitudes, raw);
   }
 
-  public DistanceFrame makeFrame(List<Double> deltas, List<Double> magnitudes) {
+  public DistanceFrame makeFrame(List<Double> deltas, List<Double> magnitudes, List<Double> rawValues) {
     int size = deltas.size();
     double[] darray = new double[size];
     double[] marray = new double[size];
@@ -109,6 +109,7 @@ public class DistanceHeader extends StreamHeader {
     for (int i = 0; i < size; i++) {
       darray[i] = deltas.get(i);
       marray[i] = magnitudes.get(i);
+      values[i] = rawValues.get(i);
     }
     return new DistanceFrame(darray, marray, values);
   }

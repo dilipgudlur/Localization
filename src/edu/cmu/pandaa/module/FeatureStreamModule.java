@@ -166,7 +166,7 @@ public class FeatureStreamModule implements StreamModule {
   @Override
   public ImpulseFrame process(StreamFrame inFrame) {
     if (inFrame == null) {
-        return pushResult(null);
+      return pushResult(null);
     }
 
     if (!(inFrame instanceof RawAudioFrame))
@@ -224,63 +224,68 @@ public class FeatureStreamModule implements StreamModule {
   }
 
   public static void main(String[] args) throws Exception {
-    int arg = 0, dint = 0;
-    String impulseFilename = args[arg++];
+    int arg = 0, dint = 0, length = 0;
+    String outFilename = args[arg++];
+    String inFilename = args[arg++];
+    String refFilename = null;
+    if (arg < args.length) {
+      length = Integer.parseInt(args[arg++]);
+      refFilename = args[arg++];
+    }
+    if (args.length != arg) {
+      throw new IllegalArgumentException("Extranious arguments");
+    }
 
-    for (int inIndex = arg; inIndex < args.length; inIndex++) {
-      String audioFilename = args[inIndex];
-      //for (slowWindow = 256; slowWindow < 2000; slowWindow *= 2)
-      // for (fastWindow = slowWindow/8; fastWindow < slowWindow; fastWindow *= 2)
-      //for (derive = 0; derive < 2; derive++)
-      //for (peakWindowMs = 20; peakWindowMs < 100; peakWindowMs *= 2)
-      {
-        RawAudioFileStream rfs = new RawAudioFileStream(audioFilename);
-        ImpulseFileStream iout = null;
-        if (inIndex == arg) {
-          iout = new ImpulseFileStream(impulseFilename, true);
-        }
-        FeatureStreamModule ism = new FeatureStreamModule();
-        int dotIndex = audioFilename.lastIndexOf('.');
-        String outFile = audioFilename.substring(0, dotIndex);
-        dotIndex = outFile.lastIndexOf(File.separator);
-        if (dotIndex >= 0)
-           outFile = outFile.substring(dotIndex+1);
-        int otherIndex = impulseFilename.lastIndexOf(File.separator);
-        if (otherIndex >= 0)
-           outFile = impulseFilename.substring(0, otherIndex+1) + outFile;
+    //for (slowWindow = 256; slowWindow < 2000; slowWindow *= 2)
+    // for (fastWindow = slowWindow/8; fastWindow < slowWindow; fastWindow *= 2)
+    //for (derive = 0; derive < 2; derive++)
+    //for (peakWindowMs = 20; peakWindowMs < 100; peakWindowMs *= 2)
+    {
+      RawAudioFileStream rfs = new RawAudioFileStream(inFilename, refFilename, length);
+      ImpulseFileStream iout = new ImpulseFileStream(outFilename, true);
+      FeatureStreamModule ism = new FeatureStreamModule();
 
-        //outFile += derive > 0 ? "_d" : "_i";
-        //outFile = outFile + "_" + slowWindow + "-" + fastWindow;
-        //outFile = outFile + "_" + peakWindowMs;
-        outFile = outFile + "-impulse.wav";
-        ism.augmentedAudio(outFile);
+      int dotIndex = inFilename.lastIndexOf('.');
+      String outFile = inFilename.substring(0, dotIndex);
+      dotIndex = outFile.lastIndexOf(File.separator);
+      if (dotIndex >= 0)
+        outFile = outFile.substring(dotIndex+1);
+      int otherIndex = outFilename.lastIndexOf(File.separator);
+      if (otherIndex >= 0)
+        outFile = outFilename.substring(0, otherIndex+1) + outFile;
 
-        System.out.println("FeatureStream: " + impulseFilename + " " + audioFilename + " " + outFile);
+      //outFile += derive > 0 ? "_d" : "_i";
+      //outFile = outFile + "_" + slowWindow + "-" + fastWindow;
+      //outFile = outFile + "_" + peakWindowMs;
+      outFile = outFile + "-impulse.wav";
+      ism.augmentedAudio(outFile);
 
-        RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
-        ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
+      System.out.println("FeatureStream: " + outFilename + " " + inFilename + " for " + length + " (" + rfs.loopCount + ")");
 
-        if (iout != null)
-          iout.setHeader(iHeader);
+      RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
+      ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
 
-        RawAudioFrame audioFrame;
-        ImpulseFrame impulses = null;
-        while (true) {
-          audioFrame = (RawAudioFrame) rfs.recvFrame();
+      if (iout != null)
+        iout.setHeader(iHeader);
 
-          impulses = ism.process(audioFrame);
+      RawAudioFrame audioFrame;
+      ImpulseFrame impulses = null;
+      while (true) {
+        audioFrame = (RawAudioFrame) rfs.recvFrame();
 
-          if (impulses == null && audioFrame == null)
-            break;
+        // TODO: make this automaticaly stop generating the augmented frames somehow.
+        impulses = ism.process(audioFrame);
 
-          if (iout != null && impulses != null)
-            iout.sendFrame(impulses);
-        }
+        if (impulses == null && audioFrame == null)
+          break;
 
-        ism.close();
-        if (iout != null)
-          iout.close();
+        if (iout != null && impulses != null)
+          iout.sendFrame(impulses);
       }
+
+      ism.close();
+      if (iout != null)
+        iout.close();
     }
   }
 }

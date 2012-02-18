@@ -39,7 +39,7 @@ public class App {
       }
       String file1 = args[0];
       for (String file : args) {
-        RawAudioFileStream in = new RawAudioFileStream(file, file1, 3);
+        RawAudioFileStream in = new RawAudioFileStream(file, file1, 60);
         in.setTimeDialtion(1.0);
         activateNewDevice(in);
       }
