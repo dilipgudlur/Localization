@@ -1,9 +1,10 @@
-package edu.cmu.pandaa.module;
+package edu.cmu.pandaa.depricated;
 
 import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.module.StreamModule;
 
 /**
  * Created by IntelliJ IDEA.

@@ -1,4 +1,4 @@
-package edu.cmu.pandaa.module;
+package edu.cmu.pandaa.depricated;
 
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
@@ -6,6 +6,7 @@ import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.ImpulseFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 import edu.cmu.pandaa.utils.ImpulseUtil;

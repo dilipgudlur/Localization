@@ -7,12 +7,9 @@ import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.module.DistanceMatrixModule;
 import edu.cmu.pandaa.module.GeometryMatrixModule;
-import edu.cmu.pandaa.module.MultiSyncModule;
 import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.FileStream;
-import edu.cmu.pandaa.stream.FrameStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
-import edu.cmu.pandaa.stream.WebViewStream;
 
 /**
  * Created by IntelliJ IDEA.

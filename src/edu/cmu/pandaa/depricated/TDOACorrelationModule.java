@@ -1,4 +1,4 @@
-package edu.cmu.pandaa.module;
+package edu.cmu.pandaa.depricated;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -6,13 +6,13 @@ import java.util.LinkedList;
 import java.util.TreeSet;
 
 import edu.cmu.pandaa.header.DistanceHeader;
-import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.ImpulseHeader;
 import edu.cmu.pandaa.header.ImpulseHeader.ImpulseFrame;
 import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.DistanceFileStream;
 import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.ImpulseFileStream;

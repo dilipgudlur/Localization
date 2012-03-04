@@ -1,4 +1,4 @@
-package edu.cmu.pandaa.module;
+package edu.cmu.pandaa.depricated;
 
 import edu.cmu.pandaa.header.DistanceHeader.DistanceFrame;
 import edu.cmu.pandaa.header.GeometryHeader;
@@ -7,9 +7,9 @@ import edu.cmu.pandaa.header.MultiHeader;
 import edu.cmu.pandaa.header.MultiHeader.MultiFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+import edu.cmu.pandaa.module.StreamModule;
 import edu.cmu.pandaa.stream.*;
 
-import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.util.LinkedList;
 import java.util.List;
 

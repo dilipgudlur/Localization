@@ -211,6 +211,13 @@ public class FeatureStreamModule implements StreamModule {
   }
 
   public void augmentedAudio(String outFile) throws Exception {
+    if ((outFile == null)&&(augmentFile != null)) {
+      rafs.close();
+      rafs = null;
+      augmentFile = null;
+      return;
+    }
+
     if (header != null) {
       throw new Exception("Need to call augmentAudio before init");
     }
@@ -261,6 +268,7 @@ public class FeatureStreamModule implements StreamModule {
       ism.augmentedAudio(outFile);
 
       System.out.println("FeatureStream: " + outFilename + " " + inFilename + " for " + length + " (" + rfs.loopCount + ")");
+      int startLoopCount = rfs.loopCount;
 
       RawAudioHeader header = (RawAudioHeader) rfs.getHeader();
       ImpulseHeader iHeader = (ImpulseHeader) ism.init(header);
@@ -273,7 +281,6 @@ public class FeatureStreamModule implements StreamModule {
       while (true) {
         audioFrame = (RawAudioFrame) rfs.recvFrame();
 
-        // TODO: make this automaticaly stop generating the augmented frames somehow.
         impulses = ism.process(audioFrame);
 
         if (impulses == null && audioFrame == null)
@@ -281,6 +288,11 @@ public class FeatureStreamModule implements StreamModule {
 
         if (iout != null && impulses != null)
           iout.sendFrame(impulses);
+
+        if ((outFile != null)&&(rfs.loopCount < startLoopCount)) {
+          ism.augmentedAudio(null);
+          outFile = null;
+        }
       }
 
       ism.close();

@@ -7,8 +7,8 @@ if [ "$TDOA_ALGORITHM" == "" ]; then
 fi
 
 DISTANCE_SMOOTH=100
-GRAPH=yes
-TARGET_LEN=200
+GRAPH=no
+TARGET_LEN=300
 
 JAR=Localization.jar
 CLASSPATH=$PWD/`find . -name $JAR`
@@ -24,8 +24,8 @@ OPTS="-classpath $CLASSPATH" #use with Linux
 #OPTS="-classpath `cygpath -wp $CLASSPATH`" #use with Cygwin ons Windows
 PACKAGE=edu.cmu.pandaa
 
-if [ "$1" == "nograph" ]; then
-  GRAPH=no
+if [ "$1" == "graph" ]; then
+  GRAPH=yes
   shift
 fi
 

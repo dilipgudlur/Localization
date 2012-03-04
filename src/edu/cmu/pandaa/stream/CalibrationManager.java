@@ -1,7 +1,9 @@
 package edu.cmu.pandaa.stream;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import edu.cmu.pandaa.header.DistanceHeader;
+import edu.cmu.pandaa.header.StreamHeader;
+import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
+
 import java.io.RandomAccessFile;
 
 /**
@@ -17,6 +19,8 @@ public class CalibrationManager {
   private final String id1, id2;
   private double sumWeight, sumWeightSq, sumDiff, sumValid;
   private int sumCount;
+  private DistanceFileStream cOut;
+  private DistanceHeader cHead;
 
   public CalibrationManager(String id1, String id2, int calMethod) throws Exception {
     this.calMethod = calMethod;
@@ -27,8 +31,8 @@ public class CalibrationManager {
     }
   }
 
-  public boolean updateCalibration(double diff, double weight) {
-    diff += calibration;
+  public boolean updateCalibration(double rawDiff, double weight, StreamFrame refFrame) throws Exception {
+    double diff = rawDiff + calibration;
 
     sumWeight += weight;
     sumWeightSq += weight * weight;
@@ -43,8 +47,16 @@ public class CalibrationManager {
       sumDiff += diff * weight;
       sumValid += weight;
     }
+
     if (sumValid > 0) {
       calibration = sumDiff / sumValid;
+    }
+
+    if (valid && cOut != null) {
+      double[] calA = { calibration };
+      double[] wtA = { diff };
+      double[] rwA = { weight };
+      cOut.sendFrame(cHead.makeFrame(refFrame.seqNum, calA, wtA, rwA));
     }
 
     return valid || calMethod == 0;
@@ -54,11 +66,10 @@ public class CalibrationManager {
     return calibration;
   }
 
-  public void writeCalibration(String fname) throws Exception {
-    RandomAccessFile raf = new RandomAccessFile(fname, "rw");
-    raf.seek(raf.length());
-    String cal = id1 + "," + id2 + " " + calibration + " " + sumDiff + " " + sumWeight + " " + sumWeightSq + " " + sumCount + "\n";
-    raf.write(cal.getBytes());
-    raf.close();
+  public void writeCalibration(String fname, StreamHeader prototype) throws Exception {
+    String[] ids = { id1, id2 };
+    cHead = new DistanceHeader("calibration", prototype.startTime, prototype.frameTime, ids);
+    cOut = new DistanceFileStream(fname, true);
+    cOut.setHeader(cHead);
   }
 }

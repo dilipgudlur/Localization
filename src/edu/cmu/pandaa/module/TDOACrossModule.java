@@ -14,7 +14,20 @@ import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
-  final int maxAbsDistance = 60 * 1000;   // max plausible distance between peaks of the same event (us, NOT ms)
+  final double speedOfSound = 340.3;   // m/s at sea level
+
+  // This constant is used/necessary for capturing the time synchronization difference between devices,
+  // so it should be set large enough to encompass those differences.
+  final double startingWindowMs = 50;
+
+  // This constant is about capturing the distance difference between devices, so it should be set to
+  // encompass the maximum plausible distance that we should be measuing.
+  final double endingWindowMs = 1000.0 / speedOfSound * 5;
+
+  private int lastSeqNum = -1;
+  private double weightWindowUs = startingWindowMs * 1000;
+  private double weightWindowWeight = 100.0;
+
   CalibrationManager cf;
   ImpulseFrame savedFrames[] = new ImpulseFrame[2];
 
@@ -60,16 +73,16 @@ public class TDOACrossModule implements StreamModule {
     }
   }
 
-  public void setCalibrationFile(CalibrationManager calibrationManager) throws Exception {
+  public void setCalibrationManager(CalibrationManager calibrationManager) throws Exception {
     cf = calibrationManager;
   }
 
   private double calcWeight(int ao, int am, int bo, int bm, double calibration) {
     double dist = Math.abs(ao - bo); // difference in us
-    if (dist > maxAbsDistance)
+    if (dist > weightWindowUs)
       return 0;
     double mag = (double) am* (double) bm;
-    return mag *(maxAbsDistance - dist)/maxAbsDistance;
+    return mag *(weightWindowUs - dist)/ weightWindowUs;
   }
 
   private ImpulseFrame getCombinedFrame(MultiFrame mf, int i) {
@@ -82,13 +95,20 @@ public class TDOACrossModule implements StreamModule {
     return newFrame.prepend(oldFrame);
   }
 
-  public StreamFrame process(StreamFrame inFrame) {
+  public StreamFrame process(StreamFrame inFrame) throws Exception {
     MultiFrame mf = (MultiFrame) inFrame;
     ImpulseFrame aFrame = getCombinedFrame(mf, 0);
     ImpulseFrame bFrame = getCombinedFrame(mf, 1);
     if (aFrame.getHeader().id.compareTo(bFrame.getHeader().id) > 0) {
       throw new RuntimeException("Frames ids not ordered properly");
     }
+
+    if (lastSeqNum >= 0) {
+      for (; lastSeqNum < inFrame.seqNum; lastSeqNum++) {
+        weightWindowUs = (weightWindowUs * weightWindowWeight + endingWindowMs * 1000.0)/(weightWindowWeight + 1);
+      }
+    }
+    lastSeqNum = inFrame.seqNum;
 
     int aSize = aFrame.peakOffsets.length;
     int bSize = bFrame.peakOffsets.length;
@@ -132,7 +152,7 @@ public class TDOACrossModule implements StreamModule {
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
       int diff = p.ao - p.bo;
-      if (cf.updateCalibration(diff, p.weight)) {
+      if (cf.updateCalibration(diff, p.weight, inFrame)) {
         peakDeltas.add((double) diff);
         peakMagnitudes.add(p.weight);
         peakRaw.add((double) diff);
@@ -141,7 +161,7 @@ public class TDOACrossModule implements StreamModule {
 
     // empty frames (no correlation) should lower the average...
     if (output.size() == 0) {
-      cf.updateCalibration(0, 0);
+      cf.updateCalibration(0, 0, inFrame);
     }
 
     return header.makeFrame(peakDeltas, peakMagnitudes, peakRaw);
@@ -180,9 +200,10 @@ public class TDOACrossModule implements StreamModule {
     mfs.setHeader(h2 = ifs2.getHeader());
 
     CalibrationManager cf = new CalibrationManager(h1.id, h2.id, calMethod);
+    cf.writeCalibration("calibration_" + h1.id + "_" + h2.id + ".txt", h1);
 
     TDOACrossModule tdoa = new TDOACrossModule();
-    tdoa.setCalibrationFile(cf);
+    tdoa.setCalibrationManager(cf);
 
     FileStream ofs = new DistanceFileStream(outf, true);
     ofs.setHeader(tdoa.init(mfs.getHeader()));
@@ -201,7 +222,5 @@ public class TDOACrossModule implements StreamModule {
     }
     tdoa.close();
     ofs.close();
-
-    cf.writeCalibration("calibration-" + calMethod + ".txt");
   }
 }
