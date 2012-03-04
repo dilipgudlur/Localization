@@ -1,6 +1,8 @@
 package edu.cmu.pandaa.stream;
 
 import java.io.*;
+import java.util.List;
+import java.util.SortedSet;
 
 import edu.cmu.pandaa.header.RawAudioHeader;
 import edu.cmu.pandaa.header.RawAudioHeader.RawAudioFrame;
@@ -13,7 +15,7 @@ public class RawAudioFileStream implements FrameStream {
   private InputStream is;
   DataInputStream dis;
   DataOutputStream dos;
-  private final String fileName;
+  private String fileName;
   private RawAudioHeader headerRef;
   private int startFrame;
   private double timeDilation;
@@ -23,6 +25,7 @@ public class RawAudioFileStream implements FrameStream {
   public int loopCount = 1;
   private final int BITS_PER_BYTE = 8;
   private int wavFrameLength;
+  private List<String> fileList;
 
   int wavSamplingRate;
   int wavSampleCount;
@@ -45,6 +48,11 @@ public class RawAudioFileStream implements FrameStream {
     this.fileName = fileName;
     is = new FileInputStream(fileName);
     wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
+  }
+
+  public RawAudioFileStream(List<String> fileList) throws IOException {
+    this(fileList.remove(0));
+    this.fileList = fileList;
   }
 
   public RawAudioFileStream(String fileName, boolean overwrite) throws IOException {
@@ -84,7 +92,18 @@ public class RawAudioFileStream implements FrameStream {
     return DataConversionUtil.byteArrayToInt(tmpInt32);
   }
 
-  private void resetStream() throws Exception {
+  private boolean resetStream() throws Exception {
+    if (fileList != null) {
+      if (fileList.size() <= 0)
+        return false;
+      fileName = fileList.remove(0);
+    } else {
+      loopCount--;
+      if (loopCount <= 0) {
+        return false;
+      }
+    }
+
     dis.close();
     is = new FileInputStream(fileName);
     dis = null;
@@ -92,6 +111,7 @@ public class RawAudioFileStream implements FrameStream {
     headerRef = null;
     getHeader();
     headerRef = saved;
+    return true;
   }
 
   @Override
@@ -246,13 +266,13 @@ public class RawAudioFileStream implements FrameStream {
     byteCount += audioDataShort.length * 2;
 
     if (bytesRead <= 0 || (byteCount >= loopSize && loopSize > 0)) {
-      loopCount--;
-      if (loopCount <= 0) {
+      if (!resetStream()) {
         return null;
       }
-
-      resetStream();
       byteCount = 0;
+      if (audioDataShort.length == 0) {
+        rawAudioFrame = (RawAudioFrame) recvFrame();
+      }
     }
     return rawAudioFrame;
   }
