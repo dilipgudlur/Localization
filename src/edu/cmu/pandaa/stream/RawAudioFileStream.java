@@ -26,6 +26,7 @@ public class RawAudioFileStream implements FrameStream {
   private final int BITS_PER_BYTE = 8;
   private int wavFrameLength;
   private List<String> fileList;
+  private int frameLength;
 
   int wavSamplingRate;
   int wavSampleCount;
@@ -53,6 +54,7 @@ public class RawAudioFileStream implements FrameStream {
   public RawAudioFileStream(List<String> fileList) throws IOException {
     this(fileList.remove(0));
     this.fileList = fileList;
+    System.out.println("Processing " + fileName);
   }
 
   public RawAudioFileStream(String fileName, boolean overwrite) throws IOException {
@@ -62,7 +64,6 @@ public class RawAudioFileStream implements FrameStream {
       throw new IOException("File exists");
     }
     os = new FileOutputStream(file);
-    wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
   }
 
   public RawAudioFileStream(String fileName, String prototype, int length) throws Exception {
@@ -97,6 +98,7 @@ public class RawAudioFileStream implements FrameStream {
       if (fileList.size() <= 0)
         return false;
       fileName = fileList.remove(0);
+      System.out.println("Processing " + fileName);
     } else {
       loopCount--;
       if (loopCount <= 0) {
@@ -205,6 +207,7 @@ public class RawAudioFileStream implements FrameStream {
     wavSampleCount = wavDataSize * wavBitsPerSample / BITS_PER_BYTE;
     headerRef = new RawAudioHeader(getDeviceID(), 0, wavFrameLength, wavFormat, wavChannels,
             wavSamplingRate, wavBitsPerSample, wavComment);
+    frameLength = (int) (headerRef.getSamplingRate() * wavFrameLength)/1000;
     return headerRef;
   }
 
@@ -235,12 +238,26 @@ public class RawAudioFileStream implements FrameStream {
 
   @Override
   public StreamFrame recvFrame() throws Exception {
-    int frameLength = (int) (headerRef.getSamplingRate() * wavFrameLength)/1000;
-
     if (timeDilation > 0)
       Thread.sleep((long) (headerRef.frameTime * timeDilation));
 
     RawAudioFrame rawAudioFrame = headerRef.makeFrame(frameLength);
+    rawAudioFrame.audioData = readData();
+
+    int bytesRead = rawAudioFrame.audioData.length * 2;
+    byteCount += bytesRead;
+
+    if (bytesRead <= 0 || (byteCount >= loopSize && loopSize > 0)) {
+      if (!resetStream()) {
+        return null;
+      }
+      byteCount = 0;
+      rawAudioFrame.audioData = readData();
+    }
+    return rawAudioFrame;
+  }
+
+  private short[] readData() throws IOException {
     int numBytesInSample = headerRef.getBitsPerSample() / BITS_PER_BYTE;
     byte[] audioDataBytes =
             new byte[(int) (frameLength * numBytesInSample * headerRef.getNumChannels())];
@@ -261,20 +278,8 @@ public class RawAudioFileStream implements FrameStream {
         audioDataShort = newShort;
       }
     }
-    rawAudioFrame.audioData = audioDataShort;
 
-    byteCount += audioDataShort.length * 2;
-
-    if (bytesRead <= 0 || (byteCount >= loopSize && loopSize > 0)) {
-      if (!resetStream()) {
-        return null;
-      }
-      byteCount = 0;
-      if (audioDataShort.length == 0) {
-        rawAudioFrame = (RawAudioFrame) recvFrame();
-      }
-    }
-    return rawAudioFrame;
+    return audioDataShort;
   }
 
   @Override
@@ -323,6 +328,11 @@ public class RawAudioFileStream implements FrameStream {
     update_pos2 = dos.size();
     dos.write(DataConversionUtil.intToByteArray(0), 0, 4); // dummy data, updated on close
     dos.flush();
+    frameLength = (int) (headerRef.getSamplingRate() * headerRef.frameTime);
+    if (frameLength % 1000 != 0) {
+      throw new IllegalArgumentException("Bad frame length: rounding error");
+    }
+    frameLength /= 1000;
   }
 
   @Override
@@ -330,12 +340,14 @@ public class RawAudioFileStream implements FrameStream {
     if (m == null)
       return;
     short[] audioData = ((RawAudioFrame) m).getAudioData();
-    if (audioData == null || audioData.length == 0)
-      return;
+    if (audioData.length != frameLength) {
+      throw new IllegalArgumentException("Length " + audioData.length + " != " + frameLength);
+    }
     for (int i = 0; i < audioData.length; i++) {
       dos.write((DataConversionUtil.shortToByteArray(audioData[i])), 0, 2);
-      byteCount += 2;
     }
+    byteCount += 2 * audioData.length;
+
     dos.flush();
   }
 

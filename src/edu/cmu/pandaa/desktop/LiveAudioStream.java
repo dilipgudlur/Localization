@@ -45,7 +45,7 @@ public class LiveAudioStream implements FrameStream {
   private final static int DEFAULT_ENCODING = 1; // PCM
   private final static int DEFAULT_CHANNELS = 1; // MONO
   private final static int DEFAULT_SAMPLING_RATE = 44100;
-  private final static int DEFAULT_FRAME_TIME = 125; // 125ms per frame
+  private final static int DEFAULT_FRAME_TIME = 100; // 100ms per frame
   private final static int DEFAULT_BITS_PER_SAMPLE = 16;
 
   private LiveAudioStream(String id, int encoding, int samplingRate, int bitsPerSample, int frameTime,

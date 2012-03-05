@@ -28,6 +28,7 @@ public class FeatureStreamModule implements StreamModule {
   private int saveFrames = -1;
   private RawAudioFileStream rafs;
   private String augmentFile;
+  private long expectedDataSamples;
 
   /* parameters we may want/need to tweak */
   static int derive = 0;  // non-zero to use 1st derivative
@@ -129,6 +130,8 @@ public class FeatureStreamModule implements StreamModule {
 
     saveFrames = (peakWindowMs + inHeader.frameTime - 1)/ inHeader.frameTime;
 
+    expectedDataSamples = (long) rah.frameTime * rah.getSamplingRate() / 1000;
+
     return header;
   }
 
@@ -178,6 +181,10 @@ public class FeatureStreamModule implements StreamModule {
     short[] data = raf.getAudioData();
     int frameSampleStart = raf.seqNum * data.length;
 
+
+    if (data.length != expectedDataSamples) {
+      throw new IllegalArgumentException("Incorrect packet length " + data.length + " != " + expectedDataSamples);
+    }
     for (int i = 0; i < data.length;i ++) {
       double slow = slowFrame[i];
       double fast = fastFrame[i];
