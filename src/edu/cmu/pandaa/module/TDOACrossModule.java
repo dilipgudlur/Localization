@@ -89,7 +89,7 @@ public class TDOACrossModule implements StreamModule {
     ImpulseFrame newFrame = (ImpulseFrame) mf.getFrame(i);
     ImpulseFrame oldFrame = savedFrames[i];
     savedFrames[i] = newFrame;
-    if (oldFrame == null) {
+    if (oldFrame == null || newFrame == null) {
       return newFrame;
     }
     return newFrame.prepend(oldFrame);
@@ -99,6 +99,9 @@ public class TDOACrossModule implements StreamModule {
     MultiFrame mf = (MultiFrame) inFrame;
     ImpulseFrame aFrame = getCombinedFrame(mf, 0);
     ImpulseFrame bFrame = getCombinedFrame(mf, 1);
+    if (aFrame == null || bFrame == null) {
+      return null;
+    }
     if (aFrame.getHeader().id.compareTo(bFrame.getHeader().id) > 0) {
       throw new RuntimeException("Frames ids not ordered properly");
     }

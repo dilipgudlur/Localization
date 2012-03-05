@@ -96,9 +96,9 @@ public class DistanceMatrixModule implements StreamModule {
         else if (j < i)
           distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
         else {
-          if (dfIn[count] == null || dfIn[count].peakDeltas.length == 0)
+          if ((dfIn[count] == null || dfIn[count].peakDeltas.length == 0) && previous != null)
             distanceMatrix[i][j] = previous[i][j];
-          else {
+          else if (dfIn[count] != null) {
             distanceMatrix[i][j] = 0;
             for (int k = 0; k < dfIn[count].peakDeltas.length; k++)
               distanceMatrix[i][j] += dfIn[count].peakDeltas[k];

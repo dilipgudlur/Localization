@@ -254,6 +254,9 @@ public class RawAudioFileStream implements FrameStream {
       byteCount = 0;
       rawAudioFrame.audioData = readData();
     }
+    if (rawAudioFrame.audioData.length == 0) {
+      return null;
+    }
     return rawAudioFrame;
   }
 

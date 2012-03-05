@@ -41,7 +41,7 @@ public class App {
       for (String fileBase : args) {
         List<String> fileNames = getFileSet(fileBase);
         RawAudioFileStream in = new RawAudioFileStream(fileNames);
-        in.setTimeDialtion(1.0);
+        in.setTimeDialtion(0.1);
         activateNewDevice(in);
       }
     } else {
