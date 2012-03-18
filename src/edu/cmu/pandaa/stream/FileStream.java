@@ -324,7 +324,11 @@ public class FileStream implements FrameStream {
       first = true;
     }
 
-    writeValue("seqNum", m.seqNum);
+    if (m.seqNum < 0 && !asJosn) {
+      writeValue("seqNum", "###");
+    } else {
+      writeValue("seqNum", m.seqNum);
+    }
     writtenSeqNum = m.seqNum;
   }
 

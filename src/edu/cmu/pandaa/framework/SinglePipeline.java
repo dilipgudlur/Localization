@@ -19,7 +19,7 @@ import edu.cmu.pandaa.stream.ImpulseFileStream;
 public class SinglePipeline implements StreamModule {
 
   /* First step is to take in RawAudioFrames and convert them to impulse frames */
-  FeatureStreamModule impulse = new FeatureStreamModule(); //new DummyModule(new ImpulseHeader("dummyImpulse", now, frameTime));
+  FeatureStreamModule impulse = new FeatureStreamModule();
 
   FileStream trace;
 

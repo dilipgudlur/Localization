@@ -95,7 +95,7 @@ public class DistanceMatrixModule implements StreamModule {
           distanceMatrix[i][j] = 0.0; //distance of device with itself
         else if (j < i)
           distanceMatrix[i][j] = distanceMatrix[j][i]; //symmetric element
-        else {
+        else if (count < dfIn.length) { // catch transitional case of array sizes adjusting
           if ((dfIn[count] == null || dfIn[count].peakDeltas.length == 0) && previous != null)
             distanceMatrix[i][j] = previous[i][j];
           else if (dfIn[count] != null) {

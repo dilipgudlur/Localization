@@ -22,6 +22,8 @@ public class App {
   private int nextCombinePort = basePort + 40;
   private final int SEGMENT_LENGTH_MS = 100 * 1000;
 
+  private int pipes_active = 0;
+
   public static final String TRACE_DIR = "trace/";
 
   public App(String[] args) throws Exception {
@@ -38,8 +40,17 @@ public class App {
       if (args.length == 1) {
         args = processDirectory(args[0]);
       }
+      String startTime = null;
       for (String fileBase : args) {
         List<String> fileNames = getFileSet(fileBase);
+        String timestamp = fileNames.get(0);
+        timestamp = timestamp.substring(0,timestamp.lastIndexOf('.'));
+        timestamp = timestamp.substring(timestamp.lastIndexOf('_'));
+        if (startTime == null) {
+          startTime = timestamp;
+        } else if (!startTime.equals(timestamp)) {
+          throw new IllegalArgumentException("Mismatching start timestamp: " + timestamp + " != " + startTime);
+        }
         RawAudioFileStream in = new RawAudioFileStream(fileNames);
         in.setTimeDialtion(0.1);
         activateNewDevice(in);
@@ -104,26 +115,44 @@ public class App {
 
   public static void main(String[] args) {
     try {
-      new App(args);
+      new App(args).waitForCompletion();
     } catch (Exception e) {
       e.printStackTrace();
+    }
+  }
+
+  private void waitForCompletion() {
+    synchronized(App.this) {
+      while (pipes_active > 0) {
+        try {
+          App.this.wait();
+        } catch (InterruptedException e) {
+          // ignore interrupted
+          }
+      }
     }
   }
 
   private String makeId(StreamHeader a, StreamHeader b) {
     String aid = a.id;
     String bid = b.id;
+    return combineIds(aid,bid);
+  }
+
+  public static String combineIds(String aid, String bid) {
     if (aid.equals(bid)) {
       throw new IllegalArgumentException("Streamin IDs must be unique!");
     }
-
-    if (aid.compareTo(bid) < 0) {
-      String tmp = bid;
-      bid = aid;
-      aid = tmp;
+    int i = 0;
+    while (i < aid.length() && i < bid.length() && aid.charAt(i) == bid.charAt(i)) {
+      i++;
     }
-
-    return aid + "+" + bid;
+    int j = aid.length()-1, k = bid.length()-1;
+    while (j > 0 && k > 0 && aid.charAt(j) == bid.charAt(k)) {
+      j--;
+      k--;
+    }
+    return aid.substring(0, j+1) + "," + bid.substring(i);
   }
 
   private synchronized void activateNewDevice(FrameStream in) throws Exception {
@@ -149,121 +178,132 @@ public class App {
     }
   }
 
-// server thread, spawning off one client thread per connection
-class AcceptClients extends Thread {
-  ServerSocket server;
+  // server thread, spawning off one client thread per connection
+  class AcceptClients extends Thread {
+    ServerSocket server;
 
-  @Override
-  public void run() {
-    try {
-      server = new ServerSocket(SERVER_PORT);   // launch server on any free port and start listening for incoming connections
-      System.out.println("Server started at " + server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
-
-      while (true) {
-        activateNewDevice(new SocketStream(server.accept()));
-      }
-    }
-    catch (Exception e) {
-      System.out.println("Error, closing connection.");
-      e.printStackTrace();
-    }
-  }
-}
-
-class PipeHandler implements Runnable {
-  private final FrameStream in;
-  private final Set<FrameStream> outSet = new HashSet<FrameStream>();
-  private final StreamModule pipeline;
-  private final String id;
-  private StreamHeader outHeader;
-  private boolean closed = false;
-  private int count = 0;
-  private boolean trace;
-  private WebViewStream view;
-
-  PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port) throws Exception {
-    this(in, pipeline, out, port, false);
-  }
-
-  PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port, boolean trace) throws Exception {
-    this.trace = trace;
-    if (in == null)
-      throw new IllegalArgumentException("argument can not be null");
-
-    this.in = in;
-    if (out != null) {
-      outSet.add(out);
-    }
-    String pipeName = pipeline.getClass().getSimpleName();
-    id = pipeName + '.' + in.getHeader().id;
-    this.pipeline = pipeline;
-    if (trace)
-      System.err.println("Pipeline " + id + " created with " + outSet.size());
-    view = new WebViewStream(port);
-  }
-
-  public void addOutput(MultiFrameStream out) throws Exception {
-    if (trace)
-      System.err.println("Adding stream " + out.id + " to " + id);
-    if (closed) {
-      throw new IllegalStateException("Pipeline closed");
-    }
-    String outId = out.id;
-    synchronized(outSet) {
-      System.out.println("Adding output " + outId + " from pipe " + id + " at frame " + count);
-      outSet.add(out);
-      if (outHeader != null)
-        out.setHeader(outHeader);
-    }
-  }
-
-  @Override
-  public void run() {
-    try {
-      if (trace)
-        System.err.println("Running stream " + id);
-      Thread.sleep(STARTUP_DELAY);
-
-      synchronized(outSet) {
-        outHeader = pipeline.init(in.getHeader());
-        for (FrameStream out : outSet) {
-          out.setHeader(outHeader);
-        }
-        view.setHeader(outHeader);
-      }
-
+    @Override
+    public void run() {
       try {
+        server = new ServerSocket(SERVER_PORT);   // launch server on any free port and start listening for incoming connections
+        System.out.println("Server started at " + server.getInetAddress().getHostAddress() + ":" + server.getLocalPort());
+
         while (true) {
-          StreamFrame frame = in.recvFrame();
-          if (frame == null)
-            break;
-          if (trace) {
-            System.err.println(frame.toString());
+          activateNewDevice(new SocketStream(server.accept()));
+        }
+      }
+      catch (Exception e) {
+        System.out.println("Error, closing connection.");
+        e.printStackTrace();
+      }
+    }
+  }
+
+  class PipeHandler implements Runnable {
+    private final FrameStream in;
+    private final Set<FrameStream> outSet = new HashSet<FrameStream>();
+    private final StreamModule pipeline;
+    private final String id;
+    private StreamHeader outHeader;
+    private boolean closed = false;
+    private int count = 0;
+    private boolean trace;
+    private WebViewStream view;
+
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port) throws Exception {
+      this(in, pipeline, out, port, false);
+    }
+
+    PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port, boolean trace) throws Exception {
+      this.trace = trace;
+      if (in == null)
+        throw new IllegalArgumentException("argument can not be null");
+
+      this.in = in;
+      if (out != null) {
+        outSet.add(out);
+      }
+      String pipeName = pipeline.getClass().getSimpleName();
+      id = pipeName + '.' + in.getHeader().id;
+      this.pipeline = pipeline;
+      if (trace)
+        System.err.println("Pipeline " + id + " created with " + outSet.size());
+      view = new WebViewStream(port);
+      synchronized(App.this) {
+        pipes_active++;
+      }
+    }
+
+    public void addOutput(MultiFrameStream out) throws Exception {
+      if (trace)
+        System.err.println("Adding stream " + out.id + " to " + id);
+      if (closed) {
+        throw new IllegalStateException("Pipeline closed");
+      }
+      String outId = out.id;
+      synchronized(outSet) {
+        System.out.println("Adding output " + outId + " from pipe " + id + " at frame " + count);
+        outSet.add(out);
+        if (outHeader != null)
+          out.setHeader(outHeader);
+      }
+    }
+
+    @Override
+    public void run() {
+      try {
+        if (trace)
+          System.err.println("Running stream " + id);
+        Thread.sleep(STARTUP_DELAY);
+
+        synchronized(outSet) {
+          outHeader = pipeline.init(in.getHeader());
+          for (FrameStream out : outSet) {
+            out.setHeader(outHeader);
           }
-          frame = pipeline.process(frame);
-          view.sendFrame(frame);
-          count++;
-          synchronized(outSet) {
-            for (FrameStream out : outSet) {
-              out.sendFrame(frame);
+          view.setHeader(outHeader);
+        }
+
+        try {
+          while (true) {
+            StreamFrame frame = in.recvFrame();
+            if (frame == null)
+              break;
+            if (trace) {
+              System.err.println(frame.toString());
+            }
+            frame = pipeline.process(frame);
+            view.sendFrame(frame);
+            count++;
+            synchronized(outSet) {
+              for (FrameStream out : outSet) {
+                out.sendFrame(frame);
+              }
             }
           }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        synchronized(outSet) {
+          System.out.println("Done with pipe " + id + " count=" + count);
+          closed = true;
+          for (FrameStream out : outSet) {
+            out.close();
+          }
+          pipeline.close();
         }
       } catch (Exception e) {
         e.printStackTrace();
-      }
-
-      synchronized(outSet) {
-        System.out.println("Done with pipe " + id + " count=" + count);
-        closed = true;
-        for (FrameStream out : outSet) {
-          out.close();
+      } finally {
+        synchronized(App.this) {
+          pipes_active--;
+          App.this.notifyAll();
         }
-        pipeline.close();
+        if (view != null) {
+          view.close();
+        }
       }
-    } catch (Exception e) {
-      e.printStackTrace();
     }
   }
-}
 }

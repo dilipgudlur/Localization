@@ -1,5 +1,6 @@
 package edu.cmu.pandaa.header;
 
+import edu.cmu.pandaa.framework.App;
 import edu.cmu.pandaa.stream.FileStream;
 
 import java.io.Serializable;
@@ -85,17 +86,22 @@ public class StreamHeader implements Serializable {
   }
 
   public static String makeId(String base,String[] ids) {
-    String nid = "";
-    for (int i = 0;i < ids.length;i++) {
-      if (ids[i].contains(","))
-        throw new IllegalArgumentException("CombinedIDs can not contain comma");
-      nid = nid + "," + ids[i];
+    String nid = ids[0];
+    for (int i = 1;i < ids.length;i++) {
+      nid = App.combineIds(nid,ids[i]);
     }
-    return nid.substring(1);
+    return nid;
   }
 
   public String[] getIds() {
-    String[] parts = id.split(",");
+    int list = id.indexOf(',');
+    int prefix = id.substring(0, list).lastIndexOf('-');
+    int postfix = id.indexOf('_', list);
+    String lstr = id.substring(prefix + 1, postfix);
+    String[] parts = lstr.split(",");
+    for (int i = 0; i < parts.length; i++) {
+      parts[i] = id.substring(0, prefix+1) + parts[i] + id.substring(postfix);
+    }
     return parts;
   }
 

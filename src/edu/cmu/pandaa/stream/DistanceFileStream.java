@@ -16,6 +16,8 @@ import java.util.ArrayList;
 
 public class DistanceFileStream extends FileStream {
   private DistanceHeader header;
+  double sum, sumSq;
+  int sumCnt;
 
   public DistanceFileStream() throws Exception {
   }
@@ -31,24 +33,40 @@ public class DistanceFileStream extends FileStream {
   @Override
   public void setHeader(StreamHeader h) throws Exception {
     super.setHeader(h);
-    writeValue("window", ((DistanceHeader) h).getRollingWindow());
+    header = (DistanceHeader) h;
+    writeValue("window", header.getRollingWindow());
   }
 
   @Override
   public void sendFrame(StreamFrame f) throws Exception {
-    if (f == null) {
+    DistanceFrame frame = (DistanceFrame) f;
+    if (f == null || frame.peakDeltas == null || frame.peakDeltas.length == 0) {
       return;
     }
     super.sendFrame(f);
-    DistanceFrame frame = (DistanceFrame) f;
     writeArray("dist");
     for (int i = 0;i < frame.peakDeltas.length; i++) {
       writeArrayObject();
       writeValue("delta", frame.peakDeltas[i]);
       writeValue("mag", frame.peakMagnitudes[i]);
       writeValue("raw", frame.rawValues[i]);
+      sum += frame.rawValues[i];
+      sumSq += frame.rawValues[i] * frame.rawValues[i];
+      sumCnt++;
     }
     writeEndArray();
+  }
+
+  public void close() {
+    try {
+      super.sendFrame(header.makeFrame(-1));
+      double avg = sum / sumCnt;
+      writeValue("avg", avg);
+      writeValue("stdev", Math.sqrt(sumSq/sumCnt - avg*avg));
+      super.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   @Override

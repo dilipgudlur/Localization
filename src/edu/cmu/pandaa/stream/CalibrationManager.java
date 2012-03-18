@@ -17,49 +17,38 @@ public class CalibrationManager {
   private final int calMethod;
   private double calibration;
   private final String id1, id2;
-  private double sumWeight, sumWeightSq, sumDiff, sumValid;
+  private double sumWeight, sumWeightSq, sumDiff;
   private int sumCount;
   private DistanceFileStream cOut;
   private DistanceHeader cHead;
+  private final boolean swap;
 
   public CalibrationManager(String id1, String id2, int calMethod) throws Exception {
     this.calMethod = calMethod;
     this.id1 = id1;
     this.id2 = id2;
-    if (id1.compareTo(id2) >= 0) {
-      throw new IllegalArgumentException("Calibration IDs are in the wrong order or equal: " + id1 + " >= " + id2);
-    }
+    this.swap = (id1.compareTo(id2) >= 0);
   }
 
-  public boolean updateCalibration(double rawDiff, double weight, StreamFrame refFrame) throws Exception {
-    double diff = rawDiff + calibration;
+  public void updateCalibration(double rawDiff, double weight, StreamFrame refFrame) throws Exception {
+    double diff = rawDiff;
+    if (!Double.isNaN(calibration)) {
+      diff += calibration;
+    }
 
     sumWeight += weight;
     sumWeightSq += weight * weight;
     sumCount++;
+    sumDiff += diff * weight;
 
-    double avgWt = sumWeight / sumCount;
-    double stdev = Math.sqrt(sumWeightSq/sumCount - avgWt * avgWt);
-    double threshold = avgWt + stdev;
+    calibration = sumDiff / sumWeight;
 
-    boolean valid = weight >= threshold;
-    if (valid) {
-      sumDiff += diff * weight;
-      sumValid += weight;
-    }
-
-    if (sumValid > 0) {
-      calibration = sumDiff / sumValid;
-    }
-
-    if (valid && cOut != null) {
+    if (cOut != null) {
       double[] calA = { calibration };
       double[] wtA = { diff };
       double[] rwA = { weight };
       cOut.sendFrame(cHead.makeFrame(refFrame.seqNum, calA, wtA, rwA));
     }
-
-    return valid || calMethod == 0;
   }
 
   public double getCalibration() {

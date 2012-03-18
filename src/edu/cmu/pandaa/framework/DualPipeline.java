@@ -46,14 +46,15 @@ public class DualPipeline implements StreamModule {
     tdoa.setCalibrationManager(new CalibrationManager(multiHeader.getHeaders()[0].id,
             multiHeader.getHeaders()[1].id, calMethod));
     header = tdoa.init(header);
+
+    trace = new DistanceFileStream(App.TRACE_DIR + header.id + ".txt", true);
+    trace.setHeader(header);
+
     header = distance.init(header);
 
     if (!(header instanceof DistanceHeader)) {
       throw new IllegalArgumentException("Output should be DistanceHeader");
     }
-
-    trace = new DistanceFileStream(App.TRACE_DIR + header.id + ".txt", true);
-    trace.setHeader(header);
 
     return header;
   }
@@ -65,8 +66,8 @@ public class DualPipeline implements StreamModule {
     }
     StreamFrame frame = inFrame;
     frame = tdoa.process(frame);
-    frame = distance.process(frame);
     trace.sendFrame(frame);
+    frame = distance.process(frame);
     return frame;
   }
 

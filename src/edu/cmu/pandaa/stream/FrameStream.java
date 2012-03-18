@@ -17,5 +17,5 @@ public interface FrameStream {
   public StreamFrame recvFrame() throws Exception;
 
   // indicates we're done with the stream
-  public void close() throws Exception;
+  public void close();
 }

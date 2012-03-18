@@ -113,6 +113,7 @@ public class WebViewStream implements FrameStream {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
+    server.stop(0);
   }
 }

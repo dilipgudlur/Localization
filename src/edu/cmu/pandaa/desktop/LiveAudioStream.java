@@ -1,6 +1,8 @@
 package edu.cmu.pandaa.desktop;
 
+import java.awt.image.ImagingOpException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
 
@@ -165,16 +167,24 @@ public class LiveAudioStream implements FrameStream {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     synchronized (this) {
       stopAudioCapture();
       while (isRunning()) {
-        wait();
+        try {
+          wait();
+        } catch (InterruptedException e) {
+          // ignore interruption
+        }
       }
     }
     if (byteArrayOutputStream != null) {
       synchronized (byteArrayOutputStream) {
-        byteArrayOutputStream.close();
+        try {
+          byteArrayOutputStream.close();
+        } catch (IOException e) {
+          // ignore closing exception
+        }
       }
     }
     if (targetDataLine != null) {

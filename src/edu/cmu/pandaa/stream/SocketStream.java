@@ -92,9 +92,13 @@ public StreamFrame recvFrame() {
   }
 
   @Override
-public void close() throws Exception {
-    connection.close();
-    outObjectStream.close();
-    inObjectStream.close();
+  public void close() {
+    try {
+      connection.close();
+      outObjectStream.close();
+      inObjectStream.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }

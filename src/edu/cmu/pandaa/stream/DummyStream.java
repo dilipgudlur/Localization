@@ -55,7 +55,7 @@ public class DummyStream implements FrameStream {
 
   // indicates we're done with the stream
   @Override
-  public void close() throws Exception {
+  public void close() {
     count = 100;
   }
 }

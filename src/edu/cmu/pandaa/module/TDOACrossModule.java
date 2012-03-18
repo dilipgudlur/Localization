@@ -24,6 +24,8 @@ public class TDOACrossModule implements StreamModule {
   // encompass the maximum plausible distance that we should be measuing.
   final double endingWindowMs = 1000.0 / speedOfSound * 5;
 
+  final static int IMPULSE_THRESHOLD = 15000; // empirically determined by graph!
+
   private int lastSeqNum = -1;
   private double weightWindowUs = startingWindowMs * 1000;
   private double weightWindowWeight = 100.0;
@@ -47,9 +49,6 @@ public class TDOACrossModule implements StreamModule {
     }
 
     String[] deviceIds = new String[] {impulseHeaders[0].id, impulseHeaders[1].id};
-    if (deviceIds[0].compareTo(deviceIds[1]) > 0) {
-      throw new RuntimeException("Frames out of order init");
-    }
 
     header = new DistanceHeader(inHeader.id, impulseHeaders[0].startTime, impulseHeaders[0].frameTime, deviceIds);
 
@@ -77,7 +76,10 @@ public class TDOACrossModule implements StreamModule {
     cf = calibrationManager;
   }
 
-  private double calcWeight(int ao, int am, int bo, int bm, double calibration) {
+  private double calcWeight(int ao, int am, int bo, int bm) {
+    if (am < IMPULSE_THRESHOLD || bm < IMPULSE_THRESHOLD) {
+      return 0;
+    }
     double dist = Math.abs(ao - bo); // difference in us
     if (dist > weightWindowUs)
       return 0;
@@ -102,9 +104,6 @@ public class TDOACrossModule implements StreamModule {
     if (aFrame == null || bFrame == null) {
       return null;
     }
-    if (aFrame.getHeader().id.compareTo(bFrame.getHeader().id) > 0) {
-      throw new RuntimeException("Frames ids not ordered properly");
-    }
 
     if (lastSeqNum >= 0) {
       for (; lastSeqNum < inFrame.seqNum; lastSeqNum++) {
@@ -123,7 +122,7 @@ public class TDOACrossModule implements StreamModule {
         int bo = bFrame.peakOffsets[bi];
         ao = ao - cal;
         double weight = calcWeight(ao, aFrame.peakMagnitudes[ai],
-                bo, bFrame.peakMagnitudes[bi], cal);
+                bo, bFrame.peakMagnitudes[bi]);
         if (weight > 0) {
           peaks.add(new Peak(ai, ao, bi, bo, weight));
         }
@@ -155,11 +154,10 @@ public class TDOACrossModule implements StreamModule {
     for (int i = 0;i < output.size(); i++) {
       Peak p = output.get(i);
       int diff = p.ao - p.bo;
-      if (cf.updateCalibration(diff, p.weight, inFrame)) {
-        peakDeltas.add((double) diff);
-        peakMagnitudes.add(p.weight);
-        peakRaw.add((double) diff);
-      }
+      cf.updateCalibration(diff, p.weight, inFrame);
+      peakDeltas.add((double) diff);
+      peakMagnitudes.add(p.weight);
+      peakRaw.add((double) cal);
     }
 
     // empty frames (no correlation) should lower the average...
