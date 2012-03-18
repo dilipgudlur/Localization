@@ -13,3 +13,5 @@ trace/
 capture/
 android-app/default.properties
 results.txt
+capture*/
+trace-*/
