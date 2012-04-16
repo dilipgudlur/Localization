@@ -1,7 +1,7 @@
 CLASSPATH=Localization.jar
 CLASSPATH=$CLASSPATH:$PWD/lib/mdsj.jar
 
-if [ "$@" == "" ]; then
+if [ "$*" == "" ]; then
   files=capture_*
 else
   files="$@"

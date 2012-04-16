@@ -1,9 +1,13 @@
 find . -name Localization.jar | xargs rm
+classpath=lib/mdsj.jar
 rm -rf out/
 modules=`find src/edu/cmu/pandaa/module/ -name \*.java`
 mkdir out
-javac -sourcepath src/ -d out/ -classpath lib/mdsj.jar $modules
-javac -Xlint:unchecked -sourcepath src/ -d out/ src/edu/cmu/pandaa/framework/App.java -classpath lib/mdsj.jar 
-javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/desktop/LiveAudioStream.java
+echo Building base modules...
+javac -sourcepath src/ -d out/ -classpath $classpath $modules
+echo Building App.java
+javac -Xlint:unchecked -sourcepath src/ -d out/ src/edu/cmu/pandaa/framework/App.java -classpath $classpath
+echo Building LiveAudioStream.java
+javac -sourcepath src/ -d out/ src/edu/cmu/pandaa/desktop/LiveAudioStream.java -classpath $classpath
 jar cf Localization.jar -C out/ .
 

@@ -16,8 +16,8 @@ import java.util.ArrayList;
 
 public class DistanceFileStream extends FileStream {
   private DistanceHeader header;
-  double sum, sumSq;
-  int sumCnt;
+  double sum, sumDiffSq, sumCnt;
+  private final double AVG_WEIGHT = 0.95;
 
   public DistanceFileStream() throws Exception {
   }
@@ -50,9 +50,12 @@ public class DistanceFileStream extends FileStream {
       writeValue("delta", frame.peakDeltas[i]);
       writeValue("mag", frame.peakMagnitudes[i]);
       writeValue("raw", frame.rawValues[i]);
-      sum += frame.rawValues[i];
-      sumSq += frame.rawValues[i] * frame.rawValues[i];
-      sumCnt++;
+
+      double statVal = frame.peakDeltas[i];
+      sum = sum * AVG_WEIGHT + statVal;
+      sumCnt = sumCnt * AVG_WEIGHT + 1;
+      double diff = (sum / sumCnt) - statVal;
+      sumDiffSq = sumDiffSq * AVG_WEIGHT + diff*diff;
     }
     writeEndArray();
   }
@@ -62,7 +65,7 @@ public class DistanceFileStream extends FileStream {
       super.sendFrame(header.makeFrame(-1));
       double avg = sum / sumCnt;
       writeValue("avg", avg);
-      writeValue("stdev", Math.sqrt(sumSq/sumCnt - avg*avg));
+      writeValue("stdev", Math.sqrt(sumDiffSq/(sumCnt-1)));
       super.close();
     } catch (Exception e) {
       e.printStackTrace();

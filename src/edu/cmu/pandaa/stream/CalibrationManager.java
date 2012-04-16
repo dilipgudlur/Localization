@@ -14,38 +14,42 @@ import java.io.RandomAccessFile;
  */
 
 public class CalibrationManager {
-  private final int calMethod;
   private double calibration;
   private final String id1, id2;
-  private double sumWeight, sumWeightSq, sumDiff;
+  private double sumWeight, sumDiff;
   private int sumCount;
   private DistanceFileStream cOut;
   private DistanceHeader cHead;
   private final boolean swap;
+  private final double WEIGHT_DECAY = 0.97;
 
   public CalibrationManager(String id1, String id2, int calMethod) throws Exception {
-    this.calMethod = calMethod;
     this.id1 = id1;
     this.id2 = id2;
     this.swap = (id1.compareTo(id2) >= 0);
   }
 
-  public void updateCalibration(double rawDiff, double weight, StreamFrame refFrame) throws Exception {
-    double diff = rawDiff;
+  public void updateCalibration(double diffPeak, double weight, StreamFrame refFrame) throws Exception {
+    double rawDiff = diffPeak;
     if (!Double.isNaN(calibration)) {
-      diff += calibration;
+      rawDiff += calibration;
     }
 
+    if (sumWeight == 0) {
+      sumWeight = weight;
+    }
     sumWeight += weight;
-    sumWeightSq += weight * weight;
     sumCount++;
-    sumDiff += diff * weight;
+    sumDiff += rawDiff * weight;
 
     calibration = sumDiff / sumWeight;
 
+    sumWeight *= WEIGHT_DECAY;
+    sumDiff *= WEIGHT_DECAY;
+
     if (cOut != null) {
       double[] calA = { calibration };
-      double[] wtA = { diff };
+      double[] wtA = { rawDiff };
       double[] rwA = { weight };
       cOut.sendFrame(cHead.makeFrame(refFrame.seqNum, calA, wtA, rwA));
     }

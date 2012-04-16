@@ -26,7 +26,7 @@ public class RawAudioFileStream implements FrameStream {
   private final int BITS_PER_BYTE = 8;
   private int wavFrameLength;
   private List<String> fileList;
-  private int frameLength;
+  public int frameLength;
 
   int wavSamplingRate;
   int wavSampleCount;
@@ -343,9 +343,10 @@ public class RawAudioFileStream implements FrameStream {
     if (m == null)
       return;
     short[] audioData = ((RawAudioFrame) m).getAudioData();
-    if (audioData.length != frameLength) {
-      throw new IllegalArgumentException("Length " + audioData.length + " != " + frameLength);
-    }
+    // TODO: This is just removed for debugging.
+    //if (audioData.length != frameLength) {
+    //  throw new IllegalArgumentException("Length " + audioData.length + " != " + frameLength);
+    //}
     for (int i = 0; i < audioData.length; i++) {
       dos.write((DataConversionUtil.shortToByteArray(audioData[i])), 0, 2);
     }

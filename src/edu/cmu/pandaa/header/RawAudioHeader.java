@@ -201,6 +201,13 @@ public class RawAudioHeader extends StreamHeader implements Serializable {
   }
 
   public RawAudioFrame makeFrame() {
-    return new RawAudioFrame((int) (frameTime * samplingRate / 1000));
+    return new RawAudioFrame(getFrameSize());
+  }
+
+  public int getFrameSize() {
+    if ((frameTime * samplingRate) % 1000 != 0) {
+      throw new RuntimeException("Losing data in getFrameSize calculation");
+    }
+    return (frameTime * samplingRate)/1000;
   }
 }

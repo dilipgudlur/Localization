@@ -14,7 +14,7 @@ import java.util.*;
 
 public class TDOACrossModule implements StreamModule {
   DistanceHeader header;
-  final double speedOfSound = 340.3;   // m/s at sea level
+  final double speedOfSoundMpS = 340.3;   // m/s at sea level
 
   // This constant is used/necessary for capturing the time synchronization difference between devices,
   // so it should be set large enough to encompass those differences.
@@ -22,9 +22,11 @@ public class TDOACrossModule implements StreamModule {
 
   // This constant is about capturing the distance difference between devices, so it should be set to
   // encompass the maximum plausible distance that we should be measuing.
-  final double endingWindowMs = 1000.0 / speedOfSound * 5;
+  final double endingDistanceM = 10; // meters -- suggest 10?
+  final double msPerSec = 1000.0;
+  final double endingWindowMs = endingDistanceM * msPerSec / speedOfSoundMpS;
 
-  final static int IMPULSE_THRESHOLD = 15000; // empirically determined by graph!
+  final static int IMPULSE_THRESHOLD = 15000; // 15000 for claps, empirically determined by graph!
 
   private int lastSeqNum = -1;
   private double weightWindowUs = startingWindowMs * 1000;
