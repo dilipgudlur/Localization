@@ -1,6 +1,5 @@
 package edu.cmu.pandaa.framework;
 
-import java.awt.image.DirectColorModel;
 import java.io.File;
 import java.net.ServerSocket;
 import java.util.*;
@@ -13,7 +12,7 @@ import edu.cmu.pandaa.stream.*;
 
 // server app
 public class App {
-  static final int STARTUP_DELAY = 500;
+  static final int STARTUP_DELAY = 1000;
   static final int SERVER_PORT = 12345;
   MultiFrameStream combiner = new MultiFrameStream("combiner");
   final Map<StreamHeader, PipeHandler> inHeaders = new HashMap<StreamHeader, PipeHandler>();
@@ -21,6 +20,8 @@ public class App {
   private int nextDevicePort = basePort + 20;
   private int nextCombinePort = basePort + 40;
   private final int SEGMENT_LENGTH_MS = 100 * 1000;
+
+  private boolean useMFCC = true;
 
   private int pipes_active = 0;
 
@@ -68,7 +69,7 @@ public class App {
     }
 
     PipeHandler combpipe = new PipeHandler(combiner, new MergePipeline(),
-            new GeometryFileStream(TRACE_DIR + "output.txt", true), basePort, true);
+            new GeometryFileStream(TRACE_DIR + "output.txt", true), basePort, false);
     new Thread(combpipe, "combiner").start();
   }
 
@@ -155,22 +156,41 @@ public class App {
     return aid.substring(0, j+1) + "," + bid.substring(i);
   }
 
+  private class CompareStreamId implements Comparator<StreamHeader> {
+    @Override
+    public int compare(StreamHeader streamHeader1, StreamHeader streamHeader2) {
+      return streamHeader1.id.compareTo(streamHeader2.id);
+    }
+  }
+
   private synchronized void activateNewDevice(FrameStream in) throws Exception {
     StreamHeader inHeader = in.getHeader();
     System.out.println("Activating device " + inHeader.id + " on " + nextDevicePort);
-    StreamModule pipeline = new SinglePipeline();
+    StreamModule pipeline = useMFCC ? new MFCCPipeline() : new SinglePipeline();
     PipeHandler pipe = new PipeHandler(in, pipeline, null, nextDevicePort++);
     new Thread(pipe, inHeader.id).start();
 
     synchronized (inHeaders) {
       for (StreamHeader other : inHeaders.keySet()) {
-        String id = makeId(inHeader, other);
+        boolean swap = inHeader.id.compareTo(other.id) > 0;
+        StreamHeader a = swap ? other : inHeader;
+        StreamHeader b = swap ? inHeader : other;
+        String id = makeId(a, b);
         MultiFrameStream mixer = new MultiFrameStream(id);
         PipeHandler otherPipe = inHeaders.get(other);
-        pipe.addOutput(mixer);
-        otherPipe.addOutput(mixer);
-        PipeHandler dualPipe = new PipeHandler(mixer, new DualPipeline(inHeaders.keySet()),
-                combiner, nextCombinePort++);
+        if (swap) {
+          otherPipe.addOutput(mixer);
+          pipe.addOutput(mixer);
+        } else {
+          pipe.addOutput(mixer);
+          otherPipe.addOutput(mixer);
+        }
+
+        SortedSet<StreamHeader> headers = new TreeSet<StreamHeader>(new CompareStreamId());
+        headers.add(a);
+        headers.add(b);
+        StreamModule pipeline2 = useMFCC ? new VectorPipeline(headers) : new DualPipeline(headers);
+        PipeHandler dualPipe = new PipeHandler(mixer, pipeline2, combiner, nextCombinePort++);
         new Thread(dualPipe, id).start();
       }
 
@@ -201,9 +221,9 @@ public class App {
 
   class PipeHandler implements Runnable {
     private final FrameStream in;
-    private final Set<FrameStream> outSet = new HashSet<FrameStream>();
+    private final List<FrameStream> outList = new ArrayList<FrameStream>();
     private final StreamModule pipeline;
-    private final String id;
+    private String id;
     private StreamHeader outHeader;
     private boolean closed = false;
     private int count = 0;
@@ -215,19 +235,16 @@ public class App {
     }
 
     PipeHandler(FrameStream in, StreamModule pipeline, FrameStream out, int port, boolean trace) throws Exception {
+      id = "initializing";
       this.trace = trace;
       if (in == null)
         throw new IllegalArgumentException("argument can not be null");
 
       this.in = in;
       if (out != null) {
-        outSet.add(out);
+        outList.add(out);
       }
-      String pipeName = pipeline.getClass().getSimpleName();
-      id = pipeName + '.' + in.getHeader().id;
       this.pipeline = pipeline;
-      if (trace)
-        System.err.println("Pipeline " + id + " created with " + outSet.size());
       view = new WebViewStream(port);
       synchronized(App.this) {
         pipes_active++;
@@ -236,14 +253,14 @@ public class App {
 
     public void addOutput(MultiFrameStream out) throws Exception {
       if (trace)
-        System.err.println("Adding stream " + out.id + " to " + id);
+        System.out.println("Adding stream " + out.id + " to " + id);
       if (closed) {
         throw new IllegalStateException("Pipeline closed");
       }
       String outId = out.id;
-      synchronized(outSet) {
+      synchronized(outList) {
         System.out.println("Adding output " + outId + " from pipe " + id + " at frame " + count);
-        outSet.add(out);
+        outList.add(out);
         if (outHeader != null)
           out.setHeader(outHeader);
       }
@@ -252,13 +269,18 @@ public class App {
     @Override
     public void run() {
       try {
+        String pipeName = pipeline.getClass().getSimpleName();
+        id = pipeName + '.' + in.getHeader().id;
         if (trace)
-          System.err.println("Running stream " + id);
-        Thread.sleep(STARTUP_DELAY);
+          System.out.println("Pipeline " + id + " created with " + outList.size());
 
-        synchronized(outSet) {
+        System.out.println("Running stream " + id);
+        Thread.sleep(STARTUP_DELAY);
+        System.out.println("Starting stream " + id);
+
+        synchronized(outList) {
           outHeader = pipeline.init(in.getHeader());
-          for (FrameStream out : outSet) {
+          for (FrameStream out : outList) {
             out.setHeader(outHeader);
           }
           view.setHeader(outHeader);
@@ -270,13 +292,13 @@ public class App {
             if (frame == null)
               break;
             if (trace) {
-              System.err.println(frame.toString());
+              System.out.println(frame.toString());
             }
             frame = pipeline.process(frame);
             view.sendFrame(frame);
             count++;
-            synchronized(outSet) {
-              for (FrameStream out : outSet) {
+            synchronized(outList) {
+              for (FrameStream out : outList) {
                 out.sendFrame(frame);
               }
             }
@@ -285,10 +307,11 @@ public class App {
           e.printStackTrace();
         }
 
-        synchronized(outSet) {
+        synchronized(outList) {
           System.out.println("Done with pipe " + id + " count=" + count);
           closed = true;
-          for (FrameStream out : outSet) {
+          outHeader.close();
+          for (FrameStream out : outList) {
             out.close();
           }
           pipeline.close();

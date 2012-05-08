@@ -23,7 +23,7 @@ public class MultiFrameStream implements FrameStream {
   private Map<StreamHeader, LinkedList<StreamFrame>> frames = new HashMap<StreamHeader, LinkedList<StreamFrame>>();
   private boolean isOpen = true;
   public boolean noblock = false;
-  private long lastTime;
+  private int lastSeq;
 
   public MultiFrameStream(String id) throws Exception {
     this.id = id;
@@ -67,14 +67,19 @@ public class MultiFrameStream implements FrameStream {
   public synchronized MultiFrame recvFrame() throws Exception {
     long minTime;
     boolean incomplete;
+    boolean closed;
 
     do {
-      incomplete = frames.size() == 0;
+      incomplete = (frames.size() == 0);
+      closed = false;
       minTime = -1;
       for (StreamHeader in : frames.keySet()) {
         StreamFrame f = frames.get(in).peekFirst();
         if (f == null) {
           incomplete = true;
+          if (in.closed) {
+            closed = true;
+          }
         } else {
           long time = f.getStartTime();
           if ((minTime < 0)||(time < minTime)) {
@@ -85,7 +90,7 @@ public class MultiFrameStream implements FrameStream {
         }
       }
       if (incomplete) {
-        if (!isOpen) {
+        if (closed) {
           return null;
         }
         if (noblock) {
@@ -95,8 +100,8 @@ public class MultiFrameStream implements FrameStream {
       }
     } while (incomplete);
 
-    int seqNum = (int) ((minTime - outHeader.startTime)/outHeader.frameTime);
-    MultiFrame frame = outHeader.makeFrame(seqNum);
+    lastSeq = (int) ((minTime - outHeader.startTime)/outHeader.frameTime);
+    MultiFrame frame = outHeader.makeFrame(lastSeq);
     if (frame.getStartTime() != minTime) {
       throw new RuntimeException("Time inconsistency");
     }

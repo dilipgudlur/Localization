@@ -19,7 +19,7 @@ import edu.cmu.pandaa.stream.GeometryFileStream;
 
 public class DistanceFilter implements StreamModule {
   double average = 0, magnitude = 1, weight;
-  DistanceHeader h, inHeader;
+  DistanceHeader header;
   public static final double speedOfSound = 340.29; // m/s at sea level
   FrameStream posStream;
   GeometryFrame posFrame;
@@ -88,10 +88,8 @@ public class DistanceFilter implements StreamModule {
   }
 
   public DistanceHeader init(StreamHeader inHeader) throws Exception {
-    h = new DistanceHeader((DistanceHeader) inHeader);
-    this.inHeader = h;
-
-    return h;
+    header = new DistanceHeader((DistanceHeader) inHeader);
+    return header;
   }
 
   public void setPositionStream(FrameStream posStream) throws Exception {
@@ -100,8 +98,8 @@ public class DistanceFilter implements StreamModule {
     GeometryHeader gh = (GeometryHeader) posStream.getHeader();
     numDevices = gh.rows;
 
-    String d1id = inHeader.getDeviceIds()[0];
-    String d2id = inHeader.getDeviceIds()[1];
+    String d1id = header.getDeviceIds()[0];
+    String d2id = header.getDeviceIds()[1];
     String[] did = gh.getIds();
     for (int i = 0;i < numDevices;i++) {
       if (d1id.equals(did[i]))
@@ -113,7 +111,7 @@ public class DistanceFilter implements StreamModule {
     if ((d1index < 0)||(d2index < 0)||(d1index == d2index))
       throw new IllegalArgumentException("Could not find matching deviceIds");
 
-    if (gh.frameTime != inHeader.frameTime)
+    if (gh.frameTime != header.frameTime)
       throw new IllegalArgumentException("Frame time mismatch");
   }
 
@@ -124,7 +122,7 @@ public class DistanceFilter implements StreamModule {
     DistanceFrame din = (DistanceFrame) inFrame;
     double scale = getScale();
     double distSum = 0;
-    int count = din.peakDeltas.length;
+    int count = din.peakDeltas == null ? 0 : din.peakDeltas.length;
     if (count == 0 && inFrame.seqNum > 0)
       return null;
 
@@ -143,7 +141,7 @@ public class DistanceFilter implements StreamModule {
     double[] magnitudes = { magnitude };
     double[] values = { count > 0 ? distSum / count : 0 };
 
-    return h.makeFrame(inFrame.seqNum + seqBase, deltas, magnitudes, values);
+    return this.header.makeFrame(inFrame.seqNum + seqBase, deltas, magnitudes, values);
   }
 
   public void close() {

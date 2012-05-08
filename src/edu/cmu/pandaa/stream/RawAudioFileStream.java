@@ -27,6 +27,7 @@ public class RawAudioFileStream implements FrameStream {
   private int wavFrameLength;
   private List<String> fileList;
   public int frameLength;
+  byte[] carryoverData;
 
   int wavSamplingRate;
   int wavSampleCount;
@@ -45,13 +46,13 @@ public class RawAudioFileStream implements FrameStream {
   private final String subChunk2String = "data";
   private final int DEFAULT_SUBCHUNK1_SIZE = 16; // For PCM
 
-  public RawAudioFileStream(String fileName) throws IOException {
+  public RawAudioFileStream(String fileName) throws Exception {
     this.fileName = fileName;
-    is = new FileInputStream(fileName);
     wavFrameLength = RawAudioHeader.DEFAULT_FRAMETIME;
+    initializeInputFile(fileName);
   }
 
-  public RawAudioFileStream(List<String> fileList) throws IOException {
+  public RawAudioFileStream(List<String> fileList) throws Exception {
     this(fileList.remove(0));
     this.fileList = fileList;
     System.out.println("Processing " + fileName);
@@ -98,7 +99,6 @@ public class RawAudioFileStream implements FrameStream {
       if (fileList.size() <= 0)
         return false;
       fileName = fileList.remove(0);
-      System.out.println("Processing " + fileName);
     } else {
       loopCount--;
       if (loopCount <= 0) {
@@ -106,14 +106,23 @@ public class RawAudioFileStream implements FrameStream {
       }
     }
 
-    dis.close();
+    initializeInputFile(fileName);
+    return true;
+  }
+
+  void initializeInputFile(String fileName) throws Exception {
     is = new FileInputStream(fileName);
+    if (dis != null) {
+      dis.close();
+    }
     dis = null;
     RawAudioHeader saved = headerRef;
     headerRef = null;
     getHeader();
-    headerRef = saved;
-    return true;
+    if (saved != null) {
+      headerRef = saved;
+    }
+    System.out.println("Initialized " + fileName + " at " + headerRef.nextSeq);
   }
 
   @Override
@@ -259,15 +268,42 @@ public class RawAudioFileStream implements FrameStream {
     }
     return rawAudioFrame;
   }
+  private byte[] concatenate(byte[] a, byte[] b, int bLen) {
+    if ((a == null)&&(b == null))
+      return null;
+    if (b == null)
+      return a;
+    if (a == null) {
+      if (bLen < b.length) {
+        byte[] ndata = new byte[bLen];
+        System.arraycopy(b, 0, ndata, 0, bLen);
+        return ndata;
+      }
+      return b;
+    }
+    byte[] ndata = new byte[a.length + bLen];
+    System.arraycopy(a, 0, ndata, 0, a.length);
+    System.arraycopy(b, 0, ndata, a.length, bLen);
+    return ndata;
+  }
 
   private short[] readData() throws IOException {
     int numBytesInSample = headerRef.getBitsPerSample() / BITS_PER_BYTE;
-    byte[] audioDataBytes =
-            new byte[(int) (frameLength * numBytesInSample * headerRef.getNumChannels())];
+    int frameBytes = (int) (frameLength * numBytesInSample * headerRef.getNumChannels());
+    int readBytes = frameBytes - (carryoverData == null ? 0 : carryoverData.length);
+    byte[] audioDataBytes = new byte[readBytes];
     int bytesRead = dis.read(audioDataBytes);
     int useLen = bytesRead > 0 ? bytesRead : 0;
+    audioDataBytes = concatenate(carryoverData, audioDataBytes, useLen);
+    if (audioDataBytes.length < frameBytes) {
+      carryoverData = audioDataBytes;
+      return new short[0];
+    } else {
+      carryoverData = null;
+    }
 
-    short[] audioDataShort = DataConversionUtil.byteArrayToShortArray(audioDataBytes, useLen);
+
+    short[] audioDataShort = DataConversionUtil.byteArrayToShortArray(audioDataBytes, audioDataBytes.length);
     if (headerRef.getNumChannels() == STEREO) {
       short[] monoAudioData = new short[audioDataShort.length / 2];
       for (int i = 0, j = 0; i < audioDataShort.length; i += 2, j++)
@@ -277,7 +313,7 @@ public class RawAudioFileStream implements FrameStream {
     if (audioDataShort.length < frameLength) {
       if (byteCount < loopSize && loopSize > 0) {
         short[] newShort = new short[frameLength];
-        System.arraycopy(newShort, 0, audioDataShort, 0, audioDataShort.length);
+        System.arraycopy(audioDataShort, 0, newShort, 0, audioDataShort.length);
         audioDataShort = newShort;
       }
     }

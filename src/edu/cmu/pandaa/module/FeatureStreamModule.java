@@ -93,7 +93,7 @@ public class FeatureStreamModule implements StreamModule {
         rafs.setHeader(frame.getHeader());
       }
     } catch (Exception e) {
-      System.err.println(e.getMessage());
+      System.out.println(e.getMessage());
     }
     return rafs;
   }

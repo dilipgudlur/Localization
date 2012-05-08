@@ -11,16 +11,16 @@ public class DistanceHeader extends StreamHeader {
   private final int rollingWindow;
   private final String[] deviceIds; // the devices providing feature/impulse data for distance calculation
 
-  public DistanceHeader(DistanceHeader in) {
+  public DistanceHeader(StreamHeader in) {
     super(in);
-    rollingWindow = in.getRollingWindow();
-    deviceIds = in.getDeviceIds();
+    rollingWindow = 1;
+    deviceIds = super.getIds();
   }
 
   public DistanceHeader(StreamHeader in, int rollingWindow) {
     super(in);
     this.rollingWindow = rollingWindow;
-    deviceIds = in.getIds();
+    deviceIds = super.getIds();
   }
 
   public DistanceHeader(String id, long startTime, int frameTime) {
@@ -84,7 +84,7 @@ public class DistanceHeader extends StreamHeader {
   }
 
   public DistanceFrame makeFrame(double[] deltas, double[] magnitudes) {
-    double[] empty = new double[deltas.length];
+    double[] empty = deltas == null ? null : new double[deltas.length];
     return new DistanceFrame(deltas, magnitudes, empty);
   }
 

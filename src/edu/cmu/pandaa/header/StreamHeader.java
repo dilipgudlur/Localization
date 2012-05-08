@@ -11,6 +11,7 @@ public class StreamHeader implements Serializable {
   public final int frameTime;  // duration of each frame, measured in ms
   public int nextSeq; // next sequence number to use by frame constructor
   private final String targetClass;
+  public boolean closed = false;
 
   public StreamHeader(StreamHeader prototype) {
     this.id = prototype.getMetaId();
@@ -21,6 +22,10 @@ public class StreamHeader implements Serializable {
     if (targetClass != null && !this.getClass().getSimpleName().equals(targetClass)) {
       throw new RuntimeException("Mismatching target class");
     }
+  }
+
+  public void close() {
+    closed = true;
   }
 
   protected String getMetaId() {
@@ -95,6 +100,10 @@ public class StreamHeader implements Serializable {
 
   public String[] getIds() {
     int list = id.indexOf(',');
+    if (list < 0) {
+      String[] parts = { id };
+      return parts;
+    }
     int prefix = id.substring(0, list).lastIndexOf('-');
     int postfix = id.indexOf('_', list);
     String lstr = id.substring(prefix + 1, postfix);

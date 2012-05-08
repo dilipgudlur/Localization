@@ -1,5 +1,5 @@
 find . -name Localization.jar | xargs rm
-classpath=lib/mdsj.jar
+classpath=lib/mdsj.jar:lib/comirva-0.36.jar 
 rm -rf out/
 modules=`find src/edu/cmu/pandaa/module/ -name \*.java`
 mkdir out

@@ -96,10 +96,10 @@ public class ImpulseFileStream extends FileStream {
     foo.close();
 
     if (frame1.getHeader().startTime != frame2.getHeader().startTime) {
-      System.err.println("Start time mismatch!");
+      System.out.println("Start time mismatch!");
     }
     if (frame1.seqNum != frame2.seqNum-2) {
-      System.err.println("Sequence number mismatch!");
+      System.out.println("Sequence number mismatch!");
     }
   }
 }

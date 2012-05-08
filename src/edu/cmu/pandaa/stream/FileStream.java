@@ -343,7 +343,7 @@ public class FileStream implements FrameStream {
       prototypeHeader = new StreamHeader(consumeString(), consumeInt(), consumeInt(), consumeInt(), targetClass);
       return prototypeHeader;
     } catch (Exception e) {
-      System.err.println("While processing inputline: " + inputLine);
+      System.out.println("While processing inputline: " + inputLine);
       throw e;
     }
   }
@@ -381,7 +381,7 @@ public class FileStream implements FrameStream {
       }
       return part;
     } catch (RuntimeException e) {
-      System.err.println("While processing input line: "+ inputLine);
+      System.out.println("While processing input line: "+ inputLine);
       throw e;
     }
   }
@@ -430,10 +430,10 @@ public class FileStream implements FrameStream {
     foo.close();
 
     if (frame1.getHeader().startTime != frame2.getHeader().startTime) {
-      System.err.println("Start time mismatch!");
+      System.out.println("Start time mismatch!");
     }
     if (frame1.seqNum != frame2.seqNum-2) {
-      System.err.println("Sequence number mismatch!");
+      System.out.println("Sequence number mismatch!");
     }
   }
 }

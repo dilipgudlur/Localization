@@ -65,7 +65,10 @@ public class DistanceFileStream extends FileStream {
       super.sendFrame(header.makeFrame(-1));
       double avg = sum / sumCnt;
       writeValue("avg", avg);
-      writeValue("stdev", Math.sqrt(sumDiffSq/(sumCnt-1)));
+      double stddev = Math.sqrt(sumDiffSq/(sumCnt-1));
+      double stderr = stddev / Math.sqrt(sumCnt);
+      writeValue("stderr", stderr);
+      writeValue("errpct", stderr / avg);
       super.close();
     } catch (Exception e) {
       e.printStackTrace();
@@ -121,10 +124,10 @@ public class DistanceFileStream extends FileStream {
     foo.close();
 
     if (frame1.getHeader().startTime != frame2.getHeader().startTime) {
-      System.err.println("Start time mismatch!");
+      System.out.println("Start time mismatch!");
     }
     if (frame1.seqNum != frame2.seqNum-2) {
-      System.err.println("Sequence number mismatch!");
+      System.out.println("Sequence number mismatch!");
     }
   }
 }

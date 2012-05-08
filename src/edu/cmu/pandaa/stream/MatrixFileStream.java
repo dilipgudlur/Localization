@@ -5,6 +5,7 @@ import edu.cmu.pandaa.header.MatrixHeader.MatrixFrame;
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 
+import javax.sound.sampled.Line;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.io.File;
@@ -57,9 +58,11 @@ public class MatrixFileStream extends FileStream {
     for (int l = 0; l < lines; l++) {
       super.sendFrame(f);
       int rows = frame.data.length;
-
       for (int j = 0; j < cols; j++) {
         writeFormatting();
+        if (multiLine && j == 0) {
+          writeValue("row", l);
+        }
         writeArray("data");
         for (int i = 0;i < rows; i++) {
           double val = frame.data[i][l + j];
@@ -85,14 +88,22 @@ public class MatrixFileStream extends FileStream {
       return null;
     int rows = header.rows;
     int cols = header.cols;
+    int line = -1;
     double[][] geometry = new double[cols][rows];
     for (int j = 0; j < rows; j++) {
       readFormatting();
+      if (multiLine) {
+        line = consumeInt();
+      }
       for (int i = 0; i < cols; i++) {
-        geometry[i][j] = Double.parseDouble(consumeString());
+        geometry[i][j] = consumeDouble();
       }
     }
-    return header.makeFrame(prototype, geometry);
+    MatrixFrame mf = header.makeFrame(prototype, geometry);
+    if (multiLine) {
+      mf.line = line;
+    }
+    return mf;
   }
 
   public static void main(String args[]) throws Exception {

@@ -42,7 +42,7 @@ public class MultiHeader extends StreamHeader {
 
   protected String getMetaId() {
     StreamHeader[] headers = getHeaders();
-    Set<String> set = new HashSet<String>();
+    Set<String> set = new TreeSet<String>();
     for (int i = 0;i < headers.length;i++) {
       String[] ids = headers[i].getIds();
       for (int j = 0;j < ids.length;j++) {

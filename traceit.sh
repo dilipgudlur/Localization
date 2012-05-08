@@ -1,5 +1,8 @@
 CLASSPATH=Localization.jar
-CLASSPATH=$CLASSPATH:$PWD/lib/mdsj.jar
+libs=$PWD/lib/*.jar
+for lib in $libs; do
+  CLASSPATH=$CLASSPATH:$lib
+done
 
 if [ "$*" == "" ]; then
   files=capture_*
@@ -10,6 +13,7 @@ fi
 for file in $files; do
   TARGET=trace-$file
   rm -rf trace $TARGET
+  echo java -cp $CLASSPATH edu.cmu.pandaa.framework.App $file
   java -cp $CLASSPATH edu.cmu.pandaa.framework.App $file
   mv trace $TARGET
 done

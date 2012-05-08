@@ -1,6 +1,5 @@
 package edu.cmu.pandaa.module;
 
-import com.sun.javaws.ui.AutoDownloadPrompt;
 import comirva.audio.util.MFCC;
 import edu.cmu.pandaa.header.MatrixHeader;
 import edu.cmu.pandaa.header.RawAudioHeader;
@@ -10,8 +9,7 @@ import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
 import edu.cmu.pandaa.stream.MatrixFileStream;
 import edu.cmu.pandaa.stream.RawAudioFileStream;
 
-import java.security.acl.LastOwnerException;
-import java.util.UnknownFormatConversionException;
+import java.util.LinkedList;
 
 /**
  * Created by IntelliJ IDEA.
@@ -24,14 +22,27 @@ public class MFCCModule implements StreamModule {
   MatrixHeader header;
   private final int coeficients = 24;
   MFCC mfcc;
-  short[][] prevData = new short[1][0];
-  int windowSize = 2048; // windowSize must be 2^n
+  LinkedList<ShortArray> prevFrames = new LinkedList<ShortArray>();
+  private int windowTime = 1000; // target window size, in ms.
+  private int windowSize; // size in samples, must be 2^n
+  double[] vectorMeans, vectorSqr;
+  final double meanWeight = 20.0;
 
   public StreamHeader init(StreamHeader inHeader) throws Exception {
     RawAudioHeader rah = (RawAudioHeader) inHeader;
     header = new MatrixHeader(inHeader, -1, coeficients);
+
+    double logSize = Math.round(Math.log(windowTime * rah.getSamplingRate() / 1000.0) / Math.log(2));
+    windowSize = (int) Math.pow(2, logSize);
     mfcc = new MFCC(rah.getSamplingRate(), windowSize, coeficients, true);
     return header;
+  }
+
+  class ShortArray {
+    public short[] data;
+    public ShortArray(short[] data) {
+      this.data = data;
+    }
   }
 
   public StreamFrame process(StreamFrame inFrame) throws Exception {
@@ -43,19 +54,23 @@ public class MFCCModule implements StreamModule {
 
     int newDataLen = audioShort.length;
     int prevLen = 0;
-    for (int p = 0;p < prevData.length;p++) {
-      prevLen += prevData[p].length;
+    for (int p = 0;p < prevFrames.size();p++) {
+      prevLen += prevFrames.get(p).data.length;
+    }
+    if (prevLen + newDataLen > (windowSize * 3/2)) {
+      prevLen -= prevFrames.removeFirst().data.length;
     }
     int dataLen = newDataLen + prevLen;
     int truncLen = (dataLen % (windowSize / 2));
     int shortLen = dataLen - truncLen;
     double[] audioData = new double[shortLen];
     int c = 0;
-    boolean first = true;
-    for (int p = 0;p < prevData.length;p++) {
-      int i = (p == 0 || prevData[p-1].length == 0) ? truncLen : 0;
-      for (; i < prevData[p].length; i++) {
-        audioData[c++] = prevData[p][i];
+    for (int p = 0; p < prevFrames.size();p++) {
+      short[] prevData = prevFrames.get(p).data;
+      int i = truncLen;
+      truncLen -= Math.min(prevData.length, truncLen);
+      for (; i < prevData.length; i++) {
+        audioData[c++] = prevData[i];
       }
     }
     for (int i = 0; i < newDataLen; i++) {
@@ -63,26 +78,40 @@ public class MFCCModule implements StreamModule {
         audioData[c++] = audioShort[i];
       }
     }
-
-    for (int i = 0; i < prevData.length-1;i++) {
-      prevData[i] = prevData[i+1];
+    if (c != audioData.length) {
+      throw new RuntimeException("Array length does not add up");
     }
-    prevData[prevData.length-1] = audioShort;
+    prevFrames.addLast(new ShortArray(audioShort));
 
-    // Input requirements for MFCC are that the data is a multiple of windowSize/2
-    double[][] mfccOut = mfcc.process(audioData);
-    int frames = newDataLen / windowSize * 2;
-    if (frames == 0) {
+    if (shortLen == 0) {
       return header.makeFrame();
     }
-    if (frames > mfccOut.length) {
-      frames = mfccOut.length;
+    // Input requirements for MFCC are that the data is a multiple of windowSize/2
+    double[][] mfccOut = mfcc.process(audioData);
+    if (mfccOut.length == 0) {
+      return header.makeFrame();
     }
-    double[][] lastFrames = new double[frames][];
-    for (int i = 0;i < frames;i++) {
-      lastFrames[i] = mfccOut[i + mfccOut.length - frames];
+    for (int i = 0;i < mfccOut.length;i++) {
+      applyAveraging(mfccOut[i]);
     }
-    return header.makeTransposedFrame(lastFrames);
+    return header.makeTransposedFrame(mfccOut);
+  }
+
+  private void applyAveraging(double[] vector) {
+    if (vectorMeans == null) {
+      vectorMeans = new double[vector.length];
+      vectorSqr = new double[vector.length];
+      for (int i = 0; i < vector.length;i ++) {
+        vectorMeans[i] = vector[i];
+        vectorSqr[i] = vector[i] * vector[i];
+      }
+    }
+
+    for (int i = 0; i < vector.length;i ++) {
+      vectorMeans[i] = (vectorMeans[i] * meanWeight + vector[i])/(meanWeight+1);
+      vectorSqr[i] = (vectorSqr[i] * meanWeight + vector[i]*vector[i])/(meanWeight+1);
+      vector[i] = (vector[i] - vectorMeans[i]);// / Math.sqrt(vectorSqr[i]);
+    }
   }
 
   public void close() {

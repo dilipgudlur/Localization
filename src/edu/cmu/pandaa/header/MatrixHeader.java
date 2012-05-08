@@ -1,6 +1,5 @@
 package edu.cmu.pandaa.header;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import edu.cmu.pandaa.stream.FileStream;
 import edu.cmu.pandaa.stream.GeometryFileStream;
 
@@ -46,6 +45,7 @@ public class MatrixHeader extends StreamHeader implements Serializable {
 
   public class MatrixFrame extends StreamFrame implements Serializable {
     public double[][] data;
+    public int line;
 
     public MatrixFrame() {
     }
