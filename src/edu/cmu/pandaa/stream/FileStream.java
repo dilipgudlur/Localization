@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.UnknownFormatConversionException;
 
 import edu.cmu.pandaa.header.StreamHeader;
 import edu.cmu.pandaa.header.StreamHeader.StreamFrame;
@@ -139,7 +140,9 @@ public class FileStream implements FrameStream {
       return inputLine;
     }
 
-    inputLine = br.readLine();
+    do {
+      inputLine = br.readLine();
+    } while (inputLine != null && inputLine.trim().startsWith("#"));
 
     if (tryPrefetch) {
       String prefix = lastReadSeqNum + " ";
@@ -160,6 +163,10 @@ public class FileStream implements FrameStream {
 
   public void setOutputStream(OutputStream os) {
     pw = new PrintWriter(os);
+  }
+
+  public boolean isOutputStream() {
+    return pw != null;
   }
 
   public void createObjectStreams() throws Exception {
@@ -360,12 +367,17 @@ public class FileStream implements FrameStream {
       return null;
     }
     lastLine = lastLine.trim();
-    int seqNum = consumeInt();
-    if (seqNum <= lastReadSeqNum) {
-      throw new IllegalArgumentException("Sequence numbers not advancing");
+    try {
+      int seqNum = consumeInt();
+      if (seqNum <= lastReadSeqNum) {
+        throw new IllegalArgumentException("Sequence numbers not advancing");
+      }
+      lastReadSeqNum = seqNum;
+      return prototypeHeader.makeFrame(seqNum);
+    } catch (NumberFormatException e) {
+      System.out.println("Reached end of input file");
+      return null;
     }
-    lastReadSeqNum = seqNum;
-    return prototypeHeader.makeFrame(seqNum);
   }
 
   protected String consumeString() {
@@ -401,7 +413,11 @@ public class FileStream implements FrameStream {
   }
 
   protected int consumeInt() {
-    return Integer.parseInt(consumeString());
+    String string = consumeString();
+    if (string.contains("###")) {
+      System.out.println("foobar");
+    }
+    return Integer.parseInt(string);
   }
 
   protected double consumeDouble() {

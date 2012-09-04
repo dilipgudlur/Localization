@@ -106,6 +106,9 @@ public class StreamHeader implements Serializable {
     }
     int prefix = id.substring(0, list).lastIndexOf('-');
     int postfix = id.indexOf('_', list);
+    if (postfix < 0) {
+      postfix = id.length();
+    }
     String lstr = id.substring(prefix + 1, postfix);
     String[] parts = lstr.split(",");
     for (int i = 0; i < parts.length; i++) {

@@ -22,7 +22,7 @@ public class LiveAudioStream implements FrameStream {
   CaptureThread captureThread;
   AudioCaptureState audioCaptureState = AudioCaptureState.BEFORE;
   final static int syncFrames = 10;
-  static final Map<TargetDataLine, Mixer> lines = new HashMap<TargetDataLine, Mixer>();
+  static final SortedMap<Mixer, TargetDataLine> lines = new TreeMap<Mixer, TargetDataLine>(new MixerComparator());
   static int lineCount = 0;
   final static int delayWindowMs = 10 * 1000;
   private RawAudioFileStream rawAudioOutputStream;
@@ -49,6 +49,12 @@ public class LiveAudioStream implements FrameStream {
   private final static int DEFAULT_SAMPLING_RATE = 44100;
   private final static int DEFAULT_FRAME_TIME = 100; // 100ms per frame
   private final static int DEFAULT_BITS_PER_SAMPLE = 16;
+
+  static class MixerComparator implements Comparator<Mixer> {
+    public int compare(Mixer a, Mixer b) {
+      return a.getMixerInfo().getName().compareTo(b.getMixerInfo().getName());
+    }
+  }
 
   private LiveAudioStream(String id, int encoding, int samplingRate, int bitsPerSample, int frameTime,
                           int captureTimeMs, int segmentLengthMs, TargetDataLine line, String fileName) {
@@ -82,7 +88,7 @@ public class LiveAudioStream implements FrameStream {
         try {
           TargetDataLine line = (TargetDataLine) mixer.getLine(dataLineInfo);
           line.open(audioFormat);
-          lines.put(line, mixer);
+          lines.put(mixer, line);
           added = true;
         } catch (Exception e) {
           // skip this entry
@@ -321,7 +327,9 @@ public class LiveAudioStream implements FrameStream {
     }
     int cnt = 1;
     List<LiveAudioStream> streams = new ArrayList<LiveAudioStream>();
-    for (TargetDataLine line : lines.keySet()) {
+    for (Mixer mixer : lines.keySet()) {
+      TargetDataLine line = lines.get(mixer);
+      System.out.println(mixer.getMixerInfo().getName());
       String id = hostname + "-" + cnt;
       String fileName = path + id + "_%d.wav";
       LiveAudioStream stream = new LiveAudioStream(id, line, captureTimeMs,segmentLengthMs, fileName);

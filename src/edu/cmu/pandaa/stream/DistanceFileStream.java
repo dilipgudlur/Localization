@@ -62,13 +62,15 @@ public class DistanceFileStream extends FileStream {
 
   public void close() {
     try {
-      super.sendFrame(header.makeFrame(-1));
-      double avg = sum / sumCnt;
-      writeValue("avg", avg);
-      double stddev = Math.sqrt(sumDiffSq/(sumCnt-1));
-      double stderr = stddev / Math.sqrt(sumCnt);
-      writeValue("stderr", stderr);
-      writeValue("errpct", stderr / avg);
+      if (isOutputStream()) {
+        super.sendFrame(header.makeFrame(-1));
+        double avg = sum / sumCnt;
+        writeValue("avg", avg);
+        double stddev = Math.sqrt(sumDiffSq/(sumCnt-1));
+        double stderr = stddev / Math.sqrt(sumCnt);
+        writeValue("stderr", stderr);
+        writeValue("errpct", stderr / avg);
+      }
       super.close();
     } catch (Exception e) {
       e.printStackTrace();
